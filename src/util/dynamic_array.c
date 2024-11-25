@@ -9,6 +9,7 @@
 #include "cstrl/cstrl_util.h"
 
 #include <memory.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 void cstrl_da_int_init(da_int *da, size_t initial_size)

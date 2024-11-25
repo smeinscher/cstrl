@@ -2,13 +2,13 @@
 // Created by 12105 on 11/23/2024.
 //
 
-#include "glad/glad.h"
-#include "log.c/log.h"
-#include "platform_internal.h"
-
 #include <cstrl/cstrl_platform.h>
 
 #ifdef CSTRL_PLATFORM_WINDOWS
+
+#include "glad/glad.h"
+#include "log.c/log.h"
+#include "platform_internal.h"
 
 #include <windows.h>
 

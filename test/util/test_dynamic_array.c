@@ -9,6 +9,7 @@
 #include "cstrl/cstrl_util.h"
 
 #include <limits.h>
+#include <stdint.h>
 
 int test_cstrl_da_int_init_happy_path()
 {

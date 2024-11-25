@@ -4,6 +4,10 @@
 
 #ifndef PLATFORM_INTERNAL_H
 #define PLATFORM_INTERNAL_H
+#include "cstrl/cstrl_defines.h"
+
+#ifdef CSTRL_PLATFORM_WINDOWS
+
 #include <windows.h>
 
 typedef struct internal_state
@@ -11,5 +15,30 @@ typedef struct internal_state
     HINSTANCE h_instance;
     HWND hwnd;
 } internal_state;
+#endif
 
+#ifdef CSTRL_PLATFORM_LINUX
+
+#include <X11/Xlib.h>
+#include <xcb/xcb.h>
+
+typedef struct internal_state_new
+{
+    Display *display;
+    Window root_window;
+    Window main_window;
+
+} internal_state_new;
+
+typedef struct internal_state
+{
+    Display *display;
+    xcb_connection_t *connection;
+    xcb_window_t window;
+    xcb_screen_t *screen;
+    xcb_atom_t wm_protocols;
+    xcb_atom_t wm_delete_win;
+} internal_state;
+
+#endif
 #endif // PLATFORM_INTERNAL_H

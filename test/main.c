@@ -7,6 +7,7 @@
 #include "cstrl_math/test_vec2.h"
 #include "cstrl_math/test_vec3.h"
 #include "cstrl_math/test_vec4.h"
+#include "log.c/log.h"
 #include "test_manager.h"
 #include "util/test_dynamic_array.h"
 
@@ -106,7 +107,7 @@ int main()
     // test_manager_log_total_failed_tests();
 
     cstrl_platform_state state;
-    if (!cstrl_platform_init(&state, "cstrl window test", 400, 300, 800, 600))
+    if (!cstrl_platform_init(&state, "cstrl window test", 0, 0, 800, 600))
     {
         cstrl_platform_destroy(&state);
         return 1;
@@ -115,11 +116,12 @@ int main()
     cstrl_renderer_init(&state);
     while (cstrl_platform_pump_messages(&state))
     {
+        // log_trace("Stuff");
         cstrl_renderer_clear(0.2f, 0.4f, 0.7f, 1.0f);
         cstrl_platform_swap_buffers(&state);
     }
 
-    cstrl_renderer_destroy(&state);
+    // cstrl_renderer_destroy(&state);
     cstrl_platform_destroy(&state);
 
     return 0;

@@ -26,7 +26,9 @@ add_library(cstrl SHARED
         src/renderer/opengl/cstrl_opengl_platform_win32.c
         src/renderer/opengl/cstrl_opengl_renderer.c
         include/cstrl/cstrl_renderer.h
-        src/platform/platform_internal.h)
+        src/platform/platform_internal.h
+        src/platform/platform_linux.c
+        src/renderer/opengl/cstrl_opengl_platform_linux.c)
 
 add_executable(cstrl-test
         test/main.c
@@ -43,8 +45,8 @@ add_executable(cstrl-test
         test/util/test_dynamic_array.h
 )
 
-target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES})
-target_link_libraries(cstrl-test PRIVATE log.c cstrl)
+target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)
+target_link_libraries(cstrl-test PRIVATE log.c cstrl m)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
