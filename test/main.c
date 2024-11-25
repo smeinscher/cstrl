@@ -107,21 +107,29 @@ int main()
     // test_manager_log_total_failed_tests();
 
     cstrl_platform_state state;
-    if (!cstrl_platform_init(&state, "cstrl window test", 0, 0, 800, 600))
+    if (!cstrl_platform_init(&state, "cstrl window test", 560, 240, 800, 600))
     {
         cstrl_platform_destroy(&state);
         return 1;
     }
 
     cstrl_renderer_init(&state);
+    render_data *render_data = cstrl_renderer_create_render_data();
+    float vertices[] = {
+        -0.5f, -0.5f, // left
+        0.5f,  -0.5f, // right
+        0.0f,  0.5f,  // top
+    };
+    cstrl_renderer_add_positions(render_data, vertices, 2, 3);
     while (cstrl_platform_pump_messages(&state))
     {
         // log_trace("Stuff");
         cstrl_renderer_clear(0.2f, 0.4f, 0.7f, 1.0f);
+        cstrl_renderer_draw(render_data);
         cstrl_platform_swap_buffers(&state);
     }
 
-    // cstrl_renderer_destroy(&state);
+    cstrl_renderer_destroy(&state);
     cstrl_platform_destroy(&state);
 
     return 0;

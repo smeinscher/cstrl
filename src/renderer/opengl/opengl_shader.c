@@ -1,0 +1,150 @@
+//
+// Created by sterling on 5/31/24.
+//
+
+#include "opengl_shader.h"
+
+#include <stdio.h>
+
+#include "../../util/file_helpers.h"
+#include "glad/glad.h"
+#include "log.c/log.h"
+
+#include <stdlib.h>
+
+#define MAX_LOG_BUFFER_SIZE 512
+
+unsigned int opengl_compile_shader(const char *shader_source, unsigned int type);
+
+Shader opengl_load_basic_shaders(const char *vertex_shader_source, const char *fragment_shader_source)
+{
+    Shader shader = {0};
+    const unsigned int vertex_shader = opengl_compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
+    if (vertex_shader == 0)
+    {
+        log_error("Vertex shader failed to compile");
+        return shader;
+    }
+    const unsigned int fragment_shader = opengl_compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
+    if (fragment_shader == 0)
+    {
+        log_error("Fragment shader failed to compile");
+        return shader;
+    }
+
+    unsigned int shader_program = glCreateProgram();
+
+    glAttachShader(shader_program, vertex_shader);
+    glAttachShader(shader_program, fragment_shader);
+
+    int success;
+    glLinkProgram(shader_program);
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        char info_log[MAX_LOG_BUFFER_SIZE];
+        glGetProgramInfoLog(shader_program, MAX_LOG_BUFFER_SIZE, NULL, info_log);
+        log_error("Failed to link shader_program:\n\t%s", info_log);
+    }
+
+    glDeleteShader(vertex_shader);
+    glDeleteShader(fragment_shader);
+
+    glUseProgram(shader_program);
+
+    shader.program = shader_program;
+    shader.vertex_shader_path = vertex_shader_source;
+    shader.fragment_shader_path = fragment_shader_source;
+    shader.vertex_shader_last_modified_timestamp = get_file_timestamp(vertex_shader_source);
+    shader.fragment_shader_last_modified_timestamp = get_file_timestamp(fragment_shader_source);
+    return shader;
+}
+
+char *opengl_get_file_contents(const char *path)
+{
+    char *source = NULL;
+    FILE *fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        log_error("Failed to open file %s", path);
+        return 0;
+    }
+
+    if (fseek(fp, 0L, SEEK_END) == 0)
+    {
+        const long buffer_size = ftell(fp);
+        if (buffer_size == -1)
+        {
+            log_error("Failed to get size of file");
+            return 0;
+        }
+        source = malloc(sizeof(char) * (buffer_size + 1));
+        if (fseek(fp, 0L, SEEK_SET) != 0)
+        {
+            log_error("Failed to return to start of file\n");
+            return 0;
+        }
+
+        size_t new_length = fread(source, sizeof(char), buffer_size, fp);
+        if (ferror(fp) != 0)
+        {
+            log_error("Failed to read file");
+            return 0;
+        }
+        source[new_length++] = '\0';
+    }
+    fclose(fp);
+
+    return source;
+}
+
+unsigned int opengl_compile_shader(const char *shader_source, unsigned int type)
+{
+    const unsigned int shader = glCreateShader(type);
+
+    glShaderSource(shader, 1, &shader_source, NULL);
+    glCompileShader(shader);
+
+    int success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        char info_log[MAX_LOG_BUFFER_SIZE];
+        glGetShaderInfoLog(shader, MAX_LOG_BUFFER_SIZE, NULL, info_log);
+        log_error("Failed to compile shader:\n\t%s", info_log);
+        return 0;
+    }
+    return shader;
+}
+
+void opengl_set_uniform_float(unsigned int program, const char *name, float f)
+{
+    glUseProgram(program);
+    glUniform1f(glGetUniformLocation(program, name), f);
+}
+
+void opengl_set_uniform_4f(unsigned int program, const char *name, float x, float y, float z, float w)
+{
+    glUseProgram(program);
+    glUniform4f(glGetUniformLocation(program, name), x, y, z, w);
+}
+
+void opengl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat)
+{
+    glUseProgram(program);
+    glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, &mat.m[0]);
+}
+
+void opengl_shader_hot_reload(Shader *shader)
+{
+    time_t vertex_current_timestamp = get_file_timestamp(shader->vertex_shader_path);
+    time_t fragment_current_timestamp = get_file_timestamp(shader->fragment_shader_path);
+
+    if (vertex_current_timestamp > shader->vertex_shader_last_modified_timestamp ||
+        fragment_current_timestamp > shader->fragment_shader_last_modified_timestamp)
+    {
+        log_trace("Hot reloading shader");
+        glDeleteProgram(shader->program);
+        *shader = opengl_load_basic_shaders(shader->vertex_shader_path, shader->fragment_shader_path);
+    }
+}

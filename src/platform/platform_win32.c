@@ -88,8 +88,6 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     }
     state->hwnd = hwnd;
 
-    ShowWindow(hwnd, SW_SHOW);
-
     LARGE_INTEGER frequency;
     QueryPerformanceFrequency(&frequency);
     clock_frequency = 1.0 / (double)frequency.QuadPart;

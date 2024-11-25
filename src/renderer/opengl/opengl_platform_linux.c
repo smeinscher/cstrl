@@ -2,14 +2,15 @@
 // Created by sterling on 11/23/24.
 //
 
+#include <cstrl/cstrl_defines.h>
+
+#ifdef CSTRL_PLATFORM_LINUX
+
 #include "../../platform/platform_internal.h"
 #include "cstrl_opengl_platform.h"
 #include "glad/glad.h"
 #include "log.c/log.h"
-
 #include <GL/glx.h>
-
-#ifdef CSTRL_PLATFORM_LINUX
 
 GLXContext gl_context;
 

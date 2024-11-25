@@ -6,8 +6,8 @@
 
 #ifdef CSTRL_PLATFORM_WINDOWS
 
-#include "cstrl_opengl_platform.h"
 #include "glad/glad.h"
+#include "opengl_platform.h"
 
 #include "../../platform/platform_internal.h"
 #include "cstrl/cstrl_platform.h"
@@ -55,8 +55,12 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
     SetPixelFormat(dc, pf, &pfd);
     rc = wglCreateContext(dc);
     wglMakeCurrent(dc, rc);
+
     gladLoadGL();
     glViewport(0, 0, 800, 600);
+
+    ShowWindow(state->hwnd, SW_SHOW);
+
     return true;
 }
 

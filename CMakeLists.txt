@@ -22,13 +22,22 @@ add_library(cstrl SHARED
         include/cstrl/cstrl_types.h
         include/cstrl/cstrl_platform.h
         src/platform/platform_win32.c
-        src/renderer/opengl/cstrl_opengl_platform.h
-        src/renderer/opengl/cstrl_opengl_platform_win32.c
-        src/renderer/opengl/cstrl_opengl_renderer.c
+        src/renderer/opengl/opengl_platform.h
+        src/renderer/opengl/opengl_platform_win32.c
+        src/renderer/opengl/opengl_renderer.c
         include/cstrl/cstrl_renderer.h
         src/platform/platform_internal.h
         src/platform/platform_linux.c
-        src/renderer/opengl/cstrl_opengl_platform_linux.c)
+        src/renderer/opengl/opengl_platform_linux.c
+        src/renderer/opengl/opengl_shader.c
+        src/renderer/opengl/opengl_shader.h
+        src/renderer/opengl/opengl_texture.c
+        src/renderer/opengl/opengl_texture.h
+        src/util/file_helpers.c
+        src/util/file_helpers.h
+        extern/stb/stb_image.c
+        extern/stb/stb_image.h
+)
 
 add_executable(cstrl-test
         test/main.c
