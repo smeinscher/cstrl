@@ -6,6 +6,7 @@
 #define OPENGL_SHADER_H
 
 #include <cstrl/cstrl_math.h>
+#include <sys/time.h>
 
 typedef struct Shader
 {

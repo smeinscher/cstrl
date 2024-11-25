@@ -6,7 +6,10 @@
 #include "opengl_platform.h"
 #include "opengl_shader.h"
 
+#include "opengl_shader_programs.h"
+
 #include <cstrl/cstrl_renderer.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 typedef struct internal_data
@@ -23,22 +26,6 @@ typedef struct internal_data
     unsigned int *indices;
 } internal_data;
 
-static const char *vertex_shader = R"(
-    #version 460 core
-    layout (location = 0) in vec2 aPos;
-    void main()
-    {
-        gl_Position = vec4(aPos, 1.0, 1.0);
-    })";
-static const char *fragment_shader = R"(
-    #version 460 core
-    out vec4 FragColor;
-    void main()
-    {
-        FragColor = vec4(0.7, 0.4, 0.2, 1.0);
-    }
-)";
-
 Shader shader;
 
 void cstrl_renderer_init(cstrl_platform_state *platform_state)
@@ -51,7 +38,7 @@ void cstrl_renderer_init(cstrl_platform_state *platform_state)
     glEnable(GL_LINE_WIDTH);
     glLineWidth(1.0f);
 
-    shader = opengl_load_basic_shaders(vertex_shader, fragment_shader);
+    shader = opengl_load_basic_shaders(pulsing_triangle_vertex_shader, pulsing_triangle_fragment_shader);
 }
 
 void cstrl_renderer_clear(float r, float g, float b, float a)
@@ -127,6 +114,7 @@ void cstrl_renderer_add_colors(render_data *render_data, float *colors)
 void cstrl_renderer_draw(render_data *data)
 {
     glUseProgram(shader.program);
+    opengl_set_uniform_float(shader.program, "time", cstrl_platform_get_absolute_time());
     internal_data *internal_data = data->internal_data;
     glBindVertexArray(internal_data->vao);
     glDrawArrays(GL_TRIANGLES, 0, internal_data->count);
@@ -135,4 +123,9 @@ void cstrl_renderer_draw(render_data *data)
 void cstrl_renderer_destroy(cstrl_platform_state *platform_state)
 {
     cstrl_opengl_platform_destroy(platform_state);
+}
+
+void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state)
+{
+    cstrl_opengl_platform_swap_buffers(platform_state);
 }

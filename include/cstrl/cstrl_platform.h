@@ -24,6 +24,4 @@ double cstrl_platform_get_absolute_time();
 
 void cstrl_platform_sleep(unsigned long long ms);
 
-void cstrl_platform_swap_buffers(cstrl_platform_state *platform_state);
-
 #endif // CSTRL_PLATFORM_H

@@ -16,6 +16,20 @@
 
 unsigned int opengl_compile_shader(const char *shader_source, unsigned int type);
 
+Shader opengl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path)
+{
+    long file_size;
+    const char *vertex_shader_source = read_file(vertex_shader_path, &file_size);
+    const char *fragment_shader_source = read_file(fragment_shader_path, &file_size);
+    Shader shader = opengl_load_basic_shaders(vertex_shader_source, fragment_shader_source);
+    shader.vertex_shader_path = vertex_shader_path;
+    shader.fragment_shader_path = fragment_shader_path;
+    shader.vertex_shader_last_modified_timestamp = get_file_timestamp(vertex_shader_path);
+    shader.fragment_shader_last_modified_timestamp = get_file_timestamp(fragment_shader_path);
+
+    return shader;
+}
+
 Shader opengl_load_basic_shaders(const char *vertex_shader_source, const char *fragment_shader_source)
 {
     Shader shader = {0};
@@ -53,10 +67,6 @@ Shader opengl_load_basic_shaders(const char *vertex_shader_source, const char *f
     glUseProgram(shader_program);
 
     shader.program = shader_program;
-    shader.vertex_shader_path = vertex_shader_source;
-    shader.fragment_shader_path = fragment_shader_source;
-    shader.vertex_shader_last_modified_timestamp = get_file_timestamp(vertex_shader_source);
-    shader.fragment_shader_last_modified_timestamp = get_file_timestamp(fragment_shader_source);
     return shader;
 }
 

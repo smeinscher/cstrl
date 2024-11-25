@@ -70,4 +70,12 @@ void cstrl_opengl_platform_destroy(cstrl_platform_state *platform_state)
     ReleaseDC(state->hwnd, dc);
     wglDeleteContext(rc);
 }
+
+void cstrl_opengl_platform_swap_buffers(cstrl_platform_state *platform_state)
+{
+    internal_state *state = (internal_state *)platform_state->internal_state;
+    HDC dc = GetDC(state->hwnd);
+    SwapBuffers(dc);
+}
+
 #endif

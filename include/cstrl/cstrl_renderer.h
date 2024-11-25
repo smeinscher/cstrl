@@ -28,4 +28,6 @@ void cstrl_renderer_draw(render_data *data);
 
 void cstrl_renderer_destroy(cstrl_platform_state *platform_state);
 
+void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state);
+
 #endif // CSTRL_RENDERER_H

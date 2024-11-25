@@ -20,8 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <GL/glx.h>
-
 #include "platform_internal.h"
 
 bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y, int width,
@@ -105,12 +103,6 @@ void cstrl_platform_sleep(unsigned long long ms)
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = (ms % 1000) * 1000 * 1000;
     nanosleep(&ts, 0);
-}
-
-void cstrl_platform_swap_buffers(cstrl_platform_state *platform_state)
-{
-    internal_state_new *state = (internal_state_new *)platform_state->internal_state;
-    glXSwapBuffers(state->display, state->main_window);
 }
 
 #endif

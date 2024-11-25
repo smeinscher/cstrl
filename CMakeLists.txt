@@ -37,6 +37,7 @@ add_library(cstrl SHARED
         src/util/file_helpers.h
         extern/stb/stb_image.c
         extern/stb/stb_image.h
+        src/renderer/opengl/opengl_shader_programs.h
 )
 
 add_executable(cstrl-test
