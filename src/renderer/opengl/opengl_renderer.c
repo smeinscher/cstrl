@@ -113,11 +113,13 @@ void cstrl_renderer_add_colors(render_data *render_data, float *colors)
 
 void cstrl_renderer_draw(render_data *data)
 {
+    static float test = 0.0f;
     glUseProgram(shader.program);
-    opengl_set_uniform_float(shader.program, "time", cstrl_platform_get_absolute_time());
+    opengl_set_uniform_float(shader.program, "time", (sinf(test) + 1.0f) / 2.0f);
     internal_data *internal_data = data->internal_data;
     glBindVertexArray(internal_data->vao);
     glDrawArrays(GL_TRIANGLES, 0, internal_data->count);
+    test += 0.01f;
 }
 
 void cstrl_renderer_destroy(cstrl_platform_state *platform_state)

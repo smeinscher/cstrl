@@ -15,6 +15,8 @@
 static double clock_frequency;
 static LARGE_INTEGER start_time;
 
+static bool should_exit = false;
+
 LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
     switch (msg)
@@ -22,7 +24,9 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
     case WM_CREATE: {
         return 0;
     }
+    case WM_CLOSE:
     case WM_DESTROY:
+        should_exit = true;
         PostQuitMessage(0);
         return 0;
     // case WM_PAINT: {
@@ -107,16 +111,14 @@ void cstrl_platform_destroy(cstrl_platform_state *platform_state)
     }
 }
 
-bool cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
+void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
 {
     MSG msg = {};
-    if (GetMessage(&msg, NULL, 0, 0) <= 0)
+    while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE))
     {
-        return false;
+        TranslateMessage(&msg);
+        DispatchMessageA(&msg);
     }
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
-    return true;
 }
 
 double cstrl_platform_get_absolute_time()
@@ -129,6 +131,11 @@ double cstrl_platform_get_absolute_time()
 void cstrl_platform_sleep(unsigned long long ms)
 {
     Sleep(ms);
+}
+
+bool cstrl_platform_should_exit(cstrl_platform_state *platform_state)
+{
+    return should_exit;
 }
 
 #endif

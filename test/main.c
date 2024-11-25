@@ -121,8 +121,9 @@ int main()
         0.0f,  0.5f,  // top
     };
     cstrl_renderer_add_positions(render_data, vertices, 2, 3);
-    while (cstrl_platform_pump_messages(&state))
+    while (!cstrl_platform_should_exit(&state))
     {
+        cstrl_platform_pump_messages(&state);
         cstrl_renderer_clear(0.2f, 0.4f, 0.7f, 1.0f);
         cstrl_renderer_draw(render_data);
         cstrl_renderer_swap_buffers(&state);

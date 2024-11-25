@@ -12,6 +12,8 @@
 #include "../../platform/platform_internal.h"
 #include "cstrl/cstrl_platform.h"
 
+#include <GL/wglext.h>
+#include <gl/gl.h>
 #include <windows.h>
 
 HDC dc;
@@ -53,7 +55,16 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
     dc = GetDC(state->hwnd);
     int pf = ChoosePixelFormat(dc, &pfd);
     SetPixelFormat(dc, pf, &pfd);
-    rc = wglCreateContext(dc);
+    HGLRC temp_context = wglCreateContext(dc);
+    wglMakeCurrent(dc, temp_context);
+    int attribs[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB,    4, WGL_CONTEXT_MINOR_VERSION_ARB, 6, WGL_CONTEXT_PROFILE_MASK_ARB,
+        WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 0};
+    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB =
+        (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+    rc = wglCreateContextAttribsARB(dc, 0, attribs);
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(temp_context);
     wglMakeCurrent(dc, rc);
 
     gladLoadGL();

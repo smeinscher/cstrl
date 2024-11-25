@@ -18,10 +18,12 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
 
 void cstrl_platform_destroy(cstrl_platform_state *platform_state);
 
-bool cstrl_platform_pump_messages(cstrl_platform_state *platform_state);
+void cstrl_platform_pump_messages(cstrl_platform_state *platform_state);
 
 double cstrl_platform_get_absolute_time();
 
 void cstrl_platform_sleep(unsigned long long ms);
+
+bool cstrl_platform_should_exit(cstrl_platform_state *platform_state);
 
 #endif // CSTRL_PLATFORM_H

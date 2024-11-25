@@ -21,6 +21,26 @@ const char *basic_fragment_shader = R"(
     }
 )";
 
+const char *basic_color_vertex_shader = R"(
+    #version 460 core
+    layout (location = 0) in vec2 aPos;
+    layout (location = 1) in vec4 aColor;
+    out vec4 color;
+    void main()
+    {
+        gl_Position = vec4(aPos, 1.0, 1.0);
+        color = aColor;
+    })";
+const char *basic_color_fragment_shader = R"(
+    #version 460 core
+    out vec4 FragColor;
+    in vec4 color;
+    void main()
+    {
+        FragColor = color;
+    }
+)";
+
 const char *pulsing_triangle_vertex_shader = R"(
     #version 460 core
     layout (location = 0) in vec2 aPos;
@@ -37,8 +57,7 @@ const char *pulsing_triangle_fragment_shader = R"(
     in float t;
     void main()
     {
-        float new_color = (sin(t) + 1.0) / 2.0;
-        FragColor = vec4(new_color, 0.4, 0.2, 1.0);
+        FragColor = vec4(t, 0.4, 0.2, 1.0);
     }
 )";
 
