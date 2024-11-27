@@ -144,10 +144,10 @@ typedef struct mat4x4
     union {
         struct
         {
-            float xx, xy, xz, xw;
-            float yx, yy, yz, yw;
-            float zx, zy, zz, zw;
-            float wx, wy, wz, ww;
+            float xx, yx, zx, wx;
+            float xy, yy, zy, wy;
+            float xz, yz, zz, wz;
+            float xw, yw, zw, ww;
         };
         struct
         {
@@ -332,6 +332,74 @@ CSTRL_INLINE vec4 cstrl_vec4_div(const vec4 a, const vec4 b)
 CSTRL_INLINE float cstrl_vec4_dot(const vec4 a, const vec4 b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
+/*
+ *
+ *      mat4x4 math functions
+ *
+ */
+
+CSTRL_INLINE mat4 cstrl_mat4_identity()
+{
+    mat4 mat = {0.0f};
+    mat.xx = 1.0f;
+    mat.yy = 1.0f;
+    mat.zz = 1.0f;
+    mat.ww = 1.0f;
+    return mat;
+}
+
+CSTRL_INLINE mat4 cstrl_look_at(const vec3 eye, const vec3 center, const vec3 up)
+{
+    vec3 z = cstrl_vec3_sub(eye, center);
+    z = cstrl_vec3_normalize(z);
+    vec3 x = cstrl_vec3_cross(up, z);
+    x = cstrl_vec3_normalize(x);
+    vec3 y = cstrl_vec3_cross(z, x);
+
+    mat4 mat = cstrl_mat4_identity();
+
+    mat.xx = x.x;
+    mat.xy = x.y;
+    mat.xz = x.z;
+    mat.yx = y.x;
+    mat.yy = y.y;
+    mat.yz = y.z;
+    mat.zx = z.x;
+    mat.zy = z.y;
+    mat.zz = z.z;
+
+    mat.xw = -cstrl_vec3_dot(x, eye);
+    mat.yw = -cstrl_vec3_dot(y, eye);
+    mat.zw = -cstrl_vec3_dot(z, eye);
+
+    return mat;
+}
+
+CSTRL_INLINE mat4 cstrl_ortho(float left, float right, float bottom, float top, float near, float far)
+{
+    mat4 mat = cstrl_mat4_identity();
+    mat.xx = 2.0f / (right - left);
+    mat.yy = 2.0f / (top - bottom);
+    mat.zz = -2.0f / (far - near);
+    mat.xw = -(right + left) / (right - left);
+    mat.yw = -(top + bottom) / (top - bottom);
+    mat.zw = -(far + near) / (far - near);
+    return mat;
+}
+
+CSTRL_INLINE mat4 cstrl_perspective(float fov, float aspect, float near, float far)
+{
+    mat4 mat = {0};
+    float tan_half_angle = tanf(fov / 2.0f);
+    float range = far - near;
+    mat.xx = 1.0f / (aspect * tan_half_angle);
+    mat.yy = 1.0f / tan_half_angle;
+    mat.zz = -(near + far) / range;
+    mat.wz = -1.0f;
+    mat.zw = -2.0 * near * far / range;
+    return mat;
 }
 
 #endif // CSTRL_MATH_H

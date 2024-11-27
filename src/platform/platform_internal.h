@@ -22,23 +22,14 @@ typedef struct internal_state
 #include <X11/Xlib.h>
 #include <xcb/xcb.h>
 
-typedef struct internal_state_new
+typedef struct internal_state
 {
     Display *display;
     Window root_window;
     Window main_window;
 
-} internal_state_new;
-
-typedef struct internal_state
-{
-    Display *display;
-    xcb_connection_t *connection;
-    xcb_window_t window;
-    xcb_screen_t *screen;
-    xcb_atom_t wm_protocols;
-    xcb_atom_t wm_delete_win;
 } internal_state;
 
 #endif
+
 #endif // PLATFORM_INTERNAL_H

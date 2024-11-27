@@ -87,9 +87,5 @@ time_t get_file_timestamp(const char *path)
     {
         log_error("Error loading file timestamp");
     }
-#ifdef _WIN32
     return st.st_mtime;
-#else
-    return st.st_mtim.tv_sec;
-#endif
 }

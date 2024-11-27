@@ -38,6 +38,8 @@ add_library(cstrl SHARED
         extern/stb/stb_image.c
         extern/stb/stb_image.h
         src/renderer/opengl/opengl_shader_programs.h
+        src/renderer/camera.c
+        src/renderer/camera.h
 )
 
 add_executable(cstrl-test

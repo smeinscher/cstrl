@@ -5,14 +5,14 @@
 #ifndef OPENGL_SHADER_PROGRAMS_H
 #define OPENGL_SHADER_PROGRAMS_H
 
-const char *basic_vertex_shader = R"(
+const char *basic_2d_vertex_shader = R"(
     #version 460 core
     layout (location = 0) in vec2 aPos;
     void main()
     {
         gl_Position = vec4(aPos, 1.0, 1.0);
     })";
-const char *basic_fragment_shader = R"(
+const char *basic_2d_fragment_shader = R"(
     #version 460 core
     out vec4 FragColor;
     void main()
@@ -21,7 +21,7 @@ const char *basic_fragment_shader = R"(
     }
 )";
 
-const char *basic_color_vertex_shader = R"(
+const char *basic_2d_color_vertex_shader = R"(
     #version 460 core
     layout (location = 0) in vec2 aPos;
     layout (location = 1) in vec4 aColor;
@@ -31,7 +31,7 @@ const char *basic_color_vertex_shader = R"(
         gl_Position = vec4(aPos, 1.0, 1.0);
         color = aColor;
     })";
-const char *basic_color_fragment_shader = R"(
+const char *basic_2d_color_fragment_shader = R"(
     #version 460 core
     out vec4 FragColor;
     in vec4 color;
@@ -58,6 +58,29 @@ const char *pulsing_triangle_fragment_shader = R"(
     void main()
     {
         FragColor = vec4(t, 0.4, 0.2, 1.0);
+    }
+)";
+
+const char *basic_3d_vertex_shader = R"(
+    #version 460 core
+    layout (location = 0) in vec3 aPos;
+    layout (location = 1) in vec2 aUV;
+    out vec2 uv;
+    uniform mat4 view;
+    uniform mat4 projection;
+    void main()
+    {
+        gl_Position = projection * view * vec4(aPos, 1.0);
+        uv = aUV;
+    })";
+const char *basic_3d_fragment_shader = R"(
+    #version 460 core
+    out vec4 FragColor;
+    in vec2 uv;
+    uniform sampler2D texture1;
+    void main()
+    {
+        FragColor = texture(texture1, uv) * vec4(0.7, 0.4, 0.2, 1.0);
     }
 )";
 

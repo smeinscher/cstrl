@@ -11,7 +11,7 @@
 
 int upload_opengl_texture(const char *path)
 {
-    // stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(true);
     int nr_channels;
     int width, height;
     unsigned char *data = stbi_load(path, &width, &height, &nr_channels, STBI_rgb_alpha);

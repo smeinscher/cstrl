@@ -1,0 +1,186 @@
+//
+// Created by sterling on 7/5/24.
+//
+
+#include "camera.h"
+
+#include "cstrl/cstrl_platform.h"
+
+static int g_viewport_width = 1280;
+static int g_viewport_height = 720;
+
+static vec3 g_camera_position = {0.0f, 0.0f, -10.0f};
+static vec2 g_max_camera_position = {INFINITY, INFINITY};
+static vec2 g_min_camera_position = {-INFINITY, -INFINITY};
+
+static bool g_camera_moving_up = false;
+static bool g_camera_moving_down = false;
+static bool g_camera_moving_left = false;
+static bool g_camera_moving_right = false;
+static float g_camera_speed = 3.0f;
+
+static float g_zoom_factor = 100.0f;
+static float g_zoom = 100.0f;
+
+static mat4 g_view;
+static mat4 g_projection;
+
+void camera_update()
+{
+    vec3 velocity = {0.0f, 0.0f, 0.0f};
+    if (g_camera_moving_up)
+    {
+        velocity.y -= 1.0f;
+    }
+    if (g_camera_moving_down)
+    {
+        velocity.y += 1.0f;
+    }
+    if (g_camera_moving_left)
+    {
+        velocity.x -= 1.0f;
+    }
+    if (g_camera_moving_right)
+    {
+        velocity.x += 1.0f;
+    }
+    velocity = cstrl_vec3_normalize(velocity);
+    velocity = cstrl_vec3_mult_scalar(velocity, g_camera_speed);
+    velocity = cstrl_vec3_mult_scalar(velocity, camera_get_zoom_ratio());
+    g_camera_position = cstrl_vec3_add(g_camera_position, velocity);
+
+    if (g_camera_position.x >= g_max_camera_position.x * camera_get_zoom_ratio())
+    {
+        g_camera_position.x = g_max_camera_position.x * camera_get_zoom_ratio();
+    }
+    if (g_camera_position.y >= g_max_camera_position.y * camera_get_zoom_ratio())
+    {
+        g_camera_position.y = g_max_camera_position.y * camera_get_zoom_ratio();
+    }
+    if (g_camera_position.x <= g_min_camera_position.x * camera_get_zoom_ratio())
+    {
+        g_camera_position.x = g_min_camera_position.x * camera_get_zoom_ratio();
+    }
+    if (g_camera_position.y <= g_min_camera_position.y * camera_get_zoom_ratio())
+    {
+        g_camera_position.y = g_min_camera_position.y * camera_get_zoom_ratio();
+    }
+    vec3 forward = {0.0f, 0.0f, -1.0f};
+    vec3 up = {0.0f, 1.0f, 0.0f};
+    vec3 camera_position_plus_forward = cstrl_vec3_add(g_camera_position, forward);
+    float cam_x = sin(cstrl_platform_get_absolute_time()) * 5.0f;
+    float cam_z = cos(cstrl_platform_get_absolute_time()) * 5.0f;
+    g_view = cstrl_look_at((vec3){cam_x, 5.0f, cam_z}, (vec3){0.0f, 0.0f, 0.0f}, up);
+
+    // float left = (float)g_viewport_width - (float)g_viewport_width / (g_zoom_factor / g_zoom);
+    // float right = (float)g_viewport_width / (g_zoom_factor / g_zoom);
+    // float bottom = (float)g_viewport_height / (g_zoom_factor / g_zoom);
+    // float top = (float)g_viewport_height - (float)g_viewport_height / (g_zoom_factor / g_zoom);
+    // g_projection = cstrl_ortho(left, right, bottom, top, 0.1f, 1000.0f);
+    g_projection = cstrl_perspective(0.785398f, g_viewport_width / g_viewport_height, 0.1f, 100.0f);
+    // g_projection = cstrl_ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
+}
+
+void camera_set_moving_up(bool moving_up)
+{
+    g_camera_moving_up = moving_up;
+}
+
+void camera_set_moving_down(bool moving_down)
+{
+    g_camera_moving_down = moving_down;
+}
+
+void camera_set_moving_left(bool moving_left)
+{
+    g_camera_moving_left = moving_left;
+}
+
+void camera_set_moving_right(bool moving_right)
+{
+    g_camera_moving_right = moving_right;
+}
+
+float camera_get_zoom()
+{
+    return g_zoom;
+}
+
+float camera_get_zoom_factor()
+{
+    return g_zoom_factor;
+}
+
+float camera_get_zoom_ratio()
+{
+    return g_zoom_factor / g_zoom;
+}
+
+void camera_set_zoom(float zoom)
+{
+    g_zoom = zoom;
+}
+
+void camera_increment_zoom(float amount)
+{
+    g_zoom += amount;
+}
+
+void camera_decrement_zoom(float amount)
+{
+    g_zoom -= amount;
+}
+
+vec3 camera_get_position()
+{
+    return g_camera_position;
+}
+
+void camera_set_position(const vec3 position)
+{
+    g_camera_position.x = position.x;
+    g_camera_position.y = position.y;
+    g_camera_position.z = position.z;
+}
+
+void camera_set_max_position(const vec2 position)
+{
+    g_max_camera_position.x = position.x;
+    g_max_camera_position.y = position.y;
+}
+
+void camera_set_min_position(const vec2 position)
+{
+    g_min_camera_position.x = position.x;
+    g_min_camera_position.y = position.y;
+}
+
+mat4 camera_get_projection()
+{
+    return g_projection;
+}
+
+mat4 camera_get_view()
+{
+    return g_view;
+}
+
+int camera_get_viewport_width()
+{
+    return g_viewport_width;
+}
+
+int camera_get_viewport_height()
+{
+    return g_viewport_height;
+}
+
+void camera_set_viewport_width(int viewport_width)
+{
+    g_viewport_width = viewport_width;
+}
+
+void camera_set_viewport_height(int viewport_height)
+{
+    g_viewport_height = viewport_height;
+}

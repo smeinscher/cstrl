@@ -21,7 +21,7 @@ GLXContext gl_context;
 
 bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
 {
-    internal_state_new *state = (internal_state_new *)platform_state->internal_state;
+    internal_state *state = platform_state->internal_state;
     int attribute_list[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
     XVisualInfo *visual_info = glXChooseVisual(state->display, 0, attribute_list);
     if (visual_info == NULL)
@@ -37,7 +37,9 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
                             None};
     int fb_count;
     GLXFBConfig *config = glXChooseFBConfig(state->display, DefaultScreen(state->display), visual_attribs, &fb_count);
-    int attribs[] = {GLX_CONTEXT_MAJOR_VERSION_ARB, 4, GLX_CONTEXT_MINOR_VERSION_ARB, 6, 0};
+    int attribs[] = {
+        GLX_CONTEXT_MAJOR_VERSION_ARB,    4,   GLX_CONTEXT_MINOR_VERSION_ARB, 6, GLX_CONTEXT_PROFILE_MASK_ARB,
+        GLX_CONTEXT_CORE_PROFILE_BIT_ARB, None};
     glXCreateContextAttribsARBProc glXCreateContextAttribsARB =
         (glXCreateContextAttribsARBProc)glXGetProcAddressARB((const GLubyte *)"glXCreateContextAttribsARB");
     gl_context = glXCreateContextAttribsARB(state->display, *config, 0, True, attribs);
@@ -57,13 +59,13 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
 
 void cstrl_opengl_platform_destroy(cstrl_platform_state *platform_state)
 {
-    internal_state_new *state = (internal_state_new *)platform_state->internal_state;
+    internal_state *state = platform_state->internal_state;
     glXDestroyContext(state->display, gl_context);
 }
 
 void cstrl_opengl_platform_swap_buffers(cstrl_platform_state *platform_state)
 {
-    internal_state_new *state = (internal_state_new *)platform_state->internal_state;
+    internal_state *state = platform_state->internal_state;
     glXSwapBuffers(state->display, state->main_window);
 }
 

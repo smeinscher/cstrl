@@ -22,11 +22,13 @@
 
 #include "platform_internal.h"
 
+static bool g_should_exit = false;
+
 bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y, int width,
                          int height)
 {
-    platform_state->internal_state = malloc(sizeof(internal_state_new));
-    internal_state_new *state = (internal_state_new *)platform_state->internal_state;
+    platform_state->internal_state = malloc(sizeof(internal_state));
+    internal_state *state = (internal_state *)platform_state->internal_state;
 
     state->display = XOpenDisplay(NULL);
     if (!state->display)
@@ -62,16 +64,20 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
 
 void cstrl_platform_destroy(cstrl_platform_state *platform_state)
 {
-    internal_state_new *state = (internal_state_new *)platform_state->internal_state;
+    internal_state *state = (internal_state *)platform_state->internal_state;
     XDestroyWindow(state->display, state->main_window);
     XCloseDisplay(state->display);
 }
 
-bool cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
+void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
 {
-    internal_state_new *state = (internal_state_new *)platform_state->internal_state;
+    internal_state *state = (internal_state *)platform_state->internal_state;
     XEvent general_event = {};
-    XNextEvent(state->display, &general_event);
+    if (!XCheckWindowEvent(state->display, state->main_window, ExposureMask | KeyPressMask | ButtonPressMask,
+                           &general_event))
+    {
+        return;
+    }
 
     switch (general_event.type)
     {
@@ -80,14 +86,12 @@ bool cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
         XKeyPressedEvent *event = (XKeyPressedEvent *)&general_event;
         if (event->keycode == XKeysymToKeycode(state->display, XK_Escape))
         {
-            return false;
+            g_should_exit = true;
         }
     }
     default:
         break;
     }
-
-    return true;
 }
 
 double cstrl_platform_get_absolute_time()
@@ -103,6 +107,11 @@ void cstrl_platform_sleep(unsigned long long ms)
     ts.tv_sec = ms / 1000;
     ts.tv_nsec = (ms % 1000) * 1000 * 1000;
     nanosleep(&ts, 0);
+}
+
+bool cstrl_platform_should_exit(cstrl_platform_state *platform_state)
+{
+    return g_should_exit;
 }
 
 #endif
