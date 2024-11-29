@@ -4,10 +4,13 @@
 
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
+#include "cstrl/cstrl_types.h"
+#include "cstrl_math/test_quat.h"
 #include "cstrl_math/test_vec2.h"
 #include "cstrl_math/test_vec3.h"
 #include "cstrl_math/test_vec4.h"
 #include "log.c/log.h"
+#include "renderer/camera.h"
 #include "test_manager.h"
 #include "util/test_dynamic_array.h"
 
@@ -76,6 +79,24 @@ void vec4_tests()
     test_manager_log_results(test_suite);
 }
 
+void quat_tests()
+{
+    int test_suite = test_manager_add_suite("quat Tests", "Suite for testing quat functions");
+    test_manager_add_test(test_suite, test_cstrl_quat_get_axis, "quat Get Axis Test",
+                          "Test if correctly gets axis of quaternion");
+    test_manager_add_test(test_suite, test_cstrl_quat_add, "quat Get Angle Test",
+                          "Test if correctly gets angle of quaternion");
+    test_manager_add_test(test_suite, test_cstrl_quat_add, "quat Add Test", "Test if correctly adds quaternions");
+    test_manager_add_test(test_suite, test_cstrl_quat_mult, "quat Multiply Test",
+                          "Test if correctly multiplies quaternions");
+    test_manager_add_test(test_suite, test_cstrl_quat_to_mat4, "quat to mat4 Test",
+                          "Test if correctly convertes quaternion to 4 by 4 matrix");
+    test_manager_add_test(test_suite, test_cstrl_quat_from_euler_angles, "quat From Euler Angles",
+                          "Test if correctly converts euler angles to quaternion");
+    test_manager_run_tests(test_suite);
+    test_manager_log_results(test_suite);
+}
+
 void dynamic_int_array_tests()
 {
     int test_suite = test_manager_add_suite("Dynamic Int Array Tests", "Suite for testing functions for da_int");
@@ -96,6 +117,94 @@ void dynamic_int_array_tests()
     test_manager_log_results(test_suite);
 }
 
+void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
+{
+    switch (key)
+    {
+    case CSTRL_KEY_ESCAPE:
+        if (action == CSTRL_RELEASE_KEY)
+        {
+            cstrl_platform_set_should_exit(true);
+        }
+        break;
+    case CSTRL_KEY_W:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            camera_set_moving_up(true);
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+            camera_set_moving_up(false);
+        }
+        break;
+    case CSTRL_KEY_S:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            camera_set_moving_down(true);
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+            camera_set_moving_down(false);
+        }
+        break;
+    case CSTRL_KEY_A:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            camera_set_moving_left(true);
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+            camera_set_moving_left(false);
+        }
+        break;
+    case CSTRL_KEY_D:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            camera_set_moving_right(true);
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+            camera_set_moving_right(false);
+        }
+        break;
+    case CSTRL_KEY_R:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            camera_set_position((vec3){0.0f, 0.0f, 5.0f});
+            camera_set_rotation(cstrl_quat_from_euler_angles((vec3){-4.5f, 7.6f, 0}));
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+int last_x = 400;
+int last_y = 300;
+
+void mouse_position_callback(cstrl_platform_state *state, int xpos, int ypos)
+{
+    if (last_x == -1 || last_y == -1)
+    {
+        last_x = xpos;
+        last_y = ypos;
+        return;
+    }
+    int offset_x = xpos - last_x;
+    int offset_y = last_y - ypos;
+
+    if (false)
+    {
+        last_x = xpos;
+        last_y = ypos;
+    }
+
+    camera_process_mouse_movement(offset_x, offset_y);
+}
+
 int main()
 {
     // vec2_tests();
@@ -104,14 +213,20 @@ int main()
 
     // dynamic_int_array_tests();
 
+    // quat_tests();
+
     // test_manager_log_total_failed_tests();
 
+    // return 0;
     cstrl_platform_state state;
     if (!cstrl_platform_init(&state, "cstrl window test", 560, 240, 800, 600))
     {
         cstrl_platform_destroy(&state);
         return 1;
     }
+
+    cstrl_platform_set_key_callback(&state, key_callback);
+    cstrl_platform_set_mouse_position_callback(&state, mouse_position_callback);
 
     cstrl_renderer_init(&state);
     render_data *render_data = cstrl_renderer_create_render_data();
@@ -150,6 +265,10 @@ int main()
                    0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
     cstrl_renderer_add_positions(render_data, vertices, 3, 36);
     cstrl_renderer_add_uvs(render_data, uvs);
+
+    camera_set_position((vec3){0.0f, 0.0f, 5.0f});
+
+    camera_set_rotation(cstrl_quat_from_euler_angles((vec3){0.0f, 0.0f, 0.0f}));
     while (!cstrl_platform_should_exit(&state))
     {
         cstrl_platform_pump_messages(&state);

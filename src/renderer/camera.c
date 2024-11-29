@@ -5,11 +5,12 @@
 #include "camera.h"
 
 #include "cstrl/cstrl_platform.h"
+#include "log.c/log.h"
 
 static int g_viewport_width = 1280;
 static int g_viewport_height = 720;
 
-static vec3 g_camera_position = {0.0f, 0.0f, -10.0f};
+static transform g_camera_transform;
 static vec2 g_max_camera_position = {INFINITY, INFINITY};
 static vec2 g_min_camera_position = {-INFINITY, -INFINITY};
 
@@ -17,7 +18,7 @@ static bool g_camera_moving_up = false;
 static bool g_camera_moving_down = false;
 static bool g_camera_moving_left = false;
 static bool g_camera_moving_right = false;
-static float g_camera_speed = 3.0f;
+static float g_camera_speed = 0.1f;
 
 static float g_zoom_factor = 100.0f;
 static float g_zoom = 100.0f;
@@ -25,59 +26,64 @@ static float g_zoom = 100.0f;
 static mat4 g_view;
 static mat4 g_projection;
 
+static vec3 g_forward = (vec3){0.0f, 0.0f, -1.0f};
+
 void camera_update()
 {
     vec3 velocity = {0.0f, 0.0f, 0.0f};
     if (g_camera_moving_up)
     {
-        velocity.y -= 1.0f;
+        velocity.z -= 1.0f;
     }
     if (g_camera_moving_down)
     {
-        velocity.y += 1.0f;
+        velocity.z += 1.0f;
     }
     if (g_camera_moving_left)
     {
-        velocity.x -= 1.0f;
+        velocity.y -= 1.0f;
     }
     if (g_camera_moving_right)
     {
-        velocity.x += 1.0f;
+        velocity.y += 1.0f;
     }
     velocity = cstrl_vec3_normalize(velocity);
     velocity = cstrl_vec3_mult_scalar(velocity, g_camera_speed);
     velocity = cstrl_vec3_mult_scalar(velocity, camera_get_zoom_ratio());
-    g_camera_position = cstrl_vec3_add(g_camera_position, velocity);
+    velocity = cstrl_vec3_rotate_by_quat(velocity, g_camera_transform.rotation);
+    g_camera_transform.position = cstrl_vec3_add(g_camera_transform.position, velocity);
 
-    if (g_camera_position.x >= g_max_camera_position.x * camera_get_zoom_ratio())
+    if (g_camera_transform.position.x >= g_max_camera_position.x * camera_get_zoom_ratio())
     {
-        g_camera_position.x = g_max_camera_position.x * camera_get_zoom_ratio();
+        g_camera_transform.position.x = g_max_camera_position.x * camera_get_zoom_ratio();
     }
-    if (g_camera_position.y >= g_max_camera_position.y * camera_get_zoom_ratio())
+    if (g_camera_transform.position.y >= g_max_camera_position.y * camera_get_zoom_ratio())
     {
-        g_camera_position.y = g_max_camera_position.y * camera_get_zoom_ratio();
+        g_camera_transform.position.y = g_max_camera_position.y * camera_get_zoom_ratio();
     }
-    if (g_camera_position.x <= g_min_camera_position.x * camera_get_zoom_ratio())
+    if (g_camera_transform.position.x <= g_min_camera_position.x * camera_get_zoom_ratio())
     {
-        g_camera_position.x = g_min_camera_position.x * camera_get_zoom_ratio();
+        g_camera_transform.position.x = g_min_camera_position.x * camera_get_zoom_ratio();
     }
-    if (g_camera_position.y <= g_min_camera_position.y * camera_get_zoom_ratio())
+    if (g_camera_transform.position.y <= g_min_camera_position.y * camera_get_zoom_ratio())
     {
-        g_camera_position.y = g_min_camera_position.y * camera_get_zoom_ratio();
+        g_camera_transform.position.y = g_min_camera_position.y * camera_get_zoom_ratio();
     }
-    vec3 forward = {0.0f, 0.0f, -1.0f};
+    g_forward = cstrl_vec3_rotate_by_quat((vec3){0.0f, 0.0f, -1.0f}, g_camera_transform.rotation);
+    vec3 right = cstrl_vec3_rotate_by_quat((vec3){1.0f, 0.0f, 0.0f}, cstrl_quat_inverse(g_camera_transform.rotation));
     vec3 up = {0.0f, 1.0f, 0.0f};
-    vec3 camera_position_plus_forward = cstrl_vec3_add(g_camera_position, forward);
+    vec3 camera_position_plus_forward = cstrl_vec3_add(g_camera_transform.position, g_forward);
     float cam_x = sin(cstrl_platform_get_absolute_time()) * 5.0f;
     float cam_z = cos(cstrl_platform_get_absolute_time()) * 5.0f;
-    g_view = cstrl_look_at((vec3){cam_x, 5.0f, cam_z}, (vec3){0.0f, 0.0f, 0.0f}, up);
+    g_view =
+        cstrl_mat4_look_at(g_camera_transform.position, cstrl_vec3_add(g_camera_transform.position, g_forward), up);
 
     // float left = (float)g_viewport_width - (float)g_viewport_width / (g_zoom_factor / g_zoom);
     // float right = (float)g_viewport_width / (g_zoom_factor / g_zoom);
     // float bottom = (float)g_viewport_height / (g_zoom_factor / g_zoom);
     // float top = (float)g_viewport_height - (float)g_viewport_height / (g_zoom_factor / g_zoom);
     // g_projection = cstrl_ortho(left, right, bottom, top, 0.1f, 1000.0f);
-    g_projection = cstrl_perspective(0.785398f, g_viewport_width / g_viewport_height, 0.1f, 100.0f);
+    g_projection = cstrl_mat4_perspective(0.785398f, (float)g_viewport_width / (float)g_viewport_height, 0.1f, 100.0f);
     // g_projection = cstrl_ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
 }
 
@@ -133,23 +139,29 @@ void camera_decrement_zoom(float amount)
 
 vec3 camera_get_position()
 {
-    return g_camera_position;
+    return g_camera_transform.position;
 }
 
-void camera_set_position(const vec3 position)
+void camera_set_position(vec3 position)
 {
-    g_camera_position.x = position.x;
-    g_camera_position.y = position.y;
-    g_camera_position.z = position.z;
+    g_camera_transform.position.x = position.x;
+    g_camera_transform.position.y = position.y;
+    g_camera_transform.position.z = position.z;
 }
 
-void camera_set_max_position(const vec2 position)
+void camera_set_rotation(quat rotation)
+{
+    rotation = cstrl_quat_normalize(rotation);
+    g_camera_transform.rotation = rotation;
+}
+
+void camera_set_max_position(vec2 position)
 {
     g_max_camera_position.x = position.x;
     g_max_camera_position.y = position.y;
 }
 
-void camera_set_min_position(const vec2 position)
+void camera_set_min_position(vec2 position)
 {
     g_min_camera_position.x = position.x;
     g_min_camera_position.y = position.y;
@@ -183,4 +195,31 @@ void camera_set_viewport_width(int viewport_width)
 void camera_set_viewport_height(int viewport_height)
 {
     g_viewport_height = viewport_height;
+}
+
+void camera_process_mouse_movement(int offset_x, int offset_y)
+{
+    float offset_x_float = (float)offset_x * 0.0075f;
+    float offset_y_float = (float)offset_y * 0.0075f;
+
+    vec3 euler = (vec3){0.0f, 0.0f, 0.0f};
+    euler.x += offset_y_float;
+    euler.y -= offset_x_float;
+
+    float max_angle = 20.0f;
+    vec3 rotation_euler = cstrl_euler_angles_from_quat(g_camera_transform.rotation);
+    if (rotation_euler.y + euler.y > max_angle * (cstrl_pi / 180.0f))
+    {
+        euler.y -= cstrl_max(max_angle * (cstrl_pi / 180.0f) - rotation_euler.y, 0.0f);
+    }
+    else if (rotation_euler.y - euler.y < -max_angle * (cstrl_pi / 180.0f))
+    {
+        euler.y += cstrl_min(-max_angle * (cstrl_pi / 180.0f) - rotation_euler.y, 0.0f);
+    }
+    g_camera_transform.rotation = cstrl_quat_mult(cstrl_quat_from_euler_angles(euler), g_camera_transform.rotation);
+    g_camera_transform.rotation = cstrl_quat_normalize(g_camera_transform.rotation);
+
+    rotation_euler = cstrl_euler_angles_from_quat(g_camera_transform.rotation);
+    log_trace("%f, %f, %f", rotation_euler.x * (180.0f / cstrl_pi), rotation_euler.y * (180.0f / cstrl_pi),
+              rotation_euler.z * (180.0f / cstrl_pi));
 }

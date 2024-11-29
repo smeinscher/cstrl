@@ -40,6 +40,7 @@ add_library(cstrl SHARED
         src/renderer/opengl/opengl_shader_programs.h
         src/renderer/camera.c
         src/renderer/camera.h
+        src/platform/platform_common.c
 )
 
 add_executable(cstrl-test
@@ -55,6 +56,8 @@ add_executable(cstrl-test
         test/cstrl_math/test_vec4.h
         test/util/test_dynamic_array.c
         test/util/test_dynamic_array.h
+        test/cstrl_math/test_quat.c
+        test/cstrl_math/test_quat.h
 )
 
 target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)

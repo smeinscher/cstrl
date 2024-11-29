@@ -2,6 +2,8 @@
 // Created by 12105 on 11/23/2024.
 //
 
+#include "cstrl/cstrl_types.h"
+
 #include <cstrl/cstrl_platform.h>
 
 #ifdef CSTRL_PLATFORM_WINDOWS
@@ -11,11 +13,61 @@
 #include "platform_internal.h"
 
 #include <windows.h>
+#include <windowsx.h>
 
 static double clock_frequency;
 static LARGE_INTEGER start_time;
 
-static bool should_exit = false;
+static bool g_should_exit = false;
+
+short win32_mouse_button_to_cstrl_mouse_button[6];
+short win32_key_to_cstrl_key[512];
+
+void win32_mouse_button_to_cstrl_mouse_button_init()
+{
+    win32_mouse_button_to_cstrl_mouse_button[VK_LBUTTON] = CSTRL_MOUSE_BUTTON_LEFT;
+    win32_mouse_button_to_cstrl_mouse_button[VK_RBUTTON] = CSTRL_MOUSE_BUTTON_RIGHT;
+    win32_mouse_button_to_cstrl_mouse_button[VK_MBUTTON] = CSTRL_MOUSE_BUTTON_MIDDLE;
+}
+
+void win32_key_to_cstrl_key_init()
+{
+    win32_key_to_cstrl_key[VK_LCONTROL] = CSTRL_KEY_LEFT_CONTROL;
+    win32_key_to_cstrl_key[VK_RCONTROL] = CSTRL_KEY_RIGHT_CONTROL;
+    win32_key_to_cstrl_key[VK_LSHIFT] = CSTRL_KEY_LEFT_SHIFT;
+    win32_key_to_cstrl_key[VK_RSHIFT] = CSTRL_KEY_RIGHT_SHIFT;
+
+    win32_key_to_cstrl_key[VK_TAB] = CSTRL_KEY_TAB;
+
+    win32_key_to_cstrl_key[VK_ESCAPE] = CSTRL_KEY_ESCAPE;
+
+    win32_key_to_cstrl_key[0x41] = CSTRL_KEY_A;
+    win32_key_to_cstrl_key[0x42] = CSTRL_KEY_B;
+    win32_key_to_cstrl_key[0x43] = CSTRL_KEY_C;
+    win32_key_to_cstrl_key[0x44] = CSTRL_KEY_D;
+    win32_key_to_cstrl_key[0x45] = CSTRL_KEY_E;
+    win32_key_to_cstrl_key[0x46] = CSTRL_KEY_F;
+    win32_key_to_cstrl_key[0x47] = CSTRL_KEY_G;
+    win32_key_to_cstrl_key[0x48] = CSTRL_KEY_H;
+    win32_key_to_cstrl_key[0x49] = CSTRL_KEY_I;
+    win32_key_to_cstrl_key[0x4A] = CSTRL_KEY_J;
+    win32_key_to_cstrl_key[0x4B] = CSTRL_KEY_K;
+    win32_key_to_cstrl_key[0x4C] = CSTRL_KEY_L;
+    win32_key_to_cstrl_key[0x4D] = CSTRL_KEY_M;
+    win32_key_to_cstrl_key[0x4E] = CSTRL_KEY_N;
+    win32_key_to_cstrl_key[0x4F] = CSTRL_KEY_O;
+    win32_key_to_cstrl_key[0x50] = CSTRL_KEY_P;
+    win32_key_to_cstrl_key[0x51] = CSTRL_KEY_Q;
+    win32_key_to_cstrl_key[0x52] = CSTRL_KEY_R;
+    win32_key_to_cstrl_key[0x53] = CSTRL_KEY_S;
+    win32_key_to_cstrl_key[0x54] = CSTRL_KEY_T;
+    win32_key_to_cstrl_key[0x55] = CSTRL_KEY_U;
+    win32_key_to_cstrl_key[0x56] = CSTRL_KEY_V;
+    win32_key_to_cstrl_key[0x57] = CSTRL_KEY_W;
+    win32_key_to_cstrl_key[0x58] = CSTRL_KEY_X;
+    win32_key_to_cstrl_key[0x59] = CSTRL_KEY_Y;
+    win32_key_to_cstrl_key[0x5A] = CSTRL_KEY_Z;
+}
 
 LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -24,9 +76,58 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
     case WM_CREATE: {
         return 0;
     }
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+    case WM_KEYUP:
+    case WM_SYSKEYUP: {
+        cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
+        if (state == NULL)
+        {
+            log_trace("State is NULL, skipping keyboard input");
+            return 0;
+        }
+        internal_state *internal_state = state->internal_state;
+        const int action = (HIWORD(lparam) & KF_UP) ? CSTRL_RELEASE_KEY : CSTRL_PRESS_KEY;
+
+        int scancode = HIWORD(lparam) & (KF_EXTENDED | 0xff);
+
+        if (internal_state->state_common.callbacks.key != NULL)
+        {
+            internal_state->state_common.callbacks.key(state, win32_key_to_cstrl_key[wparam], scancode, action, 0);
+        }
+        return 0;
+    }
+    case WM_MOUSEMOVE: {
+        cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
+        if (state == NULL)
+        {
+            log_trace("State is NULL, skipping mouse move input");
+            return 0;
+        }
+        internal_state *internal_state = state->internal_state;
+
+        int x = GET_X_LPARAM(lparam);
+        int y = GET_Y_LPARAM(lparam);
+
+        if (internal_state->state_common.callbacks.mouse_position != NULL)
+        {
+            internal_state->state_common.callbacks.mouse_position(state, x, y);
+        }
+        if (internal_state->state_common.input.mouse_mode == CSTRL_MOUSE_DISABLED)
+        {
+            SetCursorPos(1920 / 2, 1080 / 2);
+        }
+        else
+        {
+            internal_state->state_common.input.last_mouse_x = x;
+            internal_state->state_common.input.last_mouse_y = y;
+        }
+
+        return 0;
+    }
     case WM_CLOSE:
     case WM_DESTROY:
-        should_exit = true;
+        g_should_exit = true;
         PostQuitMessage(0);
         return 0;
     // case WM_PAINT: {
@@ -47,7 +148,7 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
                          int height)
 {
     platform_state->internal_state = malloc(sizeof(internal_state));
-    internal_state *state = (internal_state *)platform_state->internal_state;
+    internal_state *state = platform_state->internal_state;
 
     state->h_instance = GetModuleHandleA(0);
 
@@ -90,6 +191,13 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
         log_fatal("Window creation failed");
         return false;
     }
+
+    if (!SetPropA(hwnd, "cstrl_platform_state", platform_state))
+    {
+        log_fatal("Failed to set prop 'cstrl_platform_state'");
+        return false;
+    }
+
     state->hwnd = hwnd;
 
     LARGE_INTEGER frequency;
@@ -97,12 +205,25 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     clock_frequency = 1.0 / (double)frequency.QuadPart;
     QueryPerformanceCounter(&start_time);
 
+    state->state_common.callbacks.key = NULL;
+    state->state_common.callbacks.mouse_position = NULL;
+
+    win32_mouse_button_to_cstrl_mouse_button_init();
+    win32_key_to_cstrl_key_init();
+
+    state->state_common.input.mouse_mode = CSTRL_MOUSE_DISABLED;
+
+    SetCursorPos(1920 / 2, 1080 / 2);
+
+    state->state_common.input.last_mouse_x = 400;
+    state->state_common.input.last_mouse_y = 300;
+
     return true;
 }
 
 void cstrl_platform_destroy(cstrl_platform_state *platform_state)
 {
-    internal_state *state = (internal_state *)platform_state->internal_state;
+    internal_state *state = platform_state->internal_state;
 
     if (state->hwnd)
     {
@@ -133,9 +254,14 @@ void cstrl_platform_sleep(unsigned long long ms)
     Sleep(ms);
 }
 
-bool cstrl_platform_should_exit(cstrl_platform_state *platform_state)
+bool cstrl_platform_should_exit()
 {
-    return should_exit;
+    return g_should_exit;
+}
+
+void cstrl_platform_set_should_exit(bool should_exit)
+{
+    g_should_exit = should_exit;
 }
 
 #endif

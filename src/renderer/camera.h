@@ -33,11 +33,13 @@ void camera_decrement_zoom(float amount);
 
 vec3 camera_get_position();
 
-void camera_set_position(const vec3 position);
+void camera_set_position(vec3 position);
 
-void camera_set_max_position(const vec2 position);
+void camera_set_rotation(quat rotation);
 
-void camera_set_min_position(const vec2 position);
+void camera_set_max_position(vec2 position);
+
+void camera_set_min_position(vec2 position);
 
 mat4 camera_get_projection();
 
@@ -50,5 +52,7 @@ int camera_get_viewport_height();
 void camera_set_viewport_width(int viewport_width);
 
 void camera_set_viewport_height(int viewport_height);
+
+void camera_process_mouse_movement(int offset_x, int offset_y);
 
 #endif // OMEGA_CAMERA_H
