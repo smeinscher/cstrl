@@ -11,6 +11,7 @@
 #include "cstrl_math/test_vec4.h"
 #include "log.c/log.h"
 #include "renderer/camera.h"
+#include "renderer/test_camera.h"
 #include "test_manager.h"
 #include "util/test_dynamic_array.h"
 
@@ -54,6 +55,10 @@ void vec3_tests()
                           "Test if correctly gets the dot product of two vectors");
     test_manager_add_test(test_suite, test_cstrl_vec3_cross, "vec3 Cross Test",
                           "Test if correctly gets the cross vector");
+    test_manager_add_test(test_suite, test_cstrl_vec3_rotate_by_quat, "vec3 quat Rotation Test",
+                          "Test if correctly rotates vector by quaternion");
+    test_manager_add_test(test_suite, test_cstrl_euler_angles_from_quat, "Euler Angles From quat Test",
+                          "Test if correctly gets euler angles from quaternion");
     test_manager_run_tests(test_suite);
     test_manager_log_results(test_suite);
 }
@@ -117,6 +122,15 @@ void dynamic_int_array_tests()
     test_manager_log_results(test_suite);
 }
 
+void camera_tests()
+{
+    int test_suite = test_manager_add_suite("Camera Tests", "Suite for testing camera functions");
+    test_manager_add_test(test_suite, test_camera_process_mouse_movement, "Camera Process Mouse Movement Test",
+                          "Test if mouse movement results in expected camera behavior");
+    test_manager_run_tests(test_suite);
+    test_manager_log_results(test_suite);
+}
+
 void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
     switch (key)
@@ -171,7 +185,7 @@ void key_callback(cstrl_platform_state *state, int key, int scancode, int action
         if (action == CSTRL_PRESS_KEY)
         {
             camera_set_position((vec3){0.0f, 0.0f, 5.0f});
-            camera_set_rotation(cstrl_quat_from_euler_angles((vec3){-4.5f, 7.6f, 0}));
+            camera_set_rotation(cstrl_quat_from_euler_angles((vec3){0.0f, 0.0f, 0}));
         }
         else if (action == CSTRL_RELEASE_KEY)
         {
@@ -210,14 +224,15 @@ int main()
     // vec2_tests();
     // vec3_tests();
     // vec4_tests();
+    // quat_tests();
 
     // dynamic_int_array_tests();
 
-    // quat_tests();
-
+    // camera_tests();
     // test_manager_log_total_failed_tests();
 
     // return 0;
+
     cstrl_platform_state state;
     if (!cstrl_platform_init(&state, "cstrl window test", 560, 240, 800, 600))
     {
@@ -263,20 +278,75 @@ int main()
                    0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
 
                    0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-    cstrl_renderer_add_positions(render_data, vertices, 3, 36);
-    cstrl_renderer_add_uvs(render_data, uvs);
+    float vertices2[108];
+    for (int i = 0; i < 36; i++)
+    {
+        vertices2[i * 3] = vertices[i * 3] + 5.0f;
+        vertices2[i * 3 + 1] = vertices[i * 3 + 1];
+        vertices2[i * 3 + 2] = vertices[i * 3 + 2] + 5.0f;
+    }
+    float vertices3[108];
+    for (int i = 0; i < 36; i++)
+    {
+        vertices3[i * 3] = vertices[i * 3] - 5.0f;
+        vertices3[i * 3 + 1] = vertices[i * 3 + 1];
+        vertices3[i * 3 + 2] = vertices[i * 3 + 2] + 5.0f;
+    }
+    float vertices4[108];
+    for (int i = 0; i < 36; i++)
+    {
+        vertices4[i * 3] = vertices[i * 3];
+        vertices4[i * 3 + 1] = vertices[i * 3 + 1];
+        vertices4[i * 3 + 2] = vertices[i * 3 + 2] + 10.0f;
+    }
+    float vertices_final[108 * 4];
+    for (int i = 0; i < 108; i++)
+    {
+        vertices_final[i] = vertices[i];
+    }
+    for (int i = 108; i < 216; i++)
+    {
+        vertices_final[i] = vertices2[i - 108];
+    }
+    for (int i = 216; i < 324; i++)
+    {
+        vertices_final[i] = vertices3[i - 216];
+    }
+    for (int i = 324; i < 432; i++)
+    {
+        vertices_final[i] = vertices4[i - 324];
+    }
+    float uvs_final[288];
+    for (int i = 0; i < 288; i++)
+    {
+        uvs_final[i] = uvs[i % 72];
+    }
+    cstrl_renderer_add_positions(render_data, vertices_final, 3, 144);
+    cstrl_renderer_add_uvs(render_data, uvs_final);
 
     camera_set_position((vec3){0.0f, 0.0f, 5.0f});
 
-    camera_set_rotation(cstrl_quat_from_euler_angles((vec3){0.0f, 0.0f, 0.0f}));
+    camera_set_rotation((quat){1.0f, 0.0f, 0.0f, 0.0f});
+    double previous_time = cstrl_platform_get_absolute_time();
+    double lag = 0.0;
     while (!cstrl_platform_should_exit(&state))
     {
         cstrl_platform_pump_messages(&state);
+        double current_time = cstrl_platform_get_absolute_time();
+        double elapsed_time = current_time - previous_time;
+        previous_time = current_time;
+        lag += elapsed_time;
+        while (lag >= 1.0 / 60.0)
+        {
+            camera_update();
+            lag -= 1.0 / 60.0;
+        }
         cstrl_renderer_clear(0.1f, 0.2f, 0.4f, 1.0f);
         cstrl_renderer_draw(render_data);
         cstrl_renderer_swap_buffers(&state);
     }
 
+    cstrl_renderer_free_render_data(render_data);
     cstrl_renderer_destroy(&state);
     cstrl_platform_destroy(&state);
 

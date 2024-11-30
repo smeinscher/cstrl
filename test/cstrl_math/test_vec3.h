@@ -25,4 +25,8 @@ int test_cstrl_vec3_dot();
 
 int test_cstrl_vec3_cross();
 
+int test_cstrl_vec3_rotate_by_quat();
+
+int test_cstrl_euler_angles_from_quat();
+
 #endif // TEST_VEC3_H

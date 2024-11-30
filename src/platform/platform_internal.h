@@ -54,7 +54,7 @@ typedef struct internal_state
     Display *display;
     Window root_window;
     Window main_window;
-
+    internal_state_common state_common;
 } internal_state;
 
 #endif

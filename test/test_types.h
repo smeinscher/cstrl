@@ -7,7 +7,7 @@
 
 #include "log.c/log.h"
 
-#define cstrl_test_epsilon 1.19e-7
+#define cstrl_test_epsilon 0.000001
 #define cstrl_test_epsilon_double 2.22e-16
 
 #define expect_int_to_be(expected, result)                                                                             \

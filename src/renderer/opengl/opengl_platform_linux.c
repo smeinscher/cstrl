@@ -49,6 +49,9 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
         return false;
     }
 
+    XFree(visual_info);
+    XFree(config);
+
     glXMakeCurrent(state->display, state->main_window, gl_context);
     gladLoadGL();
     glViewport(0, 0, 800, 600);

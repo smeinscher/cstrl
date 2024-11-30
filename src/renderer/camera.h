@@ -35,6 +35,8 @@ vec3 camera_get_position();
 
 void camera_set_position(vec3 position);
 
+quat camera_get_rotation();
+
 void camera_set_rotation(quat rotation);
 
 void camera_set_max_position(vec2 position);

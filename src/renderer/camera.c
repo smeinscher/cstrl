@@ -33,24 +33,27 @@ void camera_update()
     vec3 velocity = {0.0f, 0.0f, 0.0f};
     if (g_camera_moving_up)
     {
-        velocity.z -= 1.0f;
+        velocity = cstrl_vec3_add(velocity, g_forward);
     }
     if (g_camera_moving_down)
     {
-        velocity.z += 1.0f;
+        velocity = cstrl_vec3_sub(velocity, g_forward);
     }
     if (g_camera_moving_left)
     {
-        velocity.y -= 1.0f;
+        velocity =
+            cstrl_vec3_sub(velocity, cstrl_vec3_normalize(cstrl_vec3_cross(g_forward, (vec3){0.0f, 1.0f, 0.0f})));
     }
     if (g_camera_moving_right)
     {
-        velocity.y += 1.0f;
+        velocity =
+            cstrl_vec3_add(velocity, cstrl_vec3_normalize(cstrl_vec3_cross(g_forward, (vec3){0.0f, 1.0f, 0.0f})));
     }
     velocity = cstrl_vec3_normalize(velocity);
+    // velocity = cstrl_vec3_rotate_by_quat(velocity, g_camera_transform.rotation);
+    // velocity = cstrl_vec3_normalize(velocity);
     velocity = cstrl_vec3_mult_scalar(velocity, g_camera_speed);
     velocity = cstrl_vec3_mult_scalar(velocity, camera_get_zoom_ratio());
-    velocity = cstrl_vec3_rotate_by_quat(velocity, g_camera_transform.rotation);
     g_camera_transform.position = cstrl_vec3_add(g_camera_transform.position, velocity);
 
     if (g_camera_transform.position.x >= g_max_camera_position.x * camera_get_zoom_ratio())
@@ -70,6 +73,7 @@ void camera_update()
         g_camera_transform.position.y = g_min_camera_position.y * camera_get_zoom_ratio();
     }
     g_forward = cstrl_vec3_rotate_by_quat((vec3){0.0f, 0.0f, -1.0f}, g_camera_transform.rotation);
+    g_forward = cstrl_vec3_normalize(g_forward);
     vec3 right = cstrl_vec3_rotate_by_quat((vec3){1.0f, 0.0f, 0.0f}, cstrl_quat_inverse(g_camera_transform.rotation));
     vec3 up = {0.0f, 1.0f, 0.0f};
     vec3 camera_position_plus_forward = cstrl_vec3_add(g_camera_transform.position, g_forward);
@@ -149,6 +153,11 @@ void camera_set_position(vec3 position)
     g_camera_transform.position.z = position.z;
 }
 
+quat camera_get_rotation()
+{
+    return g_camera_transform.rotation;
+}
+
 void camera_set_rotation(quat rotation)
 {
     rotation = cstrl_quat_normalize(rotation);
@@ -199,27 +208,26 @@ void camera_set_viewport_height(int viewport_height)
 
 void camera_process_mouse_movement(int offset_x, int offset_y)
 {
-    float offset_x_float = (float)offset_x * 0.0075f;
-    float offset_y_float = (float)offset_y * 0.0075f;
+    float offset_x_float = (float)offset_x * 0.001f;
+    float offset_y_float = (float)offset_y * 0.001f;
 
     vec3 euler = (vec3){0.0f, 0.0f, 0.0f};
     euler.x += offset_y_float;
     euler.y -= offset_x_float;
 
-    float max_angle = 20.0f;
+    float max_angle = 69.0f;
     vec3 rotation_euler = cstrl_euler_angles_from_quat(g_camera_transform.rotation);
-    if (rotation_euler.y + euler.y > max_angle * (cstrl_pi / 180.0f))
+    if (rotation_euler.x + euler.x > max_angle * (cstrl_pi / 180.0f))
     {
-        euler.y -= cstrl_max(max_angle * (cstrl_pi / 180.0f) - rotation_euler.y, 0.0f);
+        euler.x = cstrl_max(max_angle * (cstrl_pi / 180.0f) - rotation_euler.x, 0.0f);
     }
-    else if (rotation_euler.y - euler.y < -max_angle * (cstrl_pi / 180.0f))
+    else if (rotation_euler.x + euler.x < -max_angle * (cstrl_pi / 180.0f))
     {
-        euler.y += cstrl_min(-max_angle * (cstrl_pi / 180.0f) - rotation_euler.y, 0.0f);
+        euler.x = cstrl_min(-max_angle * (cstrl_pi / 180.0f) - rotation_euler.x, 0.0f);
     }
     g_camera_transform.rotation = cstrl_quat_mult(cstrl_quat_from_euler_angles(euler), g_camera_transform.rotation);
     g_camera_transform.rotation = cstrl_quat_normalize(g_camera_transform.rotation);
 
     rotation_euler = cstrl_euler_angles_from_quat(g_camera_transform.rotation);
-    log_trace("%f, %f, %f", rotation_euler.x * (180.0f / cstrl_pi), rotation_euler.y * (180.0f / cstrl_pi),
-              rotation_euler.z * (180.0f / cstrl_pi));
+    log_trace("%f, %f, %f", rotation_euler.x, rotation_euler.y, rotation_euler.z);
 }

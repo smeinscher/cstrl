@@ -62,8 +62,34 @@ render_data *cstrl_renderer_create_render_data()
     data->internal_data = malloc(sizeof(internal_data));
     internal_data *internal_data = data->internal_data;
 
+    internal_data->vao = 0;
+    internal_data->vbos[0] = 0;
+    internal_data->vbos[1] = 0;
+    internal_data->vbos[2] = 0;
+    internal_data->ebo = 0;
+    internal_data->count = 0;
+    internal_data->dimensions = 2;
+    internal_data->indices_count = 0;
+    internal_data->positions = NULL;
+    internal_data->uvs = NULL;
+    internal_data->colors = NULL;
+    internal_data->indices = NULL;
+
     glGenVertexArrays(1, &internal_data->vao);
+
     return data;
+}
+
+void cstrl_renderer_free_render_data(render_data *render_data)
+{
+    internal_data *internal_data = render_data->internal_data;
+    glDeleteVertexArrays(1, &internal_data->vao);
+    glDeleteBuffers(1, &internal_data->vbos[0]);
+    glDeleteBuffers(1, &internal_data->vbos[1]);
+    glDeleteBuffers(1, &internal_data->vbos[2]);
+    glDeleteBuffers(1, &internal_data->ebo);
+    free(render_data->internal_data);
+    free(render_data);
 }
 
 void cstrl_renderer_add_positions(render_data *render_data, float *positions, unsigned int dimensions,
@@ -76,7 +102,6 @@ void cstrl_renderer_add_positions(render_data *render_data, float *positions, un
 
     glGenBuffers(1, &data->vbos[0]);
     glBindVertexArray(data->vao);
-
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[0]);
     glBufferData(GL_ARRAY_BUFFER, vertex_count * dimensions * sizeof(float), positions, GL_STATIC_DRAW);
     glVertexAttribPointer(0, dimensions, GL_FLOAT, GL_FALSE, dimensions * sizeof(float), (void *)0);
@@ -93,7 +118,6 @@ void cstrl_renderer_add_uvs(render_data *render_data, float *uvs)
 
     glGenBuffers(1, &data->vbos[1]);
     glBindVertexArray(data->vao);
-
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[1]);
     glBufferData(GL_ARRAY_BUFFER, data->count * 2 * sizeof(float), uvs, GL_STATIC_DRAW);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
@@ -110,7 +134,6 @@ void cstrl_renderer_add_colors(render_data *render_data, float *colors)
 
     glGenBuffers(1, &data->vbos[2]);
     glBindVertexArray(data->vao);
-
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[2]);
     glBufferData(GL_ARRAY_BUFFER, data->count * sizeof(float), colors, GL_STATIC_DRAW);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
@@ -122,7 +145,6 @@ void cstrl_renderer_add_colors(render_data *render_data, float *colors)
 
 void cstrl_renderer_draw(render_data *data)
 {
-    camera_update();
     glUseProgram(shader.program);
     // static float test = 0.0f;
     // opengl_set_uniform_float(shader.program, "time", (sinf(test) + 1.0f) / 2.0f);

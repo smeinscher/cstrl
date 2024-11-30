@@ -17,6 +17,8 @@ void cstrl_renderer_clear(float r, float g, float b, float a);
 
 render_data *cstrl_renderer_create_render_data();
 
+void cstrl_renderer_free_render_data(render_data *render_data);
+
 void cstrl_renderer_add_positions(render_data *render_data, float *positions, unsigned int dimensions,
                                   unsigned int vertex_count);
 

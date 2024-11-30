@@ -41,6 +41,8 @@ add_library(cstrl SHARED
         src/renderer/camera.c
         src/renderer/camera.h
         src/platform/platform_common.c
+        src/util/general_helpers.c
+        src/util/general_helpers.h
 )
 
 add_executable(cstrl-test
@@ -58,6 +60,8 @@ add_executable(cstrl-test
         test/util/test_dynamic_array.h
         test/cstrl_math/test_quat.c
         test/cstrl_math/test_quat.h
+        test/renderer/test_camera.c
+        test/renderer/test_camera.h
 )
 
 target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)

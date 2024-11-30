@@ -128,9 +128,9 @@ typedef struct mat3x3
     union {
         struct
         {
-            float xx, xy, xz;
-            float yx, yy, yz;
-            float zx, zy, zz;
+            float xx, yx, zx;
+            float xy, yy, zy;
+            float xz, yz, zz;
         };
         struct
         {
@@ -305,20 +305,18 @@ CSTRL_INLINE vec3 cstrl_vec3_cross(const vec3 a, const vec3 b)
 }
 
 // For rotate by quat
-CSTRL_INLINE quat cstrl_quat_inverse(quat q);
+CSTRL_INLINE quat cstrl_quat_conjugate(quat q);
 CSTRL_INLINE quat cstrl_quat_mult(quat a, quat b);
 
-// TODO: add to unit tests
 CSTRL_INLINE vec3 cstrl_vec3_rotate_by_quat(vec3 v, quat q)
 {
     quat p = (quat){0.0f, v.x, v.y, v.z};
-    quat q_inverse = cstrl_quat_inverse(q);
+    quat q_conjugate = cstrl_quat_conjugate(q);
     quat p_q = cstrl_quat_mult(q, p);
-    quat p_new = cstrl_quat_mult(p_q, q_inverse);
+    quat p_new = cstrl_quat_mult(p_q, q_conjugate);
     return (vec3){p_new.x, p_new.y, p_new.z};
 }
 
-// TODO: add to unit tests
 CSTRL_INLINE vec3 cstrl_euler_angles_from_quat(quat q)
 {
     vec3 v = (vec3){0.0f, 0.0f, 0.0f};
@@ -337,7 +335,7 @@ CSTRL_INLINE vec3 cstrl_euler_angles_from_quat(quat q)
         v.z = 2.0f * atan2f(q.x, q.w);
     }
 
-    return cstrl_vec3_normalize(v);
+    return v;
 }
 
 /*
@@ -515,6 +513,12 @@ CSTRL_INLINE quat cstrl_quat_identity()
 }
 
 // TODO: add to unit tests
+CSTRL_INLINE quat cstrl_quat_conjugate(quat q)
+{
+    return (quat){q.w, -q.x, -q.y, -q.z};
+}
+
+// TODO: add to unit tests
 CSTRL_INLINE quat cstrl_quat_inverse(quat q)
 {
     float len_sq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
@@ -524,7 +528,7 @@ CSTRL_INLINE quat cstrl_quat_inverse(quat q)
     }
     float recip = 1.0f / len_sq;
 
-    return (quat){-q.x * recip, -q.y * recip, -q.z * recip, q.w * recip};
+    return (quat){q.w * recip, -q.x * recip, -q.y * recip, -q.z * recip};
 }
 
 CSTRL_INLINE quat cstrl_quat_normalize(quat q)
