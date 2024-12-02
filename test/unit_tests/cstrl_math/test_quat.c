@@ -123,6 +123,16 @@ int test_cstrl_quat_from_euler_angles()
     expect_float_to_be(expected.y, result.y);
     expect_float_to_be(expected.z, result.z);
 
+    euler = (vec3){cstrl_pi_2, cstrl_pi_2, cstrl_pi_2};
+    expected = (quat){0.0f, 1.0f, 0.0f, 1.0f};
+    expected = cstrl_quat_normalize(expected);
+    result = cstrl_quat_from_euler_angles(euler);
+
+    expect_float_to_be(expected.w, result.w);
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+
     euler = (vec3){0.0f, 0.0f, cstrl_pi_2};
     result = cstrl_quat_from_euler_angles(euler);
     vec3 euler_result = cstrl_euler_angles_from_quat(result);

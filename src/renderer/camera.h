@@ -22,7 +22,8 @@ camera *cstrl_camera_create(int viewport_width, int viewport_height);
 
 void cstrl_camera_free(camera *camera);
 
-void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right);
+void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right,
+                         bool turning_up, bool turning_down, bool turning_left, bool turning_right);
 
 void cstrl_camera_rotate(camera *camera, float change_x, float change_y);
 

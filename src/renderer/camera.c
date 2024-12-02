@@ -30,7 +30,8 @@ void cstrl_camera_free(camera *camera)
     free(camera);
 }
 
-void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right)
+void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right,
+                         bool turning_up, bool turning_down, bool turning_left, bool turning_right)
 {
     vec3 forward = cstrl_vec3_rotate_by_quat((vec3){0.0f, 0.0f, -1.0f}, camera->transform.rotation);
     forward = cstrl_vec3_normalize(forward);
@@ -38,22 +39,45 @@ void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool 
     if (moving_up)
     {
         velocity = cstrl_vec3_add(velocity, forward);
+        // velocity.y -= 1.0f;
     }
     if (moving_down)
     {
         velocity = cstrl_vec3_sub(velocity, forward);
+        // velocity.y += 1.0f;
     }
     if (moving_left)
     {
         velocity = cstrl_vec3_sub(velocity, cstrl_vec3_normalize(cstrl_vec3_cross(forward, (vec3){0.0f, 1.0f, 0.0f})));
+        // velocity.x -= 1.0f;
     }
     if (moving_right)
     {
         velocity = cstrl_vec3_add(velocity, cstrl_vec3_normalize(cstrl_vec3_cross(forward, (vec3){0.0f, 1.0f, 0.0f})));
+        // velocity.x += 1.0f;
     }
     velocity = cstrl_vec3_normalize(velocity);
     velocity = cstrl_vec3_mult_scalar(velocity, 0.1f);
     camera->transform.position = cstrl_vec3_add(camera->transform.position, velocity);
+
+    vec3 rotation_velocity = {0.0f, 0.0f, 0.0f};
+    if (turning_up)
+    {
+        rotation_velocity.y -= 1.0f;
+    }
+    if (turning_down)
+    {
+        rotation_velocity.y += 1.0f;
+    }
+    if (turning_left)
+    {
+        rotation_velocity.x -= 1.0f;
+    }
+    if (turning_right)
+    {
+        rotation_velocity.x += 1.0f;
+    }
+    cstrl_camera_rotate(camera, rotation_velocity.x * 0.01f, rotation_velocity.y * 0.01f);
 
     vec3 up = {0.0f, 1.0f, 0.0f};
     camera->view =
@@ -71,20 +95,27 @@ void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool 
 
 void cstrl_camera_rotate(camera *camera, float change_x, float change_y)
 {
+    if (change_x == 0.0f && change_y == 0.0f)
+    {
+        return;
+    }
     vec3 euler = (vec3){0.0f, 0.0f, 0.0f};
-    euler.x += change_y;
+    euler.x -= change_y;
     euler.y -= change_x;
 
-    float max_angle = 69.0f;
+    camera->transform.rotation = cstrl_quat_mult(camera->transform.rotation, cstrl_quat_from_euler_angles(euler));
+    float max_angle = 45.0f * cstrl_pi_180;
     vec3 rotation_euler = cstrl_euler_angles_from_quat(camera->transform.rotation);
-    if (rotation_euler.x + euler.x > max_angle * (cstrl_pi / 180.0f))
+    if (rotation_euler.x > max_angle)
     {
-        euler.x = cstrl_max(max_angle * (cstrl_pi / 180.0f) - rotation_euler.x, 0.0f);
+        // rotation_euler.x = max_angle;
+        // camera->transform.rotation = cstrl_quat_from_euler_angles(rotation_euler);
     }
-    else if (rotation_euler.x + euler.x < -max_angle * (cstrl_pi / 180.0f))
+    else if (rotation_euler.x < -max_angle)
     {
-        euler.x = cstrl_min(-max_angle * (cstrl_pi / 180.0f) - rotation_euler.x, 0.0f);
+        // rotation_euler.x = -max_angle;
+        // camera->transform.rotation = cstrl_quat_from_euler_angles(rotation_euler);
     }
-    camera->transform.rotation = cstrl_quat_mult(cstrl_quat_from_euler_angles(euler), camera->transform.rotation);
     camera->transform.rotation = cstrl_quat_normalize(camera->transform.rotation);
+    log_trace("%f, %f, %f", rotation_euler.x, rotation_euler.y, rotation_euler.z);
 }

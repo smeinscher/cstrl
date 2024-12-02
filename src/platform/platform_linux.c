@@ -172,7 +172,7 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
     if (state->state_common.input.mouse_mode == CSTRL_MOUSE_DISABLED && state->state_common.input.last_mouse_x != 400 &&
         state->state_common.input.last_mouse_y != 300)
     {
-        XWarpPointer(state->display, state->main_window, state->main_window, 0, 0, 800, 600, 400, 300);
+        XWarpPointer(state->display, None, state->main_window, 0, 0, 0, 0, 400, 300);
     }
     XFlush(state->display);
 }

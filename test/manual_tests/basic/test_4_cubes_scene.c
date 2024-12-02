@@ -18,6 +18,10 @@ bool g_camera_moving_up = false;
 bool g_camera_moving_down = false;
 bool g_camera_moving_left = false;
 bool g_camera_moving_right = false;
+bool g_camera_turning_up = false;
+bool g_camera_turning_down = false;
+bool g_camera_turning_left = false;
+bool g_camera_turning_right = false;
 
 void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -69,6 +73,46 @@ void key_callback(cstrl_platform_state *state, int key, int scancode, int action
             g_camera_moving_right = false;
         }
         break;
+    case CSTRL_KEY_Z:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            g_camera_turning_up = true;
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+            g_camera_turning_up = false;
+        }
+        break;
+    case CSTRL_KEY_X:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            g_camera_turning_down = true;
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+            g_camera_turning_down = false;
+        }
+        break;
+    case CSTRL_KEY_Q:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            g_camera_turning_left = true;
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+            g_camera_turning_left = false;
+        }
+        break;
+    case CSTRL_KEY_E:
+        if (action == CSTRL_PRESS_KEY)
+        {
+            g_camera_turning_right = true;
+        }
+        else if (action == CSTRL_RELEASE_KEY)
+        {
+            g_camera_turning_right = false;
+        }
+        break;
     case CSTRL_KEY_R:
         if (action == CSTRL_PRESS_KEY)
         {
@@ -96,7 +140,7 @@ void mouse_position_callback(cstrl_platform_state *state, int xpos, int ypos)
         return;
     }
     float offset_x = ((float)xpos - (float)last_x) * 0.001f;
-    float offset_y = ((float)last_y - (float)ypos) * 0.001f;
+    float offset_y = ((float)ypos - (float)last_y) * 0.001f;
 
     if (false)
     {
@@ -216,7 +260,8 @@ int test_4_cubes_scene()
         while (lag >= 1.0 / 60.0)
         {
             cstrl_camera_update(g_main_camera, g_camera_moving_up, g_camera_moving_down, g_camera_moving_left,
-                                g_camera_moving_right);
+                                g_camera_moving_right, g_camera_turning_up, g_camera_turning_down,
+                                g_camera_turning_left, g_camera_turning_right);
             lag -= 1.0 / 60.0;
         }
         cstrl_renderer_clear(0.1f, 0.2f, 0.4f, 1.0f);

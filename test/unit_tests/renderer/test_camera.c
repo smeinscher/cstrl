@@ -11,7 +11,7 @@ int test_camera_process_mouse_movement()
 {
     camera *camera = cstrl_camera_create(800, 600);
     cstrl_camera_rotate(camera, 0, 0);
-    cstrl_camera_update(camera, false, false, false, false);
+    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
     quat rotation_expected = {1.0f, 0.0f, 0.0f, 0.0f};
     quat rotation_result = camera->transform.rotation;
 
@@ -21,8 +21,8 @@ int test_camera_process_mouse_movement()
     expect_float_to_be(rotation_expected.z, rotation_result.z);
 
     cstrl_camera_rotate(camera, 0, 2000);
-    cstrl_camera_update(camera, false, false, false, false);
-    rotation_expected = cstrl_quat_from_euler_angles((vec3){69.0f * (cstrl_pi / 180.0f), 0.0f, 0.0f});
+    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
+    rotation_expected = cstrl_quat_from_euler_angles((vec3){-69.0f * (cstrl_pi / 180.0f), 0.0f, 0.0f});
     rotation_result = camera->transform.rotation;
 
     expect_float_to_be(rotation_expected.w, rotation_result.w);
@@ -34,8 +34,8 @@ int test_camera_process_mouse_movement()
     camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
 
     cstrl_camera_rotate(camera, 0, -2000);
-    cstrl_camera_update(camera, false, false, false, false);
-    rotation_expected = cstrl_quat_from_euler_angles((vec3){-69.0f * (cstrl_pi / 180.0f), 0.0f, 0.0f});
+    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
+    rotation_expected = cstrl_quat_from_euler_angles((vec3){69.0f * (cstrl_pi / 180.0f), 0.0f, 0.0f});
     rotation_result = camera->transform.rotation;
 
     expect_float_to_be(rotation_expected.w, rotation_result.w);
@@ -45,8 +45,8 @@ int test_camera_process_mouse_movement()
 
     camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
 
-    cstrl_camera_rotate(camera, 200, 0);
-    cstrl_camera_update(camera, false, false, false, false);
+    cstrl_camera_rotate(camera, 0.2f, 0.0f);
+    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
     rotation_expected = cstrl_quat_from_euler_angles((vec3){0.0f, -0.2f, 0.0f});
     rotation_result = camera->transform.rotation;
 
@@ -58,11 +58,6 @@ int test_camera_process_mouse_movement()
     mat4 view_expected = (mat4){0.980067f, 0.0f, -0.198669f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
                                 0.198669f, 0,    0.980067,   0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
     mat4 view_result = camera->view;
-
-    log_trace("%f, %f, %f, %f", view_result.xx, view_result.yx, view_result.zx, view_result.wx);
-    log_trace("%f, %f, %f, %f", view_result.xy, view_result.yy, view_result.zy, view_result.wy);
-    log_trace("%f, %f, %f, %f", view_result.xz, view_result.yz, view_result.zz, view_result.wz);
-    log_trace("%f, %f, %f, %f", view_result.xw, view_result.yw, view_result.zw, view_result.ww);
 
     expect_float_to_be(view_expected.xx, view_result.xx);
     expect_float_to_be(view_expected.xy, view_result.xy);

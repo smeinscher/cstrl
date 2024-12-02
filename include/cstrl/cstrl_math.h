@@ -620,10 +620,10 @@ CSTRL_INLINE quat cstrl_quat_from_euler_angles(vec3 euler_angles)
     float sy = sinf(euler_angles.y / 2.0f);
     float sz = sinf(euler_angles.z / 2.0f);
 
-    float w = cx * cy * cz + sx * sy * sz;
-    float x = sx * cy * cy - cx * sy * sz;
-    float y = cx * sy * cz + sx * cy * sz;
-    float z = cx * cy * sz - sx * sy * cz;
+    float w = cx * cy * cz - sx * sy * sz;
+    float x = sx * cy * cz + cx * sy * sz;
+    float y = cx * sy * cz - sx * cy * sz;
+    float z = cx * cy * sz + sx * sy * cz;
 
     return cstrl_quat_normalize((quat){w, x, y, z});
 }
