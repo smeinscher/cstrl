@@ -4,7 +4,7 @@
 
 #include "test_dynamic_array.h"
 
-#include "../test_types.h"
+#include "../../test_manager/test_types.h"
 #include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
 

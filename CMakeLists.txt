@@ -47,21 +47,29 @@ add_library(cstrl SHARED
 
 add_executable(cstrl-test
         test/main.c
-        test/test_manager.c
-        test/test_manager.h
-        test/cstrl_math/test_vec2.c
-        test/cstrl_math/test_vec2.h
-        test/test_types.h
-        test/cstrl_math/test_vec3.c
-        test/cstrl_math/test_vec3.h
-        test/cstrl_math/test_vec4.c
-        test/cstrl_math/test_vec4.h
-        test/util/test_dynamic_array.c
-        test/util/test_dynamic_array.h
-        test/cstrl_math/test_quat.c
-        test/cstrl_math/test_quat.h
-        test/renderer/test_camera.c
-        test/renderer/test_camera.h
+        test/test_manager/test_manager.c
+        test/test_manager/test_manager.h
+        test/test_manager/test_types.h
+        test/unit_tests/cstrl_math/test_vec2.c
+        test/unit_tests/cstrl_math/test_vec2.h
+        test/unit_tests/cstrl_math/test_vec3.c
+        test/unit_tests/cstrl_math/test_vec3.h
+        test/unit_tests/cstrl_math/test_vec4.c
+        test/unit_tests/cstrl_math/test_vec4.h
+        test/unit_tests/util/test_dynamic_array.c
+        test/unit_tests/util/test_dynamic_array.h
+        test/unit_tests/cstrl_math/test_quat.c
+        test/unit_tests/cstrl_math/test_quat.h
+        test/unit_tests/renderer/test_camera.c
+        test/unit_tests/renderer/test_camera.h
+        test/unit_tests/unit_tests.c
+        test/unit_tests/unit_tests.h
+        test/manual_tests/basic/test_4_cubes_scene.c
+        test/manual_tests/basic/test_4_cubes_scene.h
+        test/integration_tests/integration_tests.c
+        test/integration_tests/integration_tests.h
+        test/manual_tests/manual_tests.c
+        test/manual_tests/manual_tests.h
 )
 
 target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)

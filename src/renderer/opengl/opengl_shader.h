@@ -18,7 +18,11 @@ typedef struct Shader
     time_t fragment_shader_last_modified_timestamp;
 } Shader;
 
-Shader opengl_load_basic_shaders(const char *vertex_shader_source, const char *fragment_shader_source);
+Shader opengl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path);
+
+Shader opengl_load_shaders_from_source(const char *vertex_shader_source, const char *fragment_shader_source);
+
+void opengl_use_shader(Shader shader);
 
 void opengl_set_uniform_float(unsigned int program, const char *name, float f);
 

@@ -4,7 +4,7 @@
 
 #include "test_vec4.h"
 
-#include "../test_types.h"
+#include "../../test_manager/test_types.h"
 #include "cstrl/cstrl_math.h"
 
 int test_cstrl_vec4_length()

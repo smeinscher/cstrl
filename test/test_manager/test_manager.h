@@ -15,8 +15,12 @@ void test_manager_run_tests(int suite_id);
 
 void test_manager_log_results(int suite_id);
 
+int test_manager_total_passed_tests();
+
 int test_manager_total_failed_tests();
 
 void test_manager_log_total_failed_tests();
+
+void test_manager_clear();
 
 #endif // TEST_MANAGER_H

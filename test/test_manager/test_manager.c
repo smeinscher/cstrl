@@ -7,27 +7,28 @@
 #include "log.c/log.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #define MAX_TESTS 64
 #define MAX_SUITES 32
 
-typedef struct Test
+typedef struct test
 {
     test_func func;
     const char *name;
     const char *desc;
-} Test;
+} test;
 
-typedef struct Suite
+typedef struct suite
 {
     int total_tests;
     int passed_tests;
-    Test tests[MAX_TESTS];
+    test tests[MAX_TESTS];
     const char *name;
     const char *desc;
-} Suite;
+} suite;
 
-static Suite suites[MAX_SUITES];
+static suite suites[MAX_SUITES];
 
 static int total_suites = 0;
 
@@ -40,6 +41,7 @@ int test_manager_add_suite(const char *name, const char *desc)
     }
     suites[total_suites].total_tests = 0;
     suites[total_suites].passed_tests = -1;
+    memset(suites[total_suites].tests, 0, sizeof(test) * MAX_TESTS);
     suites[total_suites].name = name;
     suites[total_suites].desc = desc;
 
@@ -63,6 +65,11 @@ void test_manager_add_test(const int suite_id, test_func func, const char *name,
 
 void test_manager_run_tests(int suite_id)
 {
+    if (suite_id >= total_suites)
+    {
+        log_warn("Suite %d out of range, skipping tests", suite_id);
+        return;
+    }
     log_info("Running test suite #%d", suite_id);
     log_trace("---- %s - %s", suites[suite_id].name, suites[suite_id].desc);
     log_trace("---- %d total tests", suites[suite_id].total_tests);
@@ -90,6 +97,16 @@ void test_manager_log_results(int suite_id)
     log_info("%d of %d tests passed", suites[suite_id].passed_tests, suites[suite_id].total_tests);
 }
 
+int test_manager_total_passed_tests()
+{
+    int passed_tests = 0;
+    for (int i = 0; i < total_suites; i++)
+    {
+        passed_tests += suites[i].passed_tests;
+    }
+    return passed_tests;
+}
+
 int test_manager_total_failed_tests()
 {
     int failed_tests = 0;
@@ -103,4 +120,9 @@ int test_manager_total_failed_tests()
 void test_manager_log_total_failed_tests()
 {
     log_info("Total failed tests: %d\n", test_manager_total_failed_tests());
+}
+
+void test_manager_clear()
+{
+    total_suites = 0;
 }

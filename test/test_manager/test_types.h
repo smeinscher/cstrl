@@ -7,6 +7,9 @@
 
 #include "log.c/log.h"
 
+#define cstrl_test_success 1
+#define cstrl_test_failure 0
+
 #define cstrl_test_epsilon 0.000001
 #define cstrl_test_epsilon_double 2.22e-16
 

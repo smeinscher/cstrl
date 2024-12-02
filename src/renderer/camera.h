@@ -9,52 +9,21 @@
 
 #include <stdbool.h>
 
-void camera_update();
+typedef struct camera
+{
+    float fov;
+    vec2i viewport;
+    mat4 view;
+    mat4 projection;
+    transform transform;
+} camera;
 
-void camera_set_moving_up(bool moving_up);
+camera *cstrl_camera_create(int viewport_width, int viewport_height);
 
-void camera_set_moving_down(bool moving_down);
+void cstrl_camera_free(camera *camera);
 
-void camera_set_moving_left(bool moving_left);
+void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right);
 
-void camera_set_moving_right(bool moving_right);
-
-float camera_get_zoom();
-
-float camera_get_zoom_factor();
-
-float camera_get_zoom_ratio();
-
-void camera_set_zoom(float zoom);
-
-void camera_increment_zoom(float amount);
-
-void camera_decrement_zoom(float amount);
-
-vec3 camera_get_position();
-
-void camera_set_position(vec3 position);
-
-quat camera_get_rotation();
-
-void camera_set_rotation(quat rotation);
-
-void camera_set_max_position(vec2 position);
-
-void camera_set_min_position(vec2 position);
-
-mat4 camera_get_projection();
-
-mat4 camera_get_view();
-
-int camera_get_viewport_width();
-
-int camera_get_viewport_height();
-
-void camera_set_viewport_width(int viewport_width);
-
-void camera_set_viewport_height(int viewport_height);
-
-void camera_process_mouse_movement(int offset_x, int offset_y);
+void cstrl_camera_rotate(camera *camera, float change_x, float change_y);
 
 #endif // OMEGA_CAMERA_H

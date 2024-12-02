@@ -19,17 +19,14 @@ typedef struct internal_data
     unsigned int vao;
     unsigned int vbos[3];
     unsigned int ebo;
-    unsigned int count;
+    size_t count;
     unsigned int dimensions;
-    unsigned int indices_count;
+    size_t indices_count;
     float *positions;
     float *uvs;
     float *colors;
     unsigned int *indices;
 } internal_data;
-
-Shader shader;
-Texture texture;
 
 void cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
@@ -40,14 +37,6 @@ void cstrl_renderer_init(cstrl_platform_state *platform_state)
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LINE_WIDTH);
     glLineWidth(1.0f);
-
-    shader = opengl_load_basic_shaders(basic_3d_vertex_shader, basic_3d_fragment_shader);
-
-    camera_set_viewport_width(800);
-    camera_set_viewport_height(600);
-    // camera_set_position((vec3){0.0f, 0.0f, 2.0f});
-
-    texture = generate_opengl_texture("../resources/textures/wall.jpg");
 }
 
 void cstrl_renderer_clear(float r, float g, float b, float a)
@@ -145,12 +134,6 @@ void cstrl_renderer_add_colors(render_data *render_data, float *colors)
 
 void cstrl_renderer_draw(render_data *data)
 {
-    glUseProgram(shader.program);
-    // static float test = 0.0f;
-    // opengl_set_uniform_float(shader.program, "time", (sinf(test) + 1.0f) / 2.0f);
-    // test += 0.01f;
-    opengl_set_uniform_mat4(shader.program, "view", camera_get_view());
-    opengl_set_uniform_mat4(shader.program, "projection", camera_get_projection());
     internal_data *internal_data = data->internal_data;
     glBindVertexArray(internal_data->vao);
     glDrawArrays(GL_TRIANGLES, 0, internal_data->count);

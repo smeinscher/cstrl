@@ -14,14 +14,14 @@
 
 #define MAX_LOG_BUFFER_SIZE 512
 
-unsigned int opengl_compile_shader(const char *shader_source, unsigned int type);
+unsigned int compile_shader(const char *shader_source, unsigned int type);
 
 Shader opengl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path)
 {
     long file_size;
     const char *vertex_shader_source = read_file(vertex_shader_path, &file_size);
     const char *fragment_shader_source = read_file(fragment_shader_path, &file_size);
-    Shader shader = opengl_load_basic_shaders(vertex_shader_source, fragment_shader_source);
+    Shader shader = opengl_load_shaders_from_source(vertex_shader_source, fragment_shader_source);
     shader.vertex_shader_path = vertex_shader_path;
     shader.fragment_shader_path = fragment_shader_path;
     shader.vertex_shader_last_modified_timestamp = get_file_timestamp(vertex_shader_path);
@@ -30,16 +30,16 @@ Shader opengl_load_shaders_from_files(const char *vertex_shader_path, const char
     return shader;
 }
 
-Shader opengl_load_basic_shaders(const char *vertex_shader_source, const char *fragment_shader_source)
+Shader opengl_load_shaders_from_source(const char *vertex_shader_source, const char *fragment_shader_source)
 {
     Shader shader = {0};
-    const unsigned int vertex_shader = opengl_compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
+    const unsigned int vertex_shader = compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
     if (vertex_shader == 0)
     {
         log_error("Vertex shader failed to compile");
         return shader;
     }
-    const unsigned int fragment_shader = opengl_compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
+    const unsigned int fragment_shader = compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
     if (fragment_shader == 0)
     {
         log_error("Fragment shader failed to compile");
@@ -70,7 +70,7 @@ Shader opengl_load_basic_shaders(const char *vertex_shader_source, const char *f
     return shader;
 }
 
-char *opengl_get_file_contents(const char *path)
+char *get_file_contents(const char *path)
 {
     char *source = NULL;
     FILE *fp = fopen(path, "r");
@@ -108,7 +108,7 @@ char *opengl_get_file_contents(const char *path)
     return source;
 }
 
-unsigned int opengl_compile_shader(const char *shader_source, unsigned int type)
+unsigned int compile_shader(const char *shader_source, unsigned int type)
 {
     const unsigned int shader = glCreateShader(type);
 
@@ -125,6 +125,11 @@ unsigned int opengl_compile_shader(const char *shader_source, unsigned int type)
         return 0;
     }
     return shader;
+}
+
+void opengl_use_shader(Shader shader)
+{
+    glUseProgram(shader.program);
 }
 
 void opengl_set_uniform_float(unsigned int program, const char *name, float f)
@@ -155,6 +160,6 @@ void opengl_shader_hot_reload(Shader *shader)
     {
         log_trace("Hot reloading shader");
         glDeleteProgram(shader->program);
-        *shader = opengl_load_basic_shaders(shader->vertex_shader_path, shader->fragment_shader_path);
+        *shader = opengl_load_shaders_from_source(shader->vertex_shader_path, shader->fragment_shader_path);
     }
 }

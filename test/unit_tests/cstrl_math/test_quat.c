@@ -4,7 +4,7 @@
 
 #include "test_quat.h"
 
-#include "../test_types.h"
+#include "../../test_manager/test_types.h"
 #include "cstrl/cstrl_math.h"
 
 int test_cstrl_quat_get_axis()
