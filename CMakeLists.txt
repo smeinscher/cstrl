@@ -67,8 +67,12 @@ add_executable(cstrl-test
         test/integration_tests/integration_tests.h
         test/manual_tests/manual_tests.c
         test/manual_tests/manual_tests.h
-        test/manual_tests/basic/learnopengl.c
-        test/manual_tests/basic/learnopengl.h
+        test/manual_tests/sandbox/learnopengl.c
+        test/manual_tests/sandbox/learnopengl.h
+        test/manual_tests/sandbox/physics_for_game_developers/physics_for_game_developers.c
+        test/manual_tests/sandbox/physics_for_game_developers/physics_for_game_developers.h
+        test/manual_tests/sandbox/physics_for_game_developers/cannon_example.c
+        test/manual_tests/sandbox/physics_for_game_developers/cannon_example.h
 )
 
 target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)
