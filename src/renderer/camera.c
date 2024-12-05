@@ -16,6 +16,7 @@ camera *cstrl_camera_create(int viewport_width, int viewport_height)
     new_camera->fov = 45.0f * cstrl_pi_180;
     new_camera->viewport.x = viewport_width;
     new_camera->viewport.y = viewport_height;
+    new_camera->forward = (vec3){0.0f, 0.0f, -1.0f};
     new_camera->view = cstrl_mat4_identity();
     new_camera->projection = cstrl_mat4_identity();
     new_camera->transform.position = (vec3){0.0f, 0.0f, 0.0f};
@@ -35,6 +36,7 @@ void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool 
 {
     vec3 forward = cstrl_vec3_rotate_by_quat((vec3){0.0f, 0.0f, -1.0f}, camera->transform.rotation);
     forward = cstrl_vec3_normalize(forward);
+    forward = camera->forward;
     vec3 velocity = {0.0f, 0.0f, 0.0f};
     if (moving_up)
     {
@@ -93,29 +95,22 @@ void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool 
     // g_projection = cstrl_ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
 }
 
-void cstrl_camera_rotate(camera *camera, float change_x, float change_y)
+void cstrl_camera_rotate(camera *camera, float change_y_axis, float change_x_axis)
 {
-    if (change_x == 0.0f && change_y == 0.0f)
+    if (change_y_axis == 0.0f && change_x_axis == 0.0f)
     {
         return;
     }
-    vec3 euler = (vec3){0.0f, 0.0f, 0.0f};
-    euler.x -= change_y;
-    euler.y -= change_x;
-
-    camera->transform.rotation = cstrl_quat_mult(camera->transform.rotation, cstrl_quat_from_euler_angles(euler));
-    float max_angle = 45.0f * cstrl_pi_180;
-    vec3 rotation_euler = cstrl_euler_angles_from_quat(camera->transform.rotation);
-    if (rotation_euler.x > max_angle)
+    quat h = cstrl_quat_from_euler_angles((vec3){0.0f, -change_y_axis, 0.0f});
+    camera->forward = cstrl_vec3_rotate_by_quat(camera->forward, h);
+    camera->forward = cstrl_vec3_normalize(camera->forward);
+    quat v = cstrl_quat_angle_axis(-change_x_axis, cstrl_vec3_cross(camera->forward, (vec3){0.0f, 1.0f, 0.0f}));
+    camera->forward = cstrl_vec3_rotate_by_quat(camera->forward, v);
+    camera->forward = cstrl_vec3_normalize(camera->forward);
+    quat forward_up_rotation = cstrl_quat_from_to(camera->forward, (vec3){0.0f, 1.0f, 0.0f});
+    float angle = cstrl_quat_get_angle(forward_up_rotation);
+    if (angle > cstrl_pi - cstrl_pi_4 || angle < cstrl_pi_4)
     {
-        // rotation_euler.x = max_angle;
-        // camera->transform.rotation = cstrl_quat_from_euler_angles(rotation_euler);
+        camera->forward = cstrl_vec3_rotate_by_quat(camera->forward, cstrl_quat_conjugate(v));
     }
-    else if (rotation_euler.x < -max_angle)
-    {
-        // rotation_euler.x = -max_angle;
-        // camera->transform.rotation = cstrl_quat_from_euler_angles(rotation_euler);
-    }
-    camera->transform.rotation = cstrl_quat_normalize(camera->transform.rotation);
-    log_trace("%f, %f, %f", rotation_euler.x, rotation_euler.y, rotation_euler.z);
 }

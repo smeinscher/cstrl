@@ -2,8 +2,6 @@
 // Created by sterling on 7/28/24.
 //
 
-#include "dynamic_array.h"
-
 #include "log.c/log.h"
 
 #include "cstrl/cstrl_util.h"

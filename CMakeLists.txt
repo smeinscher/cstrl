@@ -17,7 +17,6 @@ add_library(cstrl SHARED
         include/cstrl/cstrl_defines.h
         include/cstrl/cstrl_math.h
         src/util/dynamic_array.c
-        src/util/dynamic_array.h
         include/cstrl/cstrl_util.h
         include/cstrl/cstrl_types.h
         include/cstrl/cstrl_platform.h
@@ -34,7 +33,6 @@ add_library(cstrl SHARED
         src/renderer/opengl/opengl_texture.c
         src/renderer/opengl/opengl_texture.h
         src/util/file_helpers.c
-        src/util/file_helpers.h
         extern/stb/stb_image.c
         extern/stb/stb_image.h
         src/renderer/opengl/opengl_shader_programs.h
@@ -42,7 +40,6 @@ add_library(cstrl SHARED
         src/renderer/camera.h
         src/platform/platform_common.c
         src/util/general_helpers.c
-        src/util/general_helpers.h
 )
 
 add_executable(cstrl-test
@@ -70,6 +67,8 @@ add_executable(cstrl-test
         test/integration_tests/integration_tests.h
         test/manual_tests/manual_tests.c
         test/manual_tests/manual_tests.h
+        test/manual_tests/basic/learnopengl.c
+        test/manual_tests/basic/learnopengl.h
 )
 
 target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)

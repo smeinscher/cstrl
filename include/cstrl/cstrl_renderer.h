@@ -26,6 +26,8 @@ void cstrl_renderer_add_uvs(render_data *render_data, float *uvs);
 
 void cstrl_renderer_add_colors(render_data *render_data, float *colors);
 
+void cstrl_renderer_add_normals(render_data *render_data, float *normals);
+
 void cstrl_renderer_draw(render_data *data);
 
 void cstrl_renderer_destroy(cstrl_platform_state *platform_state);

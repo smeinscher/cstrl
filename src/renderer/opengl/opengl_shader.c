@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-#include "../../util/file_helpers.h"
+#include "cstrl/cstrl_util.h"
 #include "glad/glad.h"
 #include "log.c/log.h"
 
@@ -16,21 +16,21 @@
 
 unsigned int compile_shader(const char *shader_source, unsigned int type);
 
-Shader opengl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path)
+Shader cstrl_opengl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path)
 {
     long file_size;
-    const char *vertex_shader_source = read_file(vertex_shader_path, &file_size);
-    const char *fragment_shader_source = read_file(fragment_shader_path, &file_size);
-    Shader shader = opengl_load_shaders_from_source(vertex_shader_source, fragment_shader_source);
+    const char *vertex_shader_source = cstrl_read_file(vertex_shader_path, &file_size);
+    const char *fragment_shader_source = cstrl_read_file(fragment_shader_path, &file_size);
+    Shader shader = cstrl_opengl_load_shaders_from_source(vertex_shader_source, fragment_shader_source);
     shader.vertex_shader_path = vertex_shader_path;
     shader.fragment_shader_path = fragment_shader_path;
-    shader.vertex_shader_last_modified_timestamp = get_file_timestamp(vertex_shader_path);
-    shader.fragment_shader_last_modified_timestamp = get_file_timestamp(fragment_shader_path);
+    shader.vertex_shader_last_modified_timestamp = cstrl_get_file_timestamp(vertex_shader_path);
+    shader.fragment_shader_last_modified_timestamp = cstrl_get_file_timestamp(fragment_shader_path);
 
     return shader;
 }
 
-Shader opengl_load_shaders_from_source(const char *vertex_shader_source, const char *fragment_shader_source)
+Shader cstrl_opengl_load_shaders_from_source(const char *vertex_shader_source, const char *fragment_shader_source)
 {
     Shader shader = {0};
     const unsigned int vertex_shader = compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
@@ -127,39 +127,45 @@ unsigned int compile_shader(const char *shader_source, unsigned int type)
     return shader;
 }
 
-void opengl_use_shader(Shader shader)
+void cstrl_opengl_use_shader(Shader shader)
 {
     glUseProgram(shader.program);
 }
 
-void opengl_set_uniform_float(unsigned int program, const char *name, float f)
+void cstrl_opengl_set_uniform_float(unsigned int program, const char *name, float f)
 {
     glUseProgram(program);
     glUniform1f(glGetUniformLocation(program, name), f);
 }
 
-void opengl_set_uniform_4f(unsigned int program, const char *name, float x, float y, float z, float w)
+void cstrl_opengl_set_uniform_3f(unsigned int program, const char *name, float x, float y, float z)
+{
+    glUseProgram(program);
+    glUniform3f(glGetUniformLocation(program, name), x, y, z);
+}
+
+void cstrl_opengl_set_uniform_4f(unsigned int program, const char *name, float x, float y, float z, float w)
 {
     glUseProgram(program);
     glUniform4f(glGetUniformLocation(program, name), x, y, z, w);
 }
 
-void opengl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat)
+void cstrl_opengl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat)
 {
     glUseProgram(program);
     glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, &mat.m[0]);
 }
 
-void opengl_shader_hot_reload(Shader *shader)
+void cstrl_opengl_shader_hot_reload(Shader *shader)
 {
-    time_t vertex_current_timestamp = get_file_timestamp(shader->vertex_shader_path);
-    time_t fragment_current_timestamp = get_file_timestamp(shader->fragment_shader_path);
+    time_t vertex_current_timestamp = cstrl_get_file_timestamp(shader->vertex_shader_path);
+    time_t fragment_current_timestamp = cstrl_get_file_timestamp(shader->fragment_shader_path);
 
     if (vertex_current_timestamp > shader->vertex_shader_last_modified_timestamp ||
         fragment_current_timestamp > shader->fragment_shader_last_modified_timestamp)
     {
         log_trace("Hot reloading shader");
         glDeleteProgram(shader->program);
-        *shader = opengl_load_shaders_from_source(shader->vertex_shader_path, shader->fragment_shader_path);
+        *shader = cstrl_opengl_load_shaders_from_source(shader->vertex_shader_path, shader->fragment_shader_path);
     }
 }

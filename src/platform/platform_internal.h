@@ -22,6 +22,7 @@ typedef struct input_state
     int last_mouse_x;
     int last_mouse_y;
     cstrl_mouse_mode mouse_mode;
+    bool cursor_shown;
 } input_state;
 
 // Platform-agnostic struct, common for all platforms

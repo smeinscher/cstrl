@@ -80,4 +80,18 @@ void cstrl_da_string_free(da_string *da);
 
 char *cstrl_string_to_c_str(string *str);
 
+char *cstrl_read_file(const char *file_path, long *file_size);
+
+int cstrl_write_file(const char *file_path, const char *data, unsigned long size);
+
+int cstrl_copy_file(const char *file_path, const char *output_file_path);
+
+time_t cstrl_get_file_timestamp(const char *path);
+
+void cstrl_realloc_int(int **int_ptr, size_t size);
+
+void cstrl_realloc_float(float **float_ptr, size_t size);
+
+void cstrl_realloc_string(string **str_ptr, size_t size);
+
 #endif // CSTRL_UTIL_H

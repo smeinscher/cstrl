@@ -1,16 +1,14 @@
 //
-// Created by 12105 on 12/1/2024.
+// Created by 12105 on 12/4/2024.
 //
 
-#include "test_4_cubes_scene.h"
+#include "learnopengl.h"
 
 #include "../../test_manager/test_types.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
-#include "cstrl/cstrl_types.h"
 #include "renderer/camera.h"
 #include "renderer/opengl/opengl_shader.h"
-#include "renderer/opengl/opengl_shader_programs.h"
 #include "renderer/opengl/opengl_texture.h"
 
 static camera *g_main_camera;
@@ -171,25 +169,22 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     }
 }
 
-int test_4_cubes_scene()
+int learnopengl()
 {
     cstrl_platform_state state;
-    if (!cstrl_platform_init(&state, "cstrl window test", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&state, "Learn OpenGL", 560, 240, 800, 600))
     {
         cstrl_platform_destroy(&state);
         return cstrl_test_failure;
     }
-
     cstrl_platform_set_key_callback(&state, key_callback);
     cstrl_platform_set_mouse_position_callback(&state, mouse_position_callback);
+    cstrl_platform_set_show_cursor(&state, false);
+    cstrl_platform_set_mouse_mode(&state, CSTRL_MOUSE_DISABLED);
 
     cstrl_renderer_init(&state);
-    render_data *render_data = cstrl_renderer_create_render_data();
-    float vertices_old[] = {
-        -0.5f, -0.5f, 0.0f, // left
-        0.5f,  -0.5f, 0.0f, // right
-        0.0f,  0.5f,  0.0f  // top
-    };
+    render_data *color_render_data = cstrl_renderer_create_render_data();
+    render_data *light_render_data = cstrl_renderer_create_render_data();
     float vertices[] = {-0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f,
                         0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
 
@@ -207,67 +202,37 @@ int test_4_cubes_scene()
 
                         -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
                         0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f};
-    float uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
 
-                   0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+    float normals[] = {0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f,
+                       0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f,
 
-                   1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+                       0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+                       0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
 
-                   1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+                       -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,
+                       -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,
 
-                   0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                       1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+                       1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
 
-                   0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-    float vertices2[108];
-    for (int i = 0; i < 36; i++)
-    {
-        vertices2[i * 3] = vertices[i * 3] + 5.0f;
-        vertices2[i * 3 + 1] = vertices[i * 3 + 1];
-        vertices2[i * 3 + 2] = vertices[i * 3 + 2] + 5.0f;
-    }
-    float vertices3[108];
-    for (int i = 0; i < 36; i++)
-    {
-        vertices3[i * 3] = vertices[i * 3] - 5.0f;
-        vertices3[i * 3 + 1] = vertices[i * 3 + 1];
-        vertices3[i * 3 + 2] = vertices[i * 3 + 2] + 5.0f;
-    }
-    float vertices4[108];
-    for (int i = 0; i < 36; i++)
-    {
-        vertices4[i * 3] = vertices[i * 3];
-        vertices4[i * 3 + 1] = vertices[i * 3 + 1];
-        vertices4[i * 3 + 2] = vertices[i * 3 + 2] + 10.0f;
-    }
-    float vertices_final[108 * 4];
-    for (int i = 0; i < 108; i++)
-    {
-        vertices_final[i] = vertices[i];
-    }
-    for (int i = 108; i < 216; i++)
-    {
-        vertices_final[i] = vertices2[i - 108];
-    }
-    for (int i = 216; i < 324; i++)
-    {
-        vertices_final[i] = vertices3[i - 216];
-    }
-    for (int i = 324; i < 432; i++)
-    {
-        vertices_final[i] = vertices4[i - 324];
-    }
-    float uvs_final[288];
-    for (int i = 0; i < 288; i++)
-    {
-        uvs_final[i] = uvs[i % 72];
-    }
-    cstrl_renderer_add_positions(render_data, vertices_final, 3, 144);
-    cstrl_renderer_add_uvs(render_data, uvs_final);
+                       0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,
+                       0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,
+
+                       0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+                       0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f};
+
+    cstrl_renderer_add_positions(color_render_data, vertices, 3, 36);
+    cstrl_renderer_add_normals(color_render_data, normals);
+    cstrl_renderer_add_positions(light_render_data, vertices, 3, 36);
 
     g_main_camera = cstrl_camera_create(800, 600);
     g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
-    Shader shader = cstrl_opengl_load_shaders_from_source(basic_3d_vertex_shader, basic_3d_fragment_shader);
-    Texture texture = generate_opengl_texture("../resources/textures/wall.jpg");
+    Shader color_shader = cstrl_opengl_load_shaders_from_files("../resources/shaders/learnopengl/colors.vert",
+                                                               "../resources/shaders/learnopengl/colors.frag");
+    Shader light_shader = cstrl_opengl_load_shaders_from_files("../resources/shaders/learnopengl/light_cube.vert",
+                                                               "../resources/shaders/learnopengl/light_cube.frag");
+    // Texture texture = generate_opengl_texture("../resources/textures/wall.jpg");
+
     double previous_time = cstrl_platform_get_absolute_time();
     double lag = 0.0;
     while (!cstrl_platform_should_exit(&state))
@@ -284,17 +249,28 @@ int test_4_cubes_scene()
                                 g_camera_turning_left, g_camera_turning_right);
             lag -= 1.0 / 60.0;
         }
-        cstrl_renderer_clear(0.1f, 0.2f, 0.4f, 1.0f);
-        cstrl_opengl_set_uniform_mat4(shader.program, "view", g_main_camera->view);
-        cstrl_opengl_set_uniform_mat4(shader.program, "projection", g_main_camera->projection);
-        cstrl_renderer_draw(render_data);
+
+        cstrl_renderer_clear(0.1f, 0.1f, 0.1f, 1.0f);
+
+        vec3 light_position = {sin(cstrl_platform_get_absolute_time()), cos(cstrl_platform_get_absolute_time()), 0.0f};
+        cstrl_opengl_set_uniform_mat4(color_shader.program, "model", cstrl_mat4_identity());
+        cstrl_opengl_set_uniform_mat4(color_shader.program, "view", g_main_camera->view);
+        cstrl_opengl_set_uniform_mat4(color_shader.program, "projection", g_main_camera->projection);
+        cstrl_opengl_set_uniform_3f(color_shader.program, "object_color", 1.0f, 0.5f, 0.31f);
+        cstrl_opengl_set_uniform_3f(color_shader.program, "light_color", 1.0f, 1.0f, 1.0f);
+        cstrl_opengl_set_uniform_3f(color_shader.program, "light_position", light_position.x, light_position.y,
+                                    light_position.z);
+        cstrl_opengl_set_uniform_3f(color_shader.program, "view_position", g_main_camera->transform.position.x,
+                                    g_main_camera->transform.position.y, g_main_camera->transform.position.z);
+        cstrl_renderer_draw(color_render_data);
+        mat4 model = cstrl_mat4_identity();
+        model = cstrl_mat4_translate(model, light_position);
+        model = cstrl_mat4_scale(model, (vec3){0.2f, 0.2f, 0.2f});
+        cstrl_opengl_set_uniform_mat4(light_shader.program, "model", model);
+        cstrl_opengl_set_uniform_mat4(light_shader.program, "view", g_main_camera->view);
+        cstrl_opengl_set_uniform_mat4(light_shader.program, "projection", g_main_camera->projection);
+        cstrl_renderer_draw(light_render_data);
         cstrl_renderer_swap_buffers(&state);
     }
-
-    cstrl_camera_free(g_main_camera);
-    cstrl_renderer_free_render_data(render_data);
-    cstrl_renderer_destroy(&state);
-    cstrl_platform_destroy(&state);
-
     return cstrl_test_success;
 }

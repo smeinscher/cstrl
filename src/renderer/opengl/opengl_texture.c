@@ -4,7 +4,7 @@
 
 #include "opengl_texture.h"
 
-#include "../../util/file_helpers.h"
+#include "cstrl/cstrl_util.h"
 #include "glad/glad.h"
 #include "log.c/log.h"
 #include "stb/stb_image.h"
@@ -46,13 +46,13 @@ Texture generate_opengl_texture(const char *path)
 
     texture.id = texture_id;
     texture.path = path;
-    texture.last_modified_timestamp = get_file_timestamp(path);
+    texture.last_modified_timestamp = cstrl_get_file_timestamp(path);
     return texture;
 }
 
 void opengl_texture_hot_reload(Texture *texture)
 {
-    time_t current_timestamp = get_file_timestamp(texture->path);
+    time_t current_timestamp = cstrl_get_file_timestamp(texture->path);
 
     if (current_timestamp > texture->last_modified_timestamp)
     {

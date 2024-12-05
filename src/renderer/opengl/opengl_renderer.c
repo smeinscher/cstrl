@@ -17,7 +17,7 @@
 typedef struct internal_data
 {
     unsigned int vao;
-    unsigned int vbos[3];
+    unsigned int vbos[4];
     unsigned int ebo;
     size_t count;
     unsigned int dimensions;
@@ -25,6 +25,7 @@ typedef struct internal_data
     float *positions;
     float *uvs;
     float *colors;
+    float *normals;
     unsigned int *indices;
 } internal_data;
 
@@ -124,9 +125,25 @@ void cstrl_renderer_add_colors(render_data *render_data, float *colors)
     glGenBuffers(1, &data->vbos[2]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[2]);
-    glBufferData(GL_ARRAY_BUFFER, data->count * sizeof(float), colors, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 4 * sizeof(float), colors, GL_STATIC_DRAW);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(2);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+void cstrl_renderer_add_normals(render_data *render_data, float *normals)
+{
+    internal_data *data = render_data->internal_data;
+    data->normals = normals;
+
+    glGenBuffers(1, &data->vbos[3]);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[3]);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), normals, GL_STATIC_DRAW);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(3);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

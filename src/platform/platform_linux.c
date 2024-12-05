@@ -111,7 +111,7 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
 
     XWarpPointer(state->display, state->main_window, state->main_window, 0, 0, 800, 600, 400, 300);
 
-    state->state_common.input.mouse_mode = CSTRL_MOUSE_DISABLED;
+    state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;
 
     return true;
 }

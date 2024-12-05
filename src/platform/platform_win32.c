@@ -211,12 +211,14 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     win32_mouse_button_to_cstrl_mouse_button_init();
     win32_key_to_cstrl_key_init();
 
-    state->state_common.input.mouse_mode = CSTRL_MOUSE_DISABLED;
+    state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;
 
     SetCursorPos(1920 / 2, 1080 / 2);
 
     state->state_common.input.last_mouse_x = 400;
     state->state_common.input.last_mouse_y = 300;
+
+    state->state_common.input.cursor_shown = true;
 
     return true;
 }
@@ -262,6 +264,13 @@ bool cstrl_platform_should_exit()
 void cstrl_platform_set_should_exit(bool should_exit)
 {
     g_should_exit = should_exit;
+}
+
+void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_state, bool show_cursor)
+{
+    internal_state *state = platform_state->internal_state;
+    state->state_common.input.cursor_shown = show_cursor;
+    ShowCursor(show_cursor);
 }
 
 #endif

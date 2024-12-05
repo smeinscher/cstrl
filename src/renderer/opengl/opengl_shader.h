@@ -18,18 +18,20 @@ typedef struct Shader
     time_t fragment_shader_last_modified_timestamp;
 } Shader;
 
-Shader opengl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path);
+Shader cstrl_opengl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path);
 
-Shader opengl_load_shaders_from_source(const char *vertex_shader_source, const char *fragment_shader_source);
+Shader cstrl_opengl_load_shaders_from_source(const char *vertex_shader_source, const char *fragment_shader_source);
 
-void opengl_use_shader(Shader shader);
+void cstrl_opengl_use_shader(Shader shader);
 
-void opengl_set_uniform_float(unsigned int program, const char *name, float f);
+void cstrl_opengl_set_uniform_float(unsigned int program, const char *name, float f);
 
-void opengl_set_uniform_4f(unsigned int program, const char *name, float x, float y, float z, float w);
+void cstrl_opengl_set_uniform_3f(unsigned int program, const char *name, float x, float y, float z);
 
-void opengl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat);
+void cstrl_opengl_set_uniform_4f(unsigned int program, const char *name, float x, float y, float z, float w);
 
-void opengl_shader_hot_reload(Shader *shader);
+void cstrl_opengl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat);
+
+void cstrl_opengl_shader_hot_reload(Shader *shader);
 
 #endif // OPENGL_SHADER_H

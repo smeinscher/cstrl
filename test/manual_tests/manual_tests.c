@@ -5,13 +5,14 @@
 #include "manual_tests.h"
 
 #include "../test_manager/test_types.h"
+#include "basic/learnopengl.h"
 #include "basic/test_4_cubes_scene.h"
 
 int run_manual_tests()
 {
     int result = cstrl_test_success;
 
-    result &= test_4_cubes_scene();
+    result &= learnopengl();
 
     return result;
 }

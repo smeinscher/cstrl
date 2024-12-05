@@ -6,6 +6,8 @@
 #define CSTRL_PLATFORM_H
 
 #include "cstrl_defines.h"
+#include "cstrl_types.h"
+
 #include <stdbool.h>
 
 typedef struct cstrl_platform_state
@@ -31,6 +33,12 @@ void cstrl_platform_sleep(unsigned long long ms);
 bool cstrl_platform_should_exit();
 
 void cstrl_platform_set_should_exit(bool should_exit);
+
+cstrl_mouse_mode cstrl_platform_get_mouse_mode(cstrl_platform_state *platform_state);
+
+void cstrl_platform_set_mouse_mode(cstrl_platform_state *platform_state, cstrl_mouse_mode mode);
+
+void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_state, bool show_cursor);
 
 void cstrl_platform_set_key_callback(cstrl_platform_state *platform_state, cstrl_key_callback key_callback);
 

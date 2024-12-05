@@ -257,13 +257,13 @@ CSTRL_INLINE vec3 cstrl_vec3_normalize(const vec3 v)
     {
         return (vec3){v.x / len, v.y / len, v.z / len};
     }
-    return (vec3){0, 0, 0};
+    return (vec3){0.0f, 0.0f, 0.0f};
 }
 
 // TODO: add to unit tests
 CSTRL_INLINE bool cstrl_vec3_is_equal(const vec3 a, const vec3 b)
 {
-    return fabsf(a.x - b.x) > cstrl_epsilon && fabsf(a.y - b.y) > cstrl_epsilon && fabsf(a.z - b.z) > cstrl_epsilon;
+    return fabsf(a.x - b.x) < cstrl_epsilon && fabsf(a.y - b.y) < cstrl_epsilon && fabsf(a.z - b.z) < cstrl_epsilon;
 }
 
 CSTRL_INLINE vec3 cstrl_vec3_add(const vec3 a, const vec3 b)
@@ -502,6 +502,26 @@ CSTRL_INLINE bool cstrl_mat4_is_equal(mat4 a, mat4 b)
            cstrl_vec4_is_equal(a.w, b.w);
 }
 
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_translate(mat4 m, vec3 v)
+{
+    mat4 translation = cstrl_mat4_identity();
+    translation.xw = v.x;
+    translation.yw = v.y;
+    translation.zw = v.z;
+
+    return cstrl_mat4_mult(m, translation);
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_scale(mat4 m, vec3 v)
+{
+    m.xx *= v.x;
+    m.yy *= v.y;
+    m.zz *= v.z;
+
+    return m;
+}
 /*
  *
  *      quat math functions
@@ -549,9 +569,9 @@ CSTRL_INLINE quat cstrl_quat_normalize(quat q)
 CSTRL_INLINE quat cstrl_quat_angle_axis(float angle, vec3 axis)
 {
     vec3 norm = cstrl_vec3_normalize(axis);
-    float s = sinf(angle);
+    float s = sinf(angle / 2.0f);
 
-    return (quat){cosf(angle * 0.5f), norm.x * s, norm.y * s, norm.z * s};
+    return (quat){cosf(angle / 2.0f), norm.x * s, norm.y * s, norm.z * s};
 }
 
 // TODO: add to unit tests
@@ -582,7 +602,7 @@ CSTRL_INLINE quat cstrl_quat_from_to(vec3 from, vec3 to)
     vec3 half = cstrl_vec3_normalize(cstrl_vec3_add(from, to));
     vec3 axis = cstrl_vec3_cross(from, half);
 
-    return (quat){cstrl_vec3_dot(axis, cstrl_vec3_cross(to, axis)), axis.x, axis.y, axis.z};
+    return (quat){cstrl_vec3_dot(from, half), axis.x, axis.y, axis.z};
 }
 
 CSTRL_INLINE vec3 cstrl_quat_get_axis(quat q)

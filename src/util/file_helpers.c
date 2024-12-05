@@ -2,7 +2,7 @@
 // Created by sterling on 7/11/24.
 //
 
-#include "file_helpers.h"
+#include "cstrl/cstrl_util.h"
 
 #include "log.c/log.h"
 
@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-char *read_file(const char *file_path, long *file_size)
+char *cstrl_read_file(const char *file_path, long *file_size)
 {
     *file_size = 0;
     FILE *file = fopen(file_path, "rb");
@@ -33,10 +33,11 @@ char *read_file(const char *file_path, long *file_size)
     fread(buffer, sizeof(char), *file_size, file);
     fclose(file);
 
+    buffer[*file_size] = '\0';
     return buffer;
 }
 
-int write_file(const char *file_path, const char *data, const unsigned long size)
+int cstrl_write_file(const char *file_path, const char *data, const unsigned long size)
 {
     FILE *output_file = fopen(file_path, "wb");
     if (output_file == NULL)
@@ -55,10 +56,10 @@ int write_file(const char *file_path, const char *data, const unsigned long size
     return 0;
 }
 
-int copy_file(const char *file_path, const char *output_file_path)
+int cstrl_copy_file(const char *file_path, const char *output_file_path)
 {
     long file_size = 0;
-    char *data = read_file(file_path, &file_size);
+    char *data = cstrl_read_file(file_path, &file_size);
 
     FILE *output_file = fopen(output_file_path, "wb");
     if (output_file == NULL)
@@ -79,7 +80,7 @@ int copy_file(const char *file_path, const char *output_file_path)
     return 0;
 }
 
-time_t get_file_timestamp(const char *path)
+time_t cstrl_get_file_timestamp(const char *path)
 {
     struct stat st = {0};
     int ierr = stat(path, &st);
