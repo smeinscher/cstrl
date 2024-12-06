@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.29)
 project(cstrl C)
 project(cstrl-test C)
+project(cstrl-sandbox C)
 
 set(CMAKE_C_STANDARD 11)
 
@@ -29,17 +30,16 @@ add_library(cstrl SHARED
         src/platform/platform_linux.c
         src/renderer/opengl/opengl_platform_linux.c
         src/renderer/opengl/opengl_shader.c
-        src/renderer/opengl/opengl_shader.h
         src/renderer/opengl/opengl_texture.c
-        src/renderer/opengl/opengl_texture.h
         src/util/file_helpers.c
         extern/stb/stb_image.c
         extern/stb/stb_image.h
-        src/renderer/opengl/opengl_shader_programs.h
+        src/renderer/glsl_shader_programs.h
         src/renderer/camera.c
-        src/renderer/camera.h
         src/platform/platform_common.c
         src/util/general_helpers.c
+        include/cstrl/cstrl_ui.h
+        src/ui/ui.c
 )
 
 add_executable(cstrl-test
@@ -67,16 +67,24 @@ add_executable(cstrl-test
         test/integration_tests/integration_tests.h
         test/manual_tests/manual_tests.c
         test/manual_tests/manual_tests.h
-        test/manual_tests/sandbox/learnopengl.c
-        test/manual_tests/sandbox/learnopengl.h
-        test/manual_tests/sandbox/physics_for_game_developers/physics_for_game_developers.c
-        test/manual_tests/sandbox/physics_for_game_developers/physics_for_game_developers.h
-        test/manual_tests/sandbox/physics_for_game_developers/cannon_example.c
-        test/manual_tests/sandbox/physics_for_game_developers/cannon_example.h
 )
 
-target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)
+add_executable(cstrl-sandbox
+        sandbox/learnopengl/learnopengl.c
+        sandbox/learnopengl/learnopengl.h
+        sandbox/physics_for_game_developers/physics_for_game_developers.c
+        sandbox/physics_for_game_developers/physics_for_game_developers.h
+        sandbox/physics_for_game_developers/cannon_example.c
+        sandbox/physics_for_game_developers/cannon_example.h
+        sandbox/main.c
+        sandbox/ui/basic_ui.c
+        sandbox/ui/basic_ui.h
+)
+
+target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m Xfixes)
 target_link_libraries(cstrl-test PRIVATE log.c cstrl m)
+target_link_libraries(cstrl-sandbox PRIVATE cstrl m)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)

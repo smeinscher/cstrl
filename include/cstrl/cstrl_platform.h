@@ -22,7 +22,7 @@ typedef void (*cstrl_mouse_position_callback)(cstrl_platform_state *state, int x
 bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y, int width,
                          int height);
 
-void cstrl_platform_destroy(cstrl_platform_state *platform_state);
+void cstrl_platform_shutdown(cstrl_platform_state *platform_state);
 
 void cstrl_platform_pump_messages(cstrl_platform_state *platform_state);
 

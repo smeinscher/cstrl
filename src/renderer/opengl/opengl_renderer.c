@@ -4,11 +4,6 @@
 
 #include "glad/glad.h"
 #include "opengl_platform.h"
-#include "opengl_shader.h"
-
-#include "../camera.h"
-#include "opengl_shader_programs.h"
-#include "opengl_texture.h"
 
 #include <cstrl/cstrl_renderer.h>
 #include <stdio.h>
@@ -46,9 +41,9 @@ void cstrl_renderer_clear(float r, float g, float b, float a)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-render_data *cstrl_renderer_create_render_data()
+cstrl_render_data *cstrl_renderer_create_render_data()
 {
-    render_data *data = malloc(sizeof(render_data));
+    cstrl_render_data *data = malloc(sizeof(cstrl_render_data));
     data->internal_data = malloc(sizeof(internal_data));
     internal_data *internal_data = data->internal_data;
 
@@ -70,7 +65,7 @@ render_data *cstrl_renderer_create_render_data()
     return data;
 }
 
-void cstrl_renderer_free_render_data(render_data *render_data)
+void cstrl_renderer_free_render_data(cstrl_render_data *render_data)
 {
     internal_data *internal_data = render_data->internal_data;
     glDeleteVertexArrays(1, &internal_data->vao);
@@ -82,7 +77,7 @@ void cstrl_renderer_free_render_data(render_data *render_data)
     free(render_data);
 }
 
-void cstrl_renderer_add_positions(render_data *render_data, float *positions, unsigned int dimensions,
+void cstrl_renderer_add_positions(cstrl_render_data *render_data, float *positions, unsigned int dimensions,
                                   unsigned int vertex_count)
 {
     internal_data *data = render_data->internal_data;
@@ -101,7 +96,7 @@ void cstrl_renderer_add_positions(render_data *render_data, float *positions, un
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_add_uvs(render_data *render_data, float *uvs)
+void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs)
 {
     internal_data *data = render_data->internal_data;
     data->uvs = uvs;
@@ -117,7 +112,7 @@ void cstrl_renderer_add_uvs(render_data *render_data, float *uvs)
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_add_colors(render_data *render_data, float *colors)
+void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors)
 {
     internal_data *data = render_data->internal_data;
     data->colors = colors;
@@ -126,14 +121,14 @@ void cstrl_renderer_add_colors(render_data *render_data, float *colors)
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[2]);
     glBufferData(GL_ARRAY_BUFFER, data->count * 4 * sizeof(float), colors, GL_STATIC_DRAW);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(2);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_add_normals(render_data *render_data, float *normals)
+void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals)
 {
     internal_data *data = render_data->internal_data;
     data->normals = normals;
@@ -149,7 +144,7 @@ void cstrl_renderer_add_normals(render_data *render_data, float *normals)
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_draw(render_data *data)
+void cstrl_renderer_draw(cstrl_render_data *data)
 {
     internal_data *internal_data = data->internal_data;
     glBindVertexArray(internal_data->vao);

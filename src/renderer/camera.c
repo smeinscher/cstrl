@@ -2,9 +2,8 @@
 // Created by sterling on 7/5/24.
 //
 
-#include "camera.h"
-
 #include "cstrl/cstrl_platform.h"
+#include "cstrl/cstrl_renderer.h"
 #include "log.c/log.h"
 
 #include <stdlib.h>

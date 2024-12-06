@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <time.h>
 
 void cstrl_da_int_init(da_int *da, size_t initial_size);
 

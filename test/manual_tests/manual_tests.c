@@ -6,14 +6,12 @@
 
 #include "../test_manager/test_types.h"
 #include "basic/test_4_cubes_scene.h"
-#include "sandbox/learnopengl.h"
-#include "sandbox/physics_for_game_developers.h"
 
 int run_manual_tests()
 {
-    int result = cstrl_test_success;
+    int result = 0;
 
-    // result &= learnopengl();
-    result = physics_for_game_developers();
+    result += test_4_cubes_scene();
+
     return result;
 }

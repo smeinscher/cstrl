@@ -5,7 +5,7 @@
 #include "test_camera.h"
 
 #include "../../test_manager/test_types.h"
-#include "renderer/camera.h"
+#include "cstrl/cstrl_renderer.h"
 
 int test_camera_process_mouse_movement()
 {

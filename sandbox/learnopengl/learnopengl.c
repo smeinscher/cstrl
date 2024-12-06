@@ -4,12 +4,8 @@
 
 #include "learnopengl.h"
 
-#include "../../test_manager/test_types.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
-#include "renderer/camera.h"
-#include "renderer/opengl/opengl_shader.h"
-#include "renderer/opengl/opengl_texture.h"
 
 static camera *g_main_camera;
 static bool g_camera_moving_up = false;
@@ -174,8 +170,8 @@ int learnopengl()
     cstrl_platform_state state;
     if (!cstrl_platform_init(&state, "Learn OpenGL", 560, 240, 800, 600))
     {
-        cstrl_platform_destroy(&state);
-        return cstrl_test_failure;
+        cstrl_platform_shutdown(&state);
+        return 1;
     }
     cstrl_platform_set_key_callback(&state, key_callback);
     cstrl_platform_set_mouse_position_callback(&state, mouse_position_callback);
@@ -183,8 +179,8 @@ int learnopengl()
     cstrl_platform_set_mouse_mode(&state, CSTRL_MOUSE_DISABLED);
 
     cstrl_renderer_init(&state);
-    render_data *color_render_data = cstrl_renderer_create_render_data();
-    render_data *light_render_data = cstrl_renderer_create_render_data();
+    cstrl_render_data *color_render_data = cstrl_renderer_create_render_data();
+    cstrl_render_data *light_render_data = cstrl_renderer_create_render_data();
     float vertices[] = {-0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f,
                         0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
 
@@ -227,10 +223,10 @@ int learnopengl()
 
     g_main_camera = cstrl_camera_create(800, 600);
     g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
-    Shader color_shader = cstrl_opengl_load_shaders_from_files("../resources/shaders/learnopengl/colors.vert",
-                                                               "../resources/shaders/learnopengl/colors.frag");
-    Shader light_shader = cstrl_opengl_load_shaders_from_files("../resources/shaders/learnopengl/light_cube.vert",
-                                                               "../resources/shaders/learnopengl/light_cube.frag");
+    cstrl_shader color_shader = cstrl_load_shaders_from_files("../resources/shaders/learnopengl/colors.vert",
+                                                              "../resources/shaders/learnopengl/colors.frag");
+    cstrl_shader light_shader = cstrl_load_shaders_from_files("../resources/shaders/learnopengl/light_cube.vert",
+                                                              "../resources/shaders/learnopengl/light_cube.frag");
     // Texture texture = generate_opengl_texture("../resources/textures/wall.jpg");
 
     double previous_time = cstrl_platform_get_absolute_time();
@@ -253,24 +249,24 @@ int learnopengl()
         cstrl_renderer_clear(0.1f, 0.1f, 0.1f, 1.0f);
 
         vec3 light_position = {sin(cstrl_platform_get_absolute_time()), cos(cstrl_platform_get_absolute_time()), 0.0f};
-        cstrl_opengl_set_uniform_mat4(color_shader.program, "model", cstrl_mat4_identity());
-        cstrl_opengl_set_uniform_mat4(color_shader.program, "view", g_main_camera->view);
-        cstrl_opengl_set_uniform_mat4(color_shader.program, "projection", g_main_camera->projection);
-        cstrl_opengl_set_uniform_3f(color_shader.program, "object_color", 1.0f, 0.5f, 0.31f);
-        cstrl_opengl_set_uniform_3f(color_shader.program, "light_color", 1.0f, 1.0f, 1.0f);
-        cstrl_opengl_set_uniform_3f(color_shader.program, "light_position", light_position.x, light_position.y,
-                                    light_position.z);
-        cstrl_opengl_set_uniform_3f(color_shader.program, "view_position", g_main_camera->transform.position.x,
-                                    g_main_camera->transform.position.y, g_main_camera->transform.position.z);
+        cstrl_set_uniform_mat4(color_shader.program, "model", cstrl_mat4_identity());
+        cstrl_set_uniform_mat4(color_shader.program, "view", g_main_camera->view);
+        cstrl_set_uniform_mat4(color_shader.program, "projection", g_main_camera->projection);
+        cstrl_set_uniform_3f(color_shader.program, "object_color", 1.0f, 0.5f, 0.31f);
+        cstrl_set_uniform_3f(color_shader.program, "light_color", 1.0f, 1.0f, 1.0f);
+        cstrl_set_uniform_3f(color_shader.program, "light_position", light_position.x, light_position.y,
+                             light_position.z);
+        cstrl_set_uniform_3f(color_shader.program, "view_position", g_main_camera->transform.position.x,
+                             g_main_camera->transform.position.y, g_main_camera->transform.position.z);
         cstrl_renderer_draw(color_render_data);
         mat4 model = cstrl_mat4_identity();
         model = cstrl_mat4_translate(model, light_position);
         model = cstrl_mat4_scale(model, (vec3){0.2f, 0.2f, 0.2f});
-        cstrl_opengl_set_uniform_mat4(light_shader.program, "model", model);
-        cstrl_opengl_set_uniform_mat4(light_shader.program, "view", g_main_camera->view);
-        cstrl_opengl_set_uniform_mat4(light_shader.program, "projection", g_main_camera->projection);
+        cstrl_set_uniform_mat4(light_shader.program, "model", model);
+        cstrl_set_uniform_mat4(light_shader.program, "view", g_main_camera->view);
+        cstrl_set_uniform_mat4(light_shader.program, "projection", g_main_camera->projection);
         cstrl_renderer_draw(light_render_data);
         cstrl_renderer_swap_buffers(&state);
     }
-    return cstrl_test_success;
+    return 0;
 }

@@ -223,7 +223,7 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     return true;
 }
 
-void cstrl_platform_destroy(cstrl_platform_state *platform_state)
+void cstrl_platform_shutdown(cstrl_platform_state *platform_state)
 {
     internal_state *state = platform_state->internal_state;
 

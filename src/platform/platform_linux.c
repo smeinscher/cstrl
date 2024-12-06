@@ -12,8 +12,8 @@
 #include "log.c/log.h"
 
 #include <X11/XKBlib.h>
-#include <X11/Xlib-xcb.h>
 #include <X11/Xutil.h>
+#include <X11/extensions/Xfixes.h>
 #include <X11/keysym.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -116,7 +116,7 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     return true;
 }
 
-void cstrl_platform_destroy(cstrl_platform_state *platform_state)
+void cstrl_platform_shutdown(cstrl_platform_state *platform_state)
 {
     internal_state *state = platform_state->internal_state;
     XDestroyWindow(state->display, state->main_window);
@@ -200,6 +200,15 @@ bool cstrl_platform_should_exit(cstrl_platform_state *platform_state)
 void cstrl_platform_set_should_exit(bool should_exit)
 {
     g_should_exit = should_exit;
+}
+
+void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_state, bool show_cursor)
+{
+    internal_state *state = platform_state->internal_state;
+    state->state_common.input.cursor_shown = show_cursor;
+
+    show_cursor ? XFixesShowCursor(state->display, state->main_window)
+                : XFixesHideCursor(state->display, state->main_window);
 }
 
 #endif

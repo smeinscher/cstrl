@@ -2,7 +2,9 @@
 // Created by sterling on 6/9/24.
 //
 
-#include "opengl_texture.h"
+#include "cstrl/cstrl_renderer.h"
+
+#ifdef CSTRL_RENDERER_OPENGL
 
 #include "cstrl/cstrl_util.h"
 #include "glad/glad.h"
@@ -25,9 +27,9 @@ int upload_opengl_texture(const char *path)
     return 0;
 }
 
-Texture generate_opengl_texture(const char *path)
+cstrl_texture cstrl_generate_texture(const char *path)
 {
-    Texture texture = {0};
+    cstrl_texture texture = {0};
     unsigned int texture_id;
     glGenTextures(1, &texture_id);
     glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -50,7 +52,7 @@ Texture generate_opengl_texture(const char *path)
     return texture;
 }
 
-void opengl_texture_hot_reload(Texture *texture)
+void cstrl_texture_hot_reload(cstrl_texture *texture)
 {
     time_t current_timestamp = cstrl_get_file_timestamp(texture->path);
 
@@ -62,3 +64,5 @@ void opengl_texture_hot_reload(Texture *texture)
         upload_opengl_texture(texture->path);
     }
 }
+
+#endif

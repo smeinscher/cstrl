@@ -3,7 +3,8 @@
 //
 
 #include "cstrl/cstrl_math.h"
-#include "log.c/log.h"
+
+#include <stdio.h>
 
 static float Vm;        // Magnitude of the muzzle velocity, m/s
 static float Alpha;     // Angle of y-axis (upward) to the cannon
@@ -118,13 +119,13 @@ void cannon_example()
         switch (status)
         {
         case 1:
-            log_info("Target Hit!");
+            printf("Target Hit!\n");
             break;
         case 2:
-            log_info("Target Missed");
+            printf("Target Missed\n");
             break;
         case 3:
-            log_info("Timed out");
+            printf("Timed out\n");
             break;
         default:
             break;
