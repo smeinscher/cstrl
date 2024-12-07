@@ -3,7 +3,26 @@
 //
 
 #include "cstrl/cstrl_platform.h"
+#include "log.c/log.h"
 #include "platform_internal.h"
+
+void cstrl_platform_get_cursor_position(cstrl_platform_state *platform_state, int *x, int *y)
+{
+    internal_state *state = platform_state->internal_state;
+    *x = state->state_common.input.last_mouse_x;
+    *y = state->state_common.input.last_mouse_y;
+}
+
+bool cstrl_platform_is_mouse_button_down(cstrl_platform_state *platform_state, cstrl_mouse_button button)
+{
+    internal_state *state = platform_state->internal_state;
+    if (button >= CSTRL_MOUSE_BUTTON_MAX)
+    {
+        log_warn("Button %d is out of range", button);
+        return false;
+    }
+    return state->state_common.input.mouse_buttons[button] == CSTRL_ACTION_PRESS;
+}
 
 cstrl_mouse_mode cstrl_platform_get_mouse_mode(cstrl_platform_state *platform_state)
 {

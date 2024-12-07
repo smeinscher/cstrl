@@ -522,6 +522,7 @@ CSTRL_INLINE mat4 cstrl_mat4_scale(mat4 m, vec3 v)
 
     return m;
 }
+
 /*
  *
  *      quat math functions

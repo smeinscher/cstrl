@@ -20,15 +20,7 @@ static LARGE_INTEGER start_time;
 
 static bool g_should_exit = false;
 
-short win32_mouse_button_to_cstrl_mouse_button[6];
 short win32_key_to_cstrl_key[512];
-
-void win32_mouse_button_to_cstrl_mouse_button_init()
-{
-    win32_mouse_button_to_cstrl_mouse_button[VK_LBUTTON] = CSTRL_MOUSE_BUTTON_LEFT;
-    win32_mouse_button_to_cstrl_mouse_button[VK_RBUTTON] = CSTRL_MOUSE_BUTTON_RIGHT;
-    win32_mouse_button_to_cstrl_mouse_button[VK_MBUTTON] = CSTRL_MOUSE_BUTTON_MIDDLE;
-}
 
 void win32_key_to_cstrl_key_init()
 {
@@ -87,7 +79,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
             return 0;
         }
         internal_state *internal_state = state->internal_state;
-        const int action = (HIWORD(lparam) & KF_UP) ? CSTRL_RELEASE_KEY : CSTRL_PRESS_KEY;
+        const int action = (HIWORD(lparam) & KF_UP) ? CSTRL_ACTION_RELEASE : CSTRL_ACTION_PRESS;
 
         int scancode = HIWORD(lparam) & (KF_EXTENDED | 0xff);
 
@@ -96,6 +88,53 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
             internal_state->state_common.callbacks.key(state, win32_key_to_cstrl_key[wparam], scancode, action, 0);
         }
         return 0;
+    }
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_XBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_XBUTTONUP: {
+        cstrl_mouse_button button;
+        if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP)
+        {
+            button = CSTRL_MOUSE_BUTTON_LEFT;
+        }
+        else if (msg == WM_RBUTTONDOWN || msg == WM_RBUTTONUP)
+        {
+            button = CSTRL_MOUSE_BUTTON_RIGHT;
+        }
+        else if (msg == WM_MBUTTONDOWN || msg == WM_MBUTTONUP)
+        {
+            button = CSTRL_MOUSE_BUTTON_MIDDLE;
+        }
+        else
+        {
+            button = CSTRL_MOUSE_BUTTON_UNKNOWN;
+        }
+
+        cstrl_action action;
+        if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN)
+        {
+            action = CSTRL_ACTION_PRESS;
+        }
+        else
+        {
+            action = CSTRL_ACTION_RELEASE;
+        }
+
+        cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
+        if (state == NULL)
+        {
+            log_trace("State is NULL, skipping mouse button input");
+            return 0;
+        }
+        internal_state *internal_state = state->internal_state;
+
+        internal_state->state_common.input.mouse_buttons[button] = action;
+        break;
     }
     case WM_MOUSEMOVE: {
         cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
@@ -208,7 +247,6 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     state->state_common.callbacks.key = NULL;
     state->state_common.callbacks.mouse_position = NULL;
 
-    win32_mouse_button_to_cstrl_mouse_button_init();
     win32_key_to_cstrl_key_init();
 
     state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;

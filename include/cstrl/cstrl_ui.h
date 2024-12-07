@@ -24,4 +24,6 @@ void cstrl_ui_end(cstrl_ui_context *context);
 
 void cstrl_ui_shutdown(cstrl_ui_context *context);
 
+bool cstrl_ui_button(cstrl_ui_context *context, int x, int y, int w, int h);
+
 #endif // CSTRL_UI_H

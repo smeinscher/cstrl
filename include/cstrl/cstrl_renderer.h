@@ -10,7 +10,7 @@
 
 #include <time.h>
 
-typedef struct camera
+typedef struct cstrl_camera
 {
     float fov;
     vec2i viewport;
@@ -18,7 +18,16 @@ typedef struct camera
     mat4 view;
     mat4 projection;
     transform transform;
-} camera;
+} cstrl_camera;
+
+typedef enum cstrl_render_attribute_type
+{
+    CSTRL_RENDER_ATTRIBUTE_POSITIONS,
+    CSTRL_RENDER_ATTRIBUTE_UVS,
+    CSTRL_RENDER_ATTRIBUTE_COLORS,
+    CSTRL_RENDER_ATTRIBUTE_NORMALS,
+    CSTRL_RENDER_ATTRIBUTE_MAX
+} cstrl_render_attribute_type;
 
 #define CSTRL_RENDERER_OPENGL
 #ifdef CSTRL_RENDERER_OPENGL
@@ -47,6 +56,12 @@ typedef struct cstrl_render_data
     void *internal_data;
 } cstrl_render_data;
 
+/*
+ *
+ *  Render Functions
+ *
+ */
+
 void cstrl_renderer_init(cstrl_platform_state *platform_state);
 
 void cstrl_renderer_clear(float r, float g, float b, float a);
@@ -63,6 +78,9 @@ void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs);
 void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors);
 
 void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals);
+
+void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions, const float *uvs,
+                                             const float *colors, size_t count, size_t start_index);
 
 void cstrl_renderer_draw(cstrl_render_data *data);
 
@@ -108,13 +126,13 @@ void cstrl_texture_hot_reload(cstrl_texture *texture);
  *
  */
 
-camera *cstrl_camera_create(int viewport_width, int viewport_height);
+cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height);
 
-void cstrl_camera_free(camera *camera);
+void cstrl_camera_free(cstrl_camera *camera);
 
-void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right,
+void cstrl_camera_update(cstrl_camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right,
                          bool turning_up, bool turning_down, bool turning_left, bool turning_right);
 
-void cstrl_camera_rotate(camera *camera, float change_y_axis, float change_x_axis);
+void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis);
 
 #endif // CSTRL_RENDERER_H

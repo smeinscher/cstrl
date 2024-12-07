@@ -8,6 +8,8 @@
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_ui.h"
 
+#include <stdio.h>
+
 int basic_ui()
 {
     cstrl_platform_state platform_state;
@@ -24,6 +26,10 @@ int basic_ui()
         cstrl_platform_pump_messages(&platform_state);
         cstrl_renderer_clear(0.1f, 0.1f, 0.1f, 1.0f);
         cstrl_ui_begin(context);
+        if (cstrl_ui_button(context, 10, 10, 100, 50))
+        {
+            cstrl_ui_button(context, 200, 10, 100, 50);
+        }
         cstrl_ui_end(context);
         cstrl_renderer_swap_buffers(&platform_state);
     }

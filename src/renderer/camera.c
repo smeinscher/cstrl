@@ -8,9 +8,9 @@
 
 #include <stdlib.h>
 
-camera *cstrl_camera_create(int viewport_width, int viewport_height)
+cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height)
 {
-    camera *new_camera = malloc(sizeof(camera));
+    cstrl_camera *new_camera = malloc(sizeof(cstrl_camera));
 
     new_camera->fov = 45.0f * cstrl_pi_180;
     new_camera->viewport.x = viewport_width;
@@ -25,12 +25,12 @@ camera *cstrl_camera_create(int viewport_width, int viewport_height)
     return new_camera;
 }
 
-void cstrl_camera_free(camera *camera)
+void cstrl_camera_free(cstrl_camera *camera)
 {
     free(camera);
 }
 
-void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right,
+void cstrl_camera_update(cstrl_camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right,
                          bool turning_up, bool turning_down, bool turning_left, bool turning_right)
 {
     vec3 forward = cstrl_vec3_rotate_by_quat((vec3){0.0f, 0.0f, -1.0f}, camera->transform.rotation);
@@ -94,7 +94,7 @@ void cstrl_camera_update(camera *camera, bool moving_up, bool moving_down, bool 
     // g_projection = cstrl_ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
 }
 
-void cstrl_camera_rotate(camera *camera, float change_y_axis, float change_x_axis)
+void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis)
 {
     if (change_y_axis == 0.0f && change_x_axis == 0.0f)
     {

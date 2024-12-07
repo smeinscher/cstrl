@@ -37,16 +37,17 @@ typedef struct da_string
     size_t capacity;
 } da_string;
 
-typedef enum cstrl_mouse_buttons
+typedef enum cstrl_mouse_button
 {
     CSTRL_MOUSE_BUTTON_LEFT,
     CSTRL_MOUSE_BUTTON_RIGHT,
     CSTRL_MOUSE_BUTTON_MIDDLE,
+    CSTRL_MOUSE_BUTTON_UNKNOWN,
     CSTRL_MOUSE_BUTTON_MAX
-} cstrl_mouse_buttons;
+} cstrl_mouse_button;
 
 #define DEFINE_KEY(name, code) CSTRL_KEY_##name = code
-typedef enum cstrl_keys
+typedef enum cstrl_key
 {
     DEFINE_KEY(LEFT_CONTROL, 17),
     DEFINE_KEY(RIGHT_CONTROL, 18),
@@ -85,9 +86,9 @@ typedef enum cstrl_keys
     DEFINE_KEY(Z, 90),
 
     DEFINE_KEY(MAX, 192)
-} cstrl_keys;
+} cstrl_key;
 
-typedef enum cstrl_key_modifiers
+typedef enum cstrl_key_modifier
 {
     CSTRL_KEY_MOD_SHIFT = 0x0001,
     CSTRL_KEY_MOD_CONTROL = 0x0002,
@@ -95,16 +96,16 @@ typedef enum cstrl_key_modifiers
     CSTRL_KEY_MOD_SUPER = 0x0008,
     CSTRL_KEY_MOD_CAPS_LOCK = 0x0010,
     CSTRL_KEY_MOD_NUM_LOCK = 0x0020
-} cstrl_key_modifiers;
+} cstrl_key_modifier;
 
-typedef enum cstrl_key_states
+typedef enum cstrl_action
 {
-    CSTRL_PRESS_KEY,
-    CSTRL_RELEASE_KEY,
-    CSTRL_REPEAT_KEY
-} cstrl_key_states;
+    CSTRL_ACTION_PRESS,
+    CSTRL_ACTION_RELEASE,
+    CSTRL_ACTION_REPEAT
+} cstrl_action;
 
-typedef enum cstrl_mouse_modes
+typedef enum cstrl_mouse_mode
 {
     CSTRL_MOUSE_NORMAL,
     CSTRL_MOUSE_DISABLED

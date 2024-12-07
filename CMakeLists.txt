@@ -7,6 +7,11 @@ set(CMAKE_C_STANDARD 11)
 
 find_package(OpenGL REQUIRED)
 
+find_package(XFixes QUIET)
+if (XFixes_FOUND)
+    target_link_libraries(cstrl PRIVATE XFixes)
+endif ()
+
 add_library(log.c SHARED
         extern/log.c/log.c
         extern/log.c/log.h)
@@ -81,7 +86,7 @@ add_executable(cstrl-sandbox
         sandbox/ui/basic_ui.h
 )
 
-target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m Xfixes)
+target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)
 target_link_libraries(cstrl-test PRIVATE log.c cstrl m)
 target_link_libraries(cstrl-sandbox PRIVATE cstrl m)
 

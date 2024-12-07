@@ -7,7 +7,7 @@
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 
-static camera *g_main_camera;
+static cstrl_camera *g_main_camera;
 static bool g_camera_moving_up = false;
 static bool g_camera_moving_down = false;
 static bool g_camera_moving_left = false;
@@ -22,104 +22,104 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     switch (key)
     {
     case CSTRL_KEY_ESCAPE:
-        if (action == CSTRL_RELEASE_KEY)
+        if (action == CSTRL_ACTION_RELEASE)
         {
             cstrl_platform_set_should_exit(true);
         }
         break;
     case CSTRL_KEY_W:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_camera_moving_up = true;
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
             g_camera_moving_up = false;
         }
         break;
     case CSTRL_KEY_S:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_camera_moving_down = true;
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
             g_camera_moving_down = false;
         }
         break;
     case CSTRL_KEY_A:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_camera_moving_left = true;
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
             g_camera_moving_left = false;
         }
         break;
     case CSTRL_KEY_D:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_camera_moving_right = true;
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
             g_camera_moving_right = false;
         }
         break;
     case CSTRL_KEY_Z:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_camera_turning_up = true;
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
             g_camera_turning_up = false;
         }
         break;
     case CSTRL_KEY_X:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_camera_turning_down = true;
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
             g_camera_turning_down = false;
         }
         break;
     case CSTRL_KEY_Q:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_camera_turning_left = true;
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
             g_camera_turning_left = false;
         }
         break;
     case CSTRL_KEY_E:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_camera_turning_right = true;
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
             g_camera_turning_right = false;
         }
         break;
     case CSTRL_KEY_R:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             g_main_camera->forward = (vec3){0.0f, 0.0f, -1.0f};
             g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
             g_main_camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
         }
-        else if (action == CSTRL_RELEASE_KEY)
+        else if (action == CSTRL_ACTION_RELEASE)
         {
         }
         break;
     case CSTRL_KEY_M:
-        if (action == CSTRL_PRESS_KEY)
+        if (action == CSTRL_ACTION_PRESS)
         {
             cstrl_mouse_mode mode = cstrl_platform_get_mouse_mode(state);
             if (mode == CSTRL_MOUSE_DISABLED)

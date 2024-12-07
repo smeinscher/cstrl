@@ -4,8 +4,25 @@
 
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_ui.h"
+#include "cstrl/cstrl_util.h"
 
 #include <stdlib.h>
+
+static struct internal_ui_state
+{
+    int mouse_x;
+    int mouse_y;
+    bool left_mouse_button_down;
+
+    int total_items;
+
+    int hot_item;
+    int active_item;
+
+    da_float positions;
+    da_float uvs;
+    da_float colors;
+} internal_ui_state;
 
 const char *vertex_shader_source = R"(
     #version 460 core
@@ -65,20 +82,102 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 
     cstrl_set_uniform_mat4(context->shader.program, "projection",
                            cstrl_mat4_ortho(0.0f, 800.0f, 600.0f, 0.0f, 0.1f, 100.0f));
+    internal_ui_state.total_items = 0;
+    cstrl_da_float_init(&internal_ui_state.positions, 12);
+    cstrl_da_float_init(&internal_ui_state.uvs, 12);
+    cstrl_da_float_init(&internal_ui_state.colors, 24);
     return context;
 }
 
 void cstrl_ui_begin(cstrl_ui_context *context)
 {
+    internal_ui_state.hot_item = -1;
+    internal_ui_state.active_item = -1;
+    internal_ui_state.total_items = 0;
+    cstrl_platform_get_cursor_position(context->platform_state, &internal_ui_state.mouse_x, &internal_ui_state.mouse_y);
+    internal_ui_state.left_mouse_button_down =
+        cstrl_platform_is_mouse_button_down(context->platform_state, CSTRL_MOUSE_BUTTON_LEFT);
+    cstrl_da_float_clear(&internal_ui_state.positions);
+    cstrl_da_float_clear(&internal_ui_state.uvs);
+    cstrl_da_float_clear(&internal_ui_state.colors);
 }
 
 void cstrl_ui_end(cstrl_ui_context *context)
 {
+    cstrl_renderer_modify_render_attributes(context->render_data, internal_ui_state.positions.array,
+                                            internal_ui_state.uvs.array, internal_ui_state.colors.array,
+                                            internal_ui_state.positions.size / 2, 0);
     cstrl_use_shader(context->shader);
     cstrl_renderer_draw(context->render_data);
 }
 
 void cstrl_ui_shutdown(cstrl_ui_context *context)
 {
+    cstrl_renderer_free_render_data(context->render_data);
+    cstrl_da_float_free(&internal_ui_state.positions);
+    cstrl_da_float_free(&internal_ui_state.uvs);
+    cstrl_da_float_free(&internal_ui_state.colors);
     free(context);
+}
+
+bool cstrl_ui_region_hit(int x, int y, int w, int h)
+{
+    if (internal_ui_state.mouse_x < x || internal_ui_state.mouse_y < y || internal_ui_state.mouse_x > x + w ||
+        internal_ui_state.mouse_y > y + h)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool cstrl_ui_button(cstrl_ui_context *context, int x, int y, int w, int h)
+{
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y + (float)h);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y + (float)h);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y + (float)h);
+    for (int i = 0; i < 12; i++)
+    {
+        cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
+    }
+    if (cstrl_ui_region_hit(x, y, w, h))
+    {
+        internal_ui_state.hot_item = internal_ui_state.total_items++;
+        if (internal_ui_state.left_mouse_button_down && internal_ui_state.active_item == -1)
+        {
+            internal_ui_state.active_item = internal_ui_state.hot_item;
+            for (int i = 0; i < 6; i++)
+            {
+                cstrl_da_float_push_back(&internal_ui_state.colors, 1.0f);
+                cstrl_da_float_push_back(&internal_ui_state.colors, 0.4f);
+                cstrl_da_float_push_back(&internal_ui_state.colors, 0.4f);
+                cstrl_da_float_push_back(&internal_ui_state.colors, 1.0f);
+            }
+            return true;
+        }
+        for (int i = 0; i < 6; i++)
+        {
+            cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
+            cstrl_da_float_push_back(&internal_ui_state.colors, 0.3f);
+            cstrl_da_float_push_back(&internal_ui_state.colors, 0.3f);
+            cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
+        }
+        return false;
+    }
+    for (int i = 0; i < 6; i++)
+    {
+        cstrl_da_float_push_back(&internal_ui_state.colors, 0.7f);
+        cstrl_da_float_push_back(&internal_ui_state.colors, 0.2f);
+        cstrl_da_float_push_back(&internal_ui_state.colors, 0.2f);
+        cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
+    }
+    return false;
 }
