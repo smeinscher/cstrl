@@ -100,6 +100,7 @@ typedef enum cstrl_key_modifier
 
 typedef enum cstrl_action
 {
+    CSTRL_ACTION_NONE,
     CSTRL_ACTION_PRESS,
     CSTRL_ACTION_RELEASE,
     CSTRL_ACTION_REPEAT

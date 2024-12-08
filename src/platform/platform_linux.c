@@ -146,13 +146,38 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
         case KeyPress:
         case KeyRelease: {
             XKeyPressedEvent *event = (XKeyPressedEvent *)&general_event;
-            const int action = event->type == KeyPress ? CSTRL_PRESS_KEY : CSTRL_RELEASE_KEY;
+            const int action = event->type == KeyPress ? CSTRL_ACTION_PRESS : CSTRL_ACTION_RELEASE;
 
             if (state->state_common.callbacks.key != NULL)
             {
                 state->state_common.callbacks.key(platform_state, x11_key_to_cstrl_key[event->keycode], event->keycode,
                                                   action, 0);
             }
+            break;
+        }
+        case ButtonPress:
+        case ButtonRelease: {
+            XButtonPressedEvent *event = (XButtonPressedEvent *)&general_event;
+            cstrl_mouse_button button;
+            if (event->button == Button1)
+            {
+                button = CSTRL_MOUSE_BUTTON_LEFT;
+            }
+            else if (event->button == Button2)
+            {
+                button = CSTRL_MOUSE_BUTTON_MIDDLE;
+            }
+            else if (event->button == Button3)
+            {
+                button = CSTRL_MOUSE_BUTTON_RIGHT;
+            }
+            else
+            {
+                button = CSTRL_MOUSE_BUTTON_UNKNOWN;
+            }
+            cstrl_action action = event->type == ButtonPress ? CSTRL_ACTION_PRESS : CSTRL_ACTION_RELEASE;
+
+            state->state_common.input.mouse_buttons[button] = action;
             break;
         }
         case MotionNotify: {
