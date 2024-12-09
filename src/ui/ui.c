@@ -23,6 +23,7 @@ static struct internal_ui_state
     int left_mouse_button_pressed_y;
 
     int total_items;
+    int total_font_items;
 
     int hot_item;
     int active_item;
@@ -107,7 +108,7 @@ const char *font_fragment_shader_source = R"(
     }
 )";
 
-static const int FONT_SIZE = 64;
+static const int FONT_SIZE = 32;
 
 cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 {
@@ -140,6 +141,7 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     cstrl_set_uniform_mat4(context->shader.program, "projection", projection);
     cstrl_set_uniform_mat4(context->font_shader.program, "projection", projection);
     internal_ui_state.total_items = 0;
+    internal_ui_state.total_font_items = 0;
     cstrl_da_float_init(&internal_ui_state.positions, 12);
     cstrl_da_float_init(&internal_ui_state.uvs, 12);
     cstrl_da_float_init(&internal_ui_state.colors, 24);
@@ -170,7 +172,7 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 
     context->font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512);
 
-    context->texture = cstrl_texture_generate_from_path("../resources/textures/wall.jpg");
+    context->texture = cstrl_texture_generate_from_path("../resources/textures/background.jpg");
 
     return context;
 }
@@ -204,27 +206,32 @@ void cstrl_ui_begin(cstrl_ui_context *context)
 
 void cstrl_ui_end(cstrl_ui_context *context)
 {
-    if (internal_ui_state.total_items < 1)
+    bool depth_test_enabled = glIsEnabled(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
+    if (internal_ui_state.total_items > 0)
     {
-        return;
+
+        cstrl_renderer_modify_render_attributes(context->render_data, internal_ui_state.positions.array,
+                                                internal_ui_state.uvs.array, internal_ui_state.colors.array,
+                                                internal_ui_state.positions.size / 2);
+        cstrl_texture_bind(context->texture);
+        cstrl_use_shader(context->shader);
+        cstrl_renderer_draw(context->render_data);
     }
 
-    cstrl_renderer_modify_render_attributes(context->render_data, internal_ui_state.positions.array,
-                                            internal_ui_state.uvs.array, internal_ui_state.colors.array,
-                                            internal_ui_state.positions.size / 2);
-
-    cstrl_renderer_modify_render_attributes(context->font_render_data, internal_ui_state.font_positions.array,
-                                            internal_ui_state.font_uvs.array, internal_ui_state.font_colors.array,
-                                            internal_ui_state.font_positions.size / 2);
-
-    glDisable(GL_DEPTH_TEST);
-    cstrl_texture_bind(context->texture);
-    cstrl_use_shader(context->shader);
-    cstrl_renderer_draw(context->render_data);
-    cstrl_texture_bind(context->font_texture);
-    cstrl_use_shader(context->font_shader);
-    cstrl_renderer_draw(context->font_render_data);
-    glEnable(GL_DEPTH_TEST);
+    if (internal_ui_state.total_font_items > 0)
+    {
+        cstrl_renderer_modify_render_attributes(context->font_render_data, internal_ui_state.font_positions.array,
+                                                internal_ui_state.font_uvs.array, internal_ui_state.font_colors.array,
+                                                internal_ui_state.font_positions.size / 2);
+        cstrl_texture_bind(context->font_texture);
+        cstrl_use_shader(context->font_shader);
+        cstrl_renderer_draw(context->font_render_data);
+    }
+    if (depth_test_enabled)
+    {
+        glEnable(GL_DEPTH_TEST);
+    }
 }
 
 void cstrl_ui_shutdown(cstrl_ui_context *context)
@@ -249,18 +256,39 @@ bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int
     return true;
 }
 
-bool cstrl_ui_button(cstrl_ui_context *context, int x, int y, int w, int h)
+float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale)
+{
+    int width = 0;
+
+    for (int i = 0; text[i] != '\0'; i++)
+    {
+        stbtt_packedchar c = internal_ui_state.char_data[text[i]];
+        width += c.xadvance;
+    }
+    return (float)width * scale;
+}
+
+bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h)
 {
     internal_ui_state.total_items++;
 
-    float scale = ((float)h / 2.5f) / (float)FONT_SIZE;
+    float scale = ((float)h / 2.0f) / (float)FONT_SIZE;
     float resolution[2] = {800, 600};
-    float position[2] = {(float)x, (float)y + (float)h / 2.0f};
+    float position[2] = {(float)x, (float)y + h / 1.5f};
+    position[0] = (float)x + (float)w / 2.0f - cstrl_ui_text_width(context, title, scale) / 2.0f;
 
-    const char *text = "Hello World!";
-    for (int i = 0; i < 12; i++)
+    if (title[0] != '\0')
     {
-        stbtt_packedchar c = internal_ui_state.char_data[text[i]];
+        internal_ui_state.total_font_items++;
+    }
+    for (int i = 0; i < title_length; i++)
+    {
+        if (title[i] == '\0')
+        {
+            log_warn("title length does not match length given");
+            break;
+        }
+        stbtt_packedchar c = internal_ui_state.char_data[title[i]];
 
         // log_debug("%c: %f, %f, %f, %f, %f", text[i], c.xoff, c.yoff, c.xadvance, c.xoff2, c.yoff2);
 
@@ -271,7 +299,8 @@ bool cstrl_ui_button(cstrl_ui_context *context, int x, int y, int w, int h)
 
         float size[2] = {(c.xoff2 - c.xoff) * scale, (c.yoff2 - c.yoff) * scale};
 
-        float render_position[2] = {position[0] + c.xoff * scale, position[1] - (c.yoff2 - c.yoff) * scale};
+        float render_position[2] = {position[0] + c.xoff * scale,
+                                    position[1] - (c.yoff2 - c.yoff) * scale + c.yoff2 * scale};
 
         cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[0]);
         cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[1] + size[1]);
@@ -362,4 +391,46 @@ bool cstrl_ui_button(cstrl_ui_context *context, int x, int y, int w, int h)
         cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
     }
     return false;
+}
+
+bool cstrl_ui_menu_bar(cstrl_ui_context *context)
+{
+    internal_ui_state.total_items++;
+    int width, height;
+    cstrl_platform_get_window_size(context->platform_state, &width, &height);
+    height = 20;
+    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.positions, height);
+    cstrl_da_float_push_back(&internal_ui_state.positions, width);
+    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.positions, height);
+    cstrl_da_float_push_back(&internal_ui_state.positions, width);
+    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.positions, width);
+    cstrl_da_float_push_back(&internal_ui_state.positions, height);
+
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
+    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
+
+    for (int i = 0; i < 6; i++)
+    {
+        cstrl_da_float_push_back(&internal_ui_state.colors, 0.3125f);
+        cstrl_da_float_push_back(&internal_ui_state.colors, 0.2f);
+        cstrl_da_float_push_back(&internal_ui_state.colors, 0.2f);
+        cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
+    }
+    return true;
 }

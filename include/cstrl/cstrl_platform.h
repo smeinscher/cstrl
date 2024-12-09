@@ -34,6 +34,8 @@ bool cstrl_platform_should_exit();
 
 void cstrl_platform_set_should_exit(bool should_exit);
 
+void cstrl_platform_get_window_size(cstrl_platform_state *platform_state, int *width, int *height);
+
 void cstrl_platform_get_cursor_position(cstrl_platform_state *platform_state, int *x, int *y);
 
 bool cstrl_platform_is_mouse_button_down(cstrl_platform_state *platform_state, cstrl_mouse_button button);

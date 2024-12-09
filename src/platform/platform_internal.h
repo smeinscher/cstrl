@@ -28,6 +28,8 @@ typedef struct input_state
 // Platform-agnostic struct, common for all platforms
 typedef struct internal_state_common
 {
+    int window_width;
+    int window_height;
     user_callbacks callbacks;
     input_state input;
 } internal_state_common;

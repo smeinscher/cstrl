@@ -6,6 +6,13 @@
 #include "log.c/log.h"
 #include "platform_internal.h"
 
+void cstrl_platform_get_window_size(cstrl_platform_state *platform_state, int *width, int *height)
+{
+    internal_state *state = platform_state->internal_state;
+    *width = state->state_common.window_width;
+    *height = state->state_common.window_height;
+}
+
 void cstrl_platform_get_cursor_position(cstrl_platform_state *platform_state, int *x, int *y)
 {
     internal_state *state = platform_state->internal_state;

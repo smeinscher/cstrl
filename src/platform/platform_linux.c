@@ -25,12 +25,9 @@
 
 static bool g_should_exit = false;
 
-short x11_mouse_button_to_cstrl_mouse_button[6];
-short x11_key_to_cstrl_key[192];
+static short x11_key_to_cstrl_key[192];
 
-void x11_mouse_button_to_cstrl_init()
-{
-}
+static Atom wm_delete_message;
 
 void x11_key_to_cstrl_key_init(internal_state *state)
 {
@@ -96,6 +93,9 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
                                        CopyFromParent, attribute_value_mask, &attributes);
     XFlush(state->display);
 
+    wm_delete_message = XInternAtom(state->display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(state->display, state->main_window, &wm_delete_message, 1);
+
     XSizeHints *size_hints = XAllocSizeHints();
     size_hints->flags = PMinSize | PMaxSize;
     size_hints->min_width = width;
@@ -109,9 +109,11 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
 
     x11_key_to_cstrl_key_init(state);
 
-    XWarpPointer(state->display, state->main_window, state->main_window, 0, 0, 800, 600, 400, 300);
+    XWarpPointer(state->display, state->main_window, state->main_window, 0, 0, width, height, width / 2, height / 2);
 
     state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;
+    state->state_common.window_width = width;
+    state->state_common.window_height = height;
 
     return true;
 }
@@ -189,6 +191,12 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
             state->state_common.input.last_mouse_x = event->x;
             state->state_common.input.last_mouse_y = event->y;
             break;
+        }
+        case ClientMessage: {
+            if (general_event.xclient.data.l[0] == wm_delete_message)
+            {
+                g_should_exit = true;
+            }
         }
         default:
             break;
