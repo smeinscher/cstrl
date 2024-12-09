@@ -80,7 +80,7 @@ void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors);
 void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals);
 
 void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions, const float *uvs,
-                                             const float *colors, size_t count, size_t start_index);
+                                             const float *colors, size_t count);
 
 void cstrl_renderer_draw(cstrl_render_data *data);
 
@@ -116,9 +116,13 @@ void cstrl_shader_hot_reload(cstrl_shader *shader);
  *
  */
 
-cstrl_texture cstrl_generate_texture(const char *path);
+cstrl_texture cstrl_texture_generate_from_path(const char *path);
+
+cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height);
 
 void cstrl_texture_hot_reload(cstrl_texture *texture);
+
+void cstrl_texture_bind(cstrl_texture texture);
 
 /*
  *

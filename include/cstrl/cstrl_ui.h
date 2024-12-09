@@ -14,6 +14,9 @@ typedef struct cstrl_ui_context
     cstrl_render_data *render_data;
     cstrl_shader shader;
     cstrl_texture texture;
+    cstrl_render_data *font_render_data;
+    cstrl_shader font_shader;
+    cstrl_texture font_texture;
 } cstrl_ui_context;
 
 cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state);

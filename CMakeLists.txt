@@ -42,6 +42,10 @@ add_library(cstrl SHARED
         src/util/general_helpers.c
         include/cstrl/cstrl_ui.h
         src/ui/ui.c
+        extern/stb/stb_truetype.c
+        extern/stb/stb_truetype.h
+        extern/stb/stb_image_write.c
+        extern/stb/stb_image_write.h
 )
 
 add_executable(cstrl-test

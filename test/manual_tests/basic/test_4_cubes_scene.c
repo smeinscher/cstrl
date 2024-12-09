@@ -265,7 +265,7 @@ int test_4_cubes_scene()
     g_main_camera = cstrl_camera_create(800, 600);
     g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
     cstrl_shader shader = cstrl_load_shaders_from_source(basic_3d_vertex_shader, basic_3d_fragment_shader);
-    cstrl_texture texture = cstrl_generate_texture("../resources/textures/wall.jpg");
+    cstrl_texture texture = cstrl_texture_generate_from_path("../resources/textures/wall.jpg");
 
     cstrl_ui_context *ui_context = cstrl_ui_init(&state);
 
@@ -290,6 +290,10 @@ int test_4_cubes_scene()
         cstrl_set_uniform_mat4(shader.program, "projection", g_main_camera->projection);
         cstrl_renderer_draw(render_data);
         cstrl_ui_begin(ui_context);
+        if (cstrl_ui_button(ui_context, 10, 10, 100, 30))
+        {
+            cstrl_ui_button(ui_context, 10, 40, 100, 30);
+        }
         cstrl_ui_end(ui_context);
         cstrl_renderer_swap_buffers(&state);
     }
