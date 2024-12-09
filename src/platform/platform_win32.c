@@ -251,12 +251,16 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
 
     state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;
 
+    // TODO: get screen dimensions
     SetCursorPos(1920 / 2, 1080 / 2);
 
-    state->state_common.input.last_mouse_x = 400;
-    state->state_common.input.last_mouse_y = 300;
+    state->state_common.input.last_mouse_x = width / 2;
+    state->state_common.input.last_mouse_y = height / 2;
 
     state->state_common.input.cursor_shown = true;
+
+    state->state_common.window_width = width;
+    state->state_common.window_height = height;
 
     return true;
 }
