@@ -14,8 +14,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct internal_ui_state
+typedef struct internal_ui_state
 {
+    cstrl_platform_state *platform_state;
+    cstrl_render_data *render_data;
+    cstrl_shader shader;
+    cstrl_texture texture;
+    cstrl_render_data *font_render_data;
+    cstrl_shader font_shader;
+    cstrl_texture font_texture;
+
     int mouse_x;
     int mouse_y;
     bool left_mouse_button_down;
@@ -114,12 +122,16 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 {
     cstrl_ui_context *context = malloc(sizeof(cstrl_ui_context));
 
-    context->platform_state = platform_state;
+    context->internal_ui_state = malloc(sizeof(internal_ui_state));
 
-    context->render_data = cstrl_renderer_create_render_data(platform_state);
-    context->shader = cstrl_load_shaders_from_source(vertex_shader_source, fragment_shader_source);
-    context->font_render_data = cstrl_renderer_create_render_data(platform_state);
-    context->font_shader = cstrl_load_shaders_from_source(font_vertex_shader_source, font_fragment_shader_source);
+    internal_ui_state *ui_state = context->internal_ui_state;
+
+    ui_state->platform_state = platform_state;
+
+    ui_state->render_data = cstrl_renderer_create_render_data(platform_state);
+    ui_state->shader = cstrl_load_shaders_from_source(vertex_shader_source, fragment_shader_source);
+    ui_state->font_render_data = cstrl_renderer_create_render_data(platform_state);
+    ui_state->font_shader = cstrl_load_shaders_from_source(font_vertex_shader_source, font_fragment_shader_source);
     float vertices[] = {10.0f, 320.0f, 210.0f, 10.0f, 10.0f, 10.0f, 10.0f, 320.0f, 210.0f, 10.0f, 210.0f, 320.0f};
     float uvs[] = {0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
     float colors[24];
@@ -130,24 +142,24 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
         colors[i * 4 + 2] = 1.0f;
         colors[i * 4 + 3] = 0.8f;
     }
-    cstrl_renderer_add_positions(context->render_data, vertices, 2, 6);
-    cstrl_renderer_add_uvs(context->render_data, uvs);
-    cstrl_renderer_add_colors(context->render_data, colors);
-    cstrl_renderer_add_positions(context->font_render_data, vertices, 2, 6);
-    cstrl_renderer_add_uvs(context->font_render_data, uvs);
-    cstrl_renderer_add_colors(context->font_render_data, colors);
+    cstrl_renderer_add_positions(ui_state->render_data, vertices, 2, 6);
+    cstrl_renderer_add_uvs(ui_state->render_data, uvs);
+    cstrl_renderer_add_colors(ui_state->render_data, colors);
+    cstrl_renderer_add_positions(ui_state->font_render_data, vertices, 2, 6);
+    cstrl_renderer_add_uvs(ui_state->font_render_data, uvs);
+    cstrl_renderer_add_colors(ui_state->font_render_data, colors);
 
     mat4 projection = cstrl_mat4_ortho(0.0f, 800.0f, 600.0f, 0.0f, 0.1f, 100.0f);
-    cstrl_set_uniform_mat4(context->shader.program, "projection", projection);
-    cstrl_set_uniform_mat4(context->font_shader.program, "projection", projection);
-    internal_ui_state.total_items = 0;
-    internal_ui_state.total_font_items = 0;
-    cstrl_da_float_init(&internal_ui_state.positions, 12);
-    cstrl_da_float_init(&internal_ui_state.uvs, 12);
-    cstrl_da_float_init(&internal_ui_state.colors, 24);
-    cstrl_da_float_init(&internal_ui_state.font_positions, 12);
-    cstrl_da_float_init(&internal_ui_state.font_uvs, 12);
-    cstrl_da_float_init(&internal_ui_state.font_colors, 24);
+    cstrl_set_uniform_mat4(ui_state->shader.program, "projection", projection);
+    cstrl_set_uniform_mat4(ui_state->font_shader.program, "projection", projection);
+    ui_state->total_items = 0;
+    ui_state->total_font_items = 0;
+    cstrl_da_float_init(&ui_state->positions, 12);
+    cstrl_da_float_init(&ui_state->uvs, 12);
+    cstrl_da_float_init(&ui_state->colors, 24);
+    cstrl_da_float_init(&ui_state->font_positions, 12);
+    cstrl_da_float_init(&ui_state->font_uvs, 12);
+    cstrl_da_float_init(&ui_state->font_colors, 24);
 
     // The real mvp https://sinf.org/opengl-text-using-stb_truetype/
     long size;
@@ -163,70 +175,72 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     fclose(font_file);
 
     stbtt_pack_context pack_context;
-    internal_ui_state.char_data = calloc(126, sizeof(stbtt_packedchar));
+    ui_state->char_data = calloc(126, sizeof(stbtt_packedchar));
     unsigned char *pixels = calloc(512 * 512, sizeof(char));
     stbtt_PackBegin(&pack_context, pixels, 512, 512, 512, 1, NULL);
 
-    stbtt_PackFontRange(&pack_context, font_buffer, 0, FONT_SIZE, 0, 125, internal_ui_state.char_data);
+    stbtt_PackFontRange(&pack_context, font_buffer, 0, FONT_SIZE, 0, 125, ui_state->char_data);
     stbtt_PackEnd(&pack_context);
 
-    context->font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512);
+    ui_state->font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512);
 
-    context->texture = cstrl_texture_generate_from_path("../resources/textures/background.jpg");
+    ui_state->texture = cstrl_texture_generate_from_path("../resources/textures/background.jpg");
 
     return context;
 }
 
 void cstrl_ui_begin(cstrl_ui_context *context)
 {
-    internal_ui_state.hot_item = -1;
-    internal_ui_state.active_item = -1;
-    internal_ui_state.total_items = 0;
-    cstrl_platform_get_cursor_position(context->platform_state, &internal_ui_state.mouse_x, &internal_ui_state.mouse_y);
-    bool previous_left_mouse_button_state = internal_ui_state.left_mouse_button_down;
-    internal_ui_state.left_mouse_button_down =
-        cstrl_platform_is_mouse_button_down(context->platform_state, CSTRL_MOUSE_BUTTON_LEFT);
-    if (!internal_ui_state.left_mouse_button_down)
+    internal_ui_state *ui_state = context->internal_ui_state;
+    ui_state->hot_item = -1;
+    ui_state->active_item = -1;
+    ui_state->total_items = 0;
+    cstrl_platform_get_cursor_position(ui_state->platform_state, &ui_state->mouse_x, &ui_state->mouse_y);
+    bool previous_left_mouse_button_state = ui_state->left_mouse_button_down;
+    ui_state->left_mouse_button_down =
+        cstrl_platform_is_mouse_button_down(ui_state->platform_state, CSTRL_MOUSE_BUTTON_LEFT);
+    if (!ui_state->left_mouse_button_down)
     {
-        internal_ui_state.left_mouse_button_pressed_x = -1;
-        internal_ui_state.left_mouse_button_pressed_y = -1;
+        ui_state->left_mouse_button_pressed_x = -1;
+        ui_state->left_mouse_button_pressed_y = -1;
     }
     else if (!previous_left_mouse_button_state)
     {
-        internal_ui_state.left_mouse_button_pressed_x = internal_ui_state.mouse_x;
-        internal_ui_state.left_mouse_button_pressed_y = internal_ui_state.mouse_y;
+        ui_state->left_mouse_button_pressed_x = ui_state->mouse_x;
+        ui_state->left_mouse_button_pressed_y = ui_state->mouse_y;
     }
-    cstrl_da_float_clear(&internal_ui_state.positions);
-    cstrl_da_float_clear(&internal_ui_state.uvs);
-    cstrl_da_float_clear(&internal_ui_state.colors);
-    cstrl_da_float_clear(&internal_ui_state.font_positions);
-    cstrl_da_float_clear(&internal_ui_state.font_uvs);
-    cstrl_da_float_clear(&internal_ui_state.font_colors);
+    cstrl_da_float_clear(&ui_state->positions);
+    cstrl_da_float_clear(&ui_state->uvs);
+    cstrl_da_float_clear(&ui_state->colors);
+    cstrl_da_float_clear(&ui_state->font_positions);
+    cstrl_da_float_clear(&ui_state->font_uvs);
+    cstrl_da_float_clear(&ui_state->font_colors);
 }
 
 void cstrl_ui_end(cstrl_ui_context *context)
 {
+    internal_ui_state *ui_state = context->internal_ui_state;
+
     bool depth_test_enabled = glIsEnabled(GL_DEPTH_TEST);
     glDisable(GL_DEPTH_TEST);
-    if (internal_ui_state.total_items > 0)
+    if (ui_state->total_items > 0)
     {
 
-        cstrl_renderer_modify_render_attributes(context->render_data, internal_ui_state.positions.array,
-                                                internal_ui_state.uvs.array, internal_ui_state.colors.array,
-                                                internal_ui_state.positions.size / 2);
-        cstrl_texture_bind(context->texture);
-        cstrl_use_shader(context->shader);
-        cstrl_renderer_draw(context->render_data);
+        cstrl_renderer_modify_render_attributes(ui_state->render_data, ui_state->positions.array, ui_state->uvs.array,
+                                                ui_state->colors.array, ui_state->positions.size / 2);
+        cstrl_texture_bind(ui_state->texture);
+        cstrl_use_shader(ui_state->shader);
+        cstrl_renderer_draw(ui_state->render_data);
     }
 
-    if (internal_ui_state.total_font_items > 0)
+    if (ui_state->total_font_items > 0)
     {
-        cstrl_renderer_modify_render_attributes(context->font_render_data, internal_ui_state.font_positions.array,
-                                                internal_ui_state.font_uvs.array, internal_ui_state.font_colors.array,
-                                                internal_ui_state.font_positions.size / 2);
-        cstrl_texture_bind(context->font_texture);
-        cstrl_use_shader(context->font_shader);
-        cstrl_renderer_draw(context->font_render_data);
+        cstrl_renderer_modify_render_attributes(ui_state->font_render_data, ui_state->font_positions.array,
+                                                ui_state->font_uvs.array, ui_state->font_colors.array,
+                                                ui_state->font_positions.size / 2);
+        cstrl_texture_bind(ui_state->font_texture);
+        cstrl_use_shader(ui_state->font_shader);
+        cstrl_renderer_draw(ui_state->font_render_data);
     }
     if (depth_test_enabled)
     {
@@ -236,14 +250,16 @@ void cstrl_ui_end(cstrl_ui_context *context)
 
 void cstrl_ui_shutdown(cstrl_ui_context *context)
 {
-    cstrl_renderer_free_render_data(context->render_data);
-    cstrl_da_float_free(&internal_ui_state.positions);
-    cstrl_da_float_free(&internal_ui_state.uvs);
-    cstrl_da_float_free(&internal_ui_state.colors);
-    cstrl_renderer_free_render_data(context->font_render_data);
-    cstrl_da_float_free(&internal_ui_state.font_positions);
-    cstrl_da_float_free(&internal_ui_state.font_uvs);
-    cstrl_da_float_free(&internal_ui_state.font_colors);
+    internal_ui_state *ui_state = context->internal_ui_state;
+
+    cstrl_renderer_free_render_data(ui_state->render_data);
+    cstrl_da_float_free(&ui_state->positions);
+    cstrl_da_float_free(&ui_state->uvs);
+    cstrl_da_float_free(&ui_state->colors);
+    cstrl_renderer_free_render_data(ui_state->font_render_data);
+    cstrl_da_float_free(&ui_state->font_positions);
+    cstrl_da_float_free(&ui_state->font_uvs);
+    cstrl_da_float_free(&ui_state->font_colors);
     free(context);
 }
 
@@ -258,37 +274,43 @@ bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int
 
 float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale)
 {
+    internal_ui_state *ui_state = context->internal_ui_state;
+
     int width = 0;
 
     for (int i = 0; text[i] != '\0'; i++)
     {
-        stbtt_packedchar c = internal_ui_state.char_data[text[i]];
+        stbtt_packedchar c = ui_state->char_data[text[i]];
         width += c.xadvance;
     }
     return (float)width * scale;
 }
 
-bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h)
+bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
+                   cstrl_ui_text_alignment alignment)
 {
-    internal_ui_state.total_items++;
+    internal_ui_state *ui_state = context->internal_ui_state;
+
+    ui_state->total_font_items++;
 
     float scale = ((float)h / 2.0f) / (float)FONT_SIZE;
-    float resolution[2] = {800, 600};
     float position[2] = {(float)x, (float)y + h / 1.5f};
-    position[0] = (float)x + (float)w / 2.0f - cstrl_ui_text_width(context, title, scale) / 2.0f;
-
-    if (title[0] != '\0')
+    if (alignment == CSTRL_UI_TEXT_ALIGN_CENTER)
     {
-        internal_ui_state.total_font_items++;
+        position[0] = (float)x + (float)w / 2.0f - cstrl_ui_text_width(context, text, scale) / 2.0f;
+    }
+    else if (alignment == CSTRL_UI_TEXT_ALIGN_RIGHT)
+    {
+        position[0] = (float)x + (float)w - cstrl_ui_text_width(context, text, scale);
     }
     for (int i = 0; i < title_length; i++)
     {
-        if (title[i] == '\0')
+        if (text[i] == '\0')
         {
             log_warn("title length does not match length given");
             break;
         }
-        stbtt_packedchar c = internal_ui_state.char_data[title[i]];
+        stbtt_packedchar c = ui_state->char_data[text[i]];
 
         // log_debug("%c: %f, %f, %f, %f, %f", text[i], c.xoff, c.yoff, c.xadvance, c.xoff2, c.yoff2);
 
@@ -302,135 +324,250 @@ bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_len
         float render_position[2] = {position[0] + c.xoff * scale,
                                     position[1] - (c.yoff2 - c.yoff) * scale + c.yoff2 * scale};
 
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[0]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[1] + size[1]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[0] + size[0]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[1]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[0]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[1]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[0]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[1] + size[1]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[0] + size[0]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[1]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[0] + size[0]);
-        cstrl_da_float_push_back(&internal_ui_state.font_positions, render_position[1] + size[1]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[0]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[1] + size[1]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[0] + size[0]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[1]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[0]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[1]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[0]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[1] + size[1]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[0] + size[0]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[1]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[0] + size[0]);
+        cstrl_da_float_push_back(&ui_state->font_positions, render_position[1] + size[1]);
 
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, u0);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, v1);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, u1);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, v0);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, u0);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, v0);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, u0);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, v1);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, u1);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, v0);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, u1);
-        cstrl_da_float_push_back(&internal_ui_state.font_uvs, v1);
+        cstrl_da_float_push_back(&ui_state->font_uvs, u0);
+        cstrl_da_float_push_back(&ui_state->font_uvs, v1);
+        cstrl_da_float_push_back(&ui_state->font_uvs, u1);
+        cstrl_da_float_push_back(&ui_state->font_uvs, v0);
+        cstrl_da_float_push_back(&ui_state->font_uvs, u0);
+        cstrl_da_float_push_back(&ui_state->font_uvs, v0);
+        cstrl_da_float_push_back(&ui_state->font_uvs, u0);
+        cstrl_da_float_push_back(&ui_state->font_uvs, v1);
+        cstrl_da_float_push_back(&ui_state->font_uvs, u1);
+        cstrl_da_float_push_back(&ui_state->font_uvs, v0);
+        cstrl_da_float_push_back(&ui_state->font_uvs, u1);
+        cstrl_da_float_push_back(&ui_state->font_uvs, v1);
 
         for (int j = 0; j < 6; j++)
         {
-            cstrl_da_float_push_back(&internal_ui_state.font_colors, 1.0f);
-            cstrl_da_float_push_back(&internal_ui_state.font_colors, 1.0f);
-            cstrl_da_float_push_back(&internal_ui_state.font_colors, 1.0f);
-            cstrl_da_float_push_back(&internal_ui_state.font_colors, 1.0f);
+            cstrl_da_float_push_back(&ui_state->font_colors, 1.0f);
+            cstrl_da_float_push_back(&ui_state->font_colors, 1.0f);
+            cstrl_da_float_push_back(&ui_state->font_colors, 1.0f);
+            cstrl_da_float_push_back(&ui_state->font_colors, 1.0f);
         }
 
         position[0] += c.xadvance * scale;
     }
+    return true;
+}
 
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y + (float)h);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x + (float)w);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y + (float)h);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x + (float)w);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)x + (float)w);
-    cstrl_da_float_push_back(&internal_ui_state.positions, (float)y + (float)h);
+static int x_cache = -1;
+static int y_cache = -1;
+static int prev_mouse_x = -1;
+static int prev_mouse_y = -1;
+
+bool cstrl_ui_container(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h)
+{
+    internal_ui_state *ui_state = context->internal_ui_state;
+
+    if (x_cache < 0 && y_cache < 0)
+    {
+        x_cache = x;
+        y_cache = y;
+    }
+    ui_state->total_items++;
+    x = x_cache;
+    y = y_cache;
+    if (cstrl_ui_region_hit(ui_state->mouse_x, ui_state->mouse_y, x, y, w, h) && ui_state->left_mouse_button_down)
+    {
+        if (prev_mouse_x < 0 && prev_mouse_y < 0)
+        {
+            prev_mouse_x = ui_state->mouse_x;
+            prev_mouse_y = ui_state->mouse_y;
+        }
+        else
+        {
+            x -= prev_mouse_x - ui_state->mouse_x;
+            y -= prev_mouse_y - ui_state->mouse_y;
+            prev_mouse_x = ui_state->mouse_x;
+            prev_mouse_y = ui_state->mouse_y;
+        }
+        x_cache = x;
+        y_cache = y;
+    }
+    else
+    {
+        // x_cache = -1;
+        // y_cache = -1;
+        prev_mouse_x = -1;
+        prev_mouse_y = -1;
+    }
+    if (x < 0)
+    {
+        x = 0;
+        x_cache = 0;
+    }
+    else if (x > 800 - w)
+    {
+        x = 800 - w;
+        x_cache = 800 - w;
+    }
+    if (y < 0)
+    {
+        y = 0;
+        y_cache = 0;
+    }
+    else if (y > 600 - h)
+    {
+        y = 600 - h;
+        y_cache = 600 - h;
+    }
+    if (title[0] != '\0')
+    {
+        cstrl_ui_text(context, title, title_length, x, y, w, 30, CSTRL_UI_TEXT_ALIGN_LEFT);
+    }
+    cstrl_da_float_push_back(&ui_state->positions, (float)x);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y + (float)h);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y + (float)h);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y + (float)h);
+
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+
+    for (int i = 0; i < 6; i++)
+    {
+        cstrl_da_float_push_back(&ui_state->colors, 0.2f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.4f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.7f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.9f);
+    }
+    return true;
+}
+
+bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h)
+{
+    internal_ui_state *ui_state = context->internal_ui_state;
+
+    ui_state->total_items++;
+
+    if (title[0] != '\0')
+    {
+        cstrl_ui_text(context, title, title_length, x, y, w, h, CSTRL_UI_TEXT_ALIGN_CENTER);
+    }
+    cstrl_da_float_push_back(&ui_state->positions, (float)x);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y + (float)h);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y + (float)h);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y);
+    cstrl_da_float_push_back(&ui_state->positions, (float)x + (float)w);
+    cstrl_da_float_push_back(&ui_state->positions, (float)y + (float)h);
 
     for (int i = 0; i < 12; i++)
     {
-        cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
+        cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
     }
 
-    if (cstrl_ui_region_hit(internal_ui_state.mouse_x, internal_ui_state.mouse_y, x, y, w, h))
+    if (cstrl_ui_region_hit(ui_state->mouse_x, ui_state->mouse_y, x, y, w, h))
     {
-        internal_ui_state.hot_item = internal_ui_state.total_items - 1;
-        if (internal_ui_state.left_mouse_button_down && internal_ui_state.active_item == -1 &&
-            cstrl_ui_region_hit(internal_ui_state.left_mouse_button_pressed_x,
-                                internal_ui_state.left_mouse_button_pressed_y, x, y, w, h))
+        ui_state->hot_item = ui_state->total_items - 1;
+        if (ui_state->left_mouse_button_down && ui_state->active_item == -1 &&
+            cstrl_ui_region_hit(ui_state->left_mouse_button_pressed_x, ui_state->left_mouse_button_pressed_y, x, y, w,
+                                h))
         {
-            internal_ui_state.active_item = internal_ui_state.hot_item;
+            ui_state->active_item = ui_state->hot_item;
             for (int i = 0; i < 6; i++)
             {
-                cstrl_da_float_push_back(&internal_ui_state.colors, 1.0f);
-                cstrl_da_float_push_back(&internal_ui_state.colors, 0.4f);
-                cstrl_da_float_push_back(&internal_ui_state.colors, 0.4f);
-                cstrl_da_float_push_back(&internal_ui_state.colors, 1.0f);
+                cstrl_da_float_push_back(&ui_state->colors, 1.0f);
+                cstrl_da_float_push_back(&ui_state->colors, 0.4f);
+                cstrl_da_float_push_back(&ui_state->colors, 0.4f);
+                cstrl_da_float_push_back(&ui_state->colors, 1.0f);
             }
             return true;
         }
         for (int i = 0; i < 6; i++)
         {
-            cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
-            cstrl_da_float_push_back(&internal_ui_state.colors, 0.3f);
-            cstrl_da_float_push_back(&internal_ui_state.colors, 0.3f);
-            cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
+            cstrl_da_float_push_back(&ui_state->colors, 0.9f);
+            cstrl_da_float_push_back(&ui_state->colors, 0.3f);
+            cstrl_da_float_push_back(&ui_state->colors, 0.3f);
+            cstrl_da_float_push_back(&ui_state->colors, 0.9f);
         }
         return false;
     }
     for (int i = 0; i < 6; i++)
     {
-        cstrl_da_float_push_back(&internal_ui_state.colors, 0.7f);
-        cstrl_da_float_push_back(&internal_ui_state.colors, 0.2f);
-        cstrl_da_float_push_back(&internal_ui_state.colors, 0.2f);
-        cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.7f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.2f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.2f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.9f);
     }
     return false;
 }
 
 bool cstrl_ui_menu_bar(cstrl_ui_context *context)
 {
-    internal_ui_state.total_items++;
-    int width, height;
-    cstrl_platform_get_window_size(context->platform_state, &width, &height);
-    height = 20;
-    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.positions, height);
-    cstrl_da_float_push_back(&internal_ui_state.positions, width);
-    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.positions, height);
-    cstrl_da_float_push_back(&internal_ui_state.positions, width);
-    cstrl_da_float_push_back(&internal_ui_state.positions, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.positions, width);
-    cstrl_da_float_push_back(&internal_ui_state.positions, height);
+    internal_ui_state *ui_state = context->internal_ui_state;
 
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 0.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
-    cstrl_da_float_push_back(&internal_ui_state.uvs, 1.0f);
+    ui_state->total_items++;
+    int width, height;
+    cstrl_platform_get_window_size(ui_state->platform_state, &width, &height);
+    height = 20;
+    cstrl_da_float_push_back(&ui_state->positions, 0.0f);
+    cstrl_da_float_push_back(&ui_state->positions, height);
+    cstrl_da_float_push_back(&ui_state->positions, width);
+    cstrl_da_float_push_back(&ui_state->positions, 0.0f);
+    cstrl_da_float_push_back(&ui_state->positions, 0.0f);
+    cstrl_da_float_push_back(&ui_state->positions, 0.0f);
+    cstrl_da_float_push_back(&ui_state->positions, 0.0f);
+    cstrl_da_float_push_back(&ui_state->positions, height);
+    cstrl_da_float_push_back(&ui_state->positions, width);
+    cstrl_da_float_push_back(&ui_state->positions, 0.0f);
+    cstrl_da_float_push_back(&ui_state->positions, width);
+    cstrl_da_float_push_back(&ui_state->positions, height);
+
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 0.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
+    cstrl_da_float_push_back(&ui_state->uvs, 1.0f);
 
     for (int i = 0; i < 6; i++)
     {
-        cstrl_da_float_push_back(&internal_ui_state.colors, 0.3125f);
-        cstrl_da_float_push_back(&internal_ui_state.colors, 0.2f);
-        cstrl_da_float_push_back(&internal_ui_state.colors, 0.2f);
-        cstrl_da_float_push_back(&internal_ui_state.colors, 0.9f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.3125f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.2f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.2f);
+        cstrl_da_float_push_back(&ui_state->colors, 0.9f);
     }
     return true;
 }

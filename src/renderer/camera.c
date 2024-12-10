@@ -8,10 +8,11 @@
 
 #include <stdlib.h>
 
-cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height)
+cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool is_orthographic)
 {
     cstrl_camera *new_camera = malloc(sizeof(cstrl_camera));
 
+    new_camera->is_orthographic = is_orthographic;
     new_camera->fov = 45.0f * cstrl_pi_180;
     new_camera->viewport.x = viewport_width;
     new_camera->viewport.y = viewport_height;
@@ -89,8 +90,16 @@ void cstrl_camera_update(cstrl_camera *camera, bool moving_up, bool moving_down,
     // float bottom = (float)g_viewport_height / (g_zoom_factor / g_zoom);
     // float top = (float)g_viewport_height - (float)g_viewport_height / (g_zoom_factor / g_zoom);
     // g_projection = cstrl_ortho(left, right, bottom, top, 0.1f, 1000.0f);
-    camera->projection =
-        cstrl_mat4_perspective(camera->fov, (float)camera->viewport.x / (float)camera->viewport.y, 0.1f, 100.0f);
+    if (!camera->is_orthographic)
+    {
+        camera->projection =
+            cstrl_mat4_perspective(camera->fov, (float)camera->viewport.x / (float)camera->viewport.y, 0.1f, 100.0f);
+    }
+    else
+    {
+        camera->projection =
+            cstrl_mat4_ortho(0.0f, (float)camera->viewport.x, (float)camera->viewport.y, 0.0f, 0.1f, 100.0f);
+    }
     // g_projection = cstrl_ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
 }
 

@@ -9,7 +9,7 @@
 
 int test_camera_process_mouse_movement()
 {
-    cstrl_camera *camera = cstrl_camera_create(800, 600);
+    cstrl_camera *camera = cstrl_camera_create(800, 600, false);
     cstrl_camera_rotate(camera, 0, 0);
     cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
     quat rotation_expected = {1.0f, 0.0f, 0.0f, 0.0f};

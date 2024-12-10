@@ -10,14 +10,15 @@
 
 typedef struct cstrl_ui_context
 {
-    cstrl_platform_state *platform_state;
-    cstrl_render_data *render_data;
-    cstrl_shader shader;
-    cstrl_texture texture;
-    cstrl_render_data *font_render_data;
-    cstrl_shader font_shader;
-    cstrl_texture font_texture;
+    void *internal_ui_state;
 } cstrl_ui_context;
+
+typedef enum cstrl_ui_text_alignment
+{
+    CSTRL_UI_TEXT_ALIGN_LEFT,
+    CSTRL_UI_TEXT_ALIGN_CENTER,
+    CSTRL_UI_TEXT_ALIGN_RIGHT
+} cstrl_ui_text_alignment;
 
 cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state);
 
@@ -26,6 +27,15 @@ void cstrl_ui_begin(cstrl_ui_context *context);
 void cstrl_ui_end(cstrl_ui_context *context);
 
 void cstrl_ui_shutdown(cstrl_ui_context *context);
+
+bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int object_width, int object_height);
+
+float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale);
+
+bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
+                   cstrl_ui_text_alignment alignment);
+
+bool cstrl_ui_container(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h);
 
 bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h);
 

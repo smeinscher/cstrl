@@ -12,6 +12,7 @@
 
 typedef struct cstrl_camera
 {
+    bool is_orthographic;
     float fov;
     vec2i viewport;
     vec3 forward;
@@ -130,7 +131,7 @@ void cstrl_texture_bind(cstrl_texture texture);
  *
  */
 
-cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height);
+cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool is_orthographic);
 
 void cstrl_camera_free(cstrl_camera *camera);
 

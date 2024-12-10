@@ -221,7 +221,7 @@ int learnopengl()
     cstrl_renderer_add_normals(color_render_data, normals);
     cstrl_renderer_add_positions(light_render_data, vertices, 3, 36);
 
-    g_main_camera = cstrl_camera_create(800, 600);
+    g_main_camera = cstrl_camera_create(800, 600, false);
     g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
     cstrl_shader color_shader = cstrl_load_shaders_from_files("../resources/shaders/learnopengl/colors.vert",
                                                               "../resources/shaders/learnopengl/colors.frag");
