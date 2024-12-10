@@ -134,7 +134,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         internal_state *internal_state = state->internal_state;
 
         internal_state->state_common.input.mouse_buttons[button] = action;
-        break;
+        return 0;
     }
     case WM_MOUSEMOVE: {
         cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
