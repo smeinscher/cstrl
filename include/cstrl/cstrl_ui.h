@@ -8,6 +8,8 @@
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl_platform.h"
 
+#define GEN_ID(group) (((group) * 10000) + (__LINE__))
+
 typedef struct cstrl_ui_context
 {
     void *internal_ui_state;
@@ -34,6 +36,11 @@ float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float sca
 
 bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
                    cstrl_ui_text_alignment alignment);
+
+bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
+                              int h, int id);
+
+void cstrl_ui_container_end(cstrl_ui_context *context);
 
 bool cstrl_ui_container(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h);
 

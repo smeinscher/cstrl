@@ -55,6 +55,7 @@ int basic_ui()
         cstrl_texture_bind(texture);
         cstrl_renderer_draw(render_data);
         cstrl_ui_begin(context);
+        /*
         cstrl_ui_menu_bar(context);
         if (cstrl_ui_container(context, "debug", 5, 10, 10, 100, 300))
         {
@@ -62,6 +63,11 @@ int basic_ui()
             {
                 cstrl_ui_button(context, "finish", 6, 200, 40, 60, 30);
             }
+        }
+        */
+        if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 100, 300, GEN_ID(0)))
+        {
+            cstrl_ui_container_end(context);
         }
         cstrl_ui_end(context);
         cstrl_renderer_swap_buffers(&platform_state);
