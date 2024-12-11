@@ -11,6 +11,14 @@
 #include <stdio.h>
 #include <string.h>
 
+static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
+{
+    if (key == CSTRL_KEY_ESCAPE)
+    {
+        cstrl_platform_set_should_exit(true);
+    }
+}
+
 int basic_ui()
 {
     cstrl_platform_state platform_state;
@@ -19,6 +27,7 @@ int basic_ui()
         cstrl_platform_shutdown(&platform_state);
         return 1;
     }
+    cstrl_platform_set_key_callback(&platform_state, key_callback);
 
     cstrl_renderer_init(&platform_state);
     cstrl_render_data *render_data = cstrl_renderer_create_render_data();
@@ -55,33 +64,27 @@ int basic_ui()
         cstrl_texture_bind(texture);
         cstrl_renderer_draw(render_data);
         cstrl_ui_begin(context);
-        /*
-        cstrl_ui_menu_bar(context);
-        if (cstrl_ui_container(context, "debug", 5, 10, 10, 100, 300))
-        {
-            if (cstrl_ui_button(context, "start", 5, 10, 40, 60, 30))
-            {
-                cstrl_ui_button(context, "finish", 6, 200, 40, 60, 30);
-            }
-        }
-        */
         if (cstrl_ui_container_begin(context, "Menu", 4, 0, 0, 800, 30, GEN_ID(0), true, 1))
         {
+            if (cstrl_ui_button(context, "Quit", 4, 760, 5, 50, 20, GEN_ID(0)))
+            {
+                cstrl_platform_set_should_exit(true);
+            }
             cstrl_ui_container_end(context);
         }
-        if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 100, 300, GEN_ID(0), false, 2))
+        if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 200, 300, GEN_ID(0), false, 2))
         {
+            char num_buffer[20];
+            if (cstrl_ui_text_field(context, "PLACEHOLDER", 11, 10, 75, 180, 30, GEN_ID(0), num_buffer, 20))
+            {
+            }
+            if (cstrl_ui_button(context, "Save", 4, 145, 270, 50, 30, GEN_ID(0)))
+            {
+                double value = atof(num_buffer);
+                printf("%lf\n", value);
+            }
             cstrl_ui_container_end(context);
         }
-        if (cstrl_ui_container_begin(context, "Test2", 5, 700, 10, 100, 300, GEN_ID(0), false, 3))
-        {
-            cstrl_ui_container_end(context);
-        }
-        if (cstrl_ui_container_begin(context, "Test3", 5, 700, 300, 100, 300, GEN_ID(0), false, 4))
-        {
-            cstrl_ui_container_end(context);
-        }
-
         cstrl_ui_end(context);
         cstrl_renderer_swap_buffers(&platform_state);
     }

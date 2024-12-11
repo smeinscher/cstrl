@@ -31,6 +31,12 @@ bool cstrl_platform_is_mouse_button_down(cstrl_platform_state *platform_state, c
     return state->state_common.input.mouse_buttons[button] == CSTRL_ACTION_PRESS;
 }
 
+cstrl_key cstrl_platform_get_most_recent_key_pressed(cstrl_platform_state *platform_state)
+{
+    internal_state *state = platform_state->internal_state;
+    return state->state_common.input.most_recent_key_pressed;
+}
+
 cstrl_mouse_mode cstrl_platform_get_mouse_mode(cstrl_platform_state *platform_state)
 {
     internal_state *state = platform_state->internal_state;

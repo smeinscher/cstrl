@@ -28,10 +28,24 @@ void win32_key_to_cstrl_key_init()
     win32_key_to_cstrl_key[VK_RCONTROL] = CSTRL_KEY_RIGHT_CONTROL;
     win32_key_to_cstrl_key[VK_LSHIFT] = CSTRL_KEY_LEFT_SHIFT;
     win32_key_to_cstrl_key[VK_RSHIFT] = CSTRL_KEY_RIGHT_SHIFT;
+    win32_key_to_cstrl_key[VK_BACK] = CSTRL_KEY_BACKSPACE;
 
     win32_key_to_cstrl_key[VK_TAB] = CSTRL_KEY_TAB;
 
     win32_key_to_cstrl_key[VK_ESCAPE] = CSTRL_KEY_ESCAPE;
+
+    win32_key_to_cstrl_key[0x30] = CSTRL_KEY_0;
+    win32_key_to_cstrl_key[0x31] = CSTRL_KEY_1;
+    win32_key_to_cstrl_key[0x32] = CSTRL_KEY_2;
+    win32_key_to_cstrl_key[0x33] = CSTRL_KEY_3;
+    win32_key_to_cstrl_key[0x34] = CSTRL_KEY_4;
+    win32_key_to_cstrl_key[0x35] = CSTRL_KEY_5;
+    win32_key_to_cstrl_key[0x36] = CSTRL_KEY_6;
+    win32_key_to_cstrl_key[0x37] = CSTRL_KEY_7;
+    win32_key_to_cstrl_key[0x38] = CSTRL_KEY_8;
+    win32_key_to_cstrl_key[0x39] = CSTRL_KEY_9;
+
+    win32_key_to_cstrl_key[VK_OEM_PERIOD] = CSTRL_KEY_PERIOD;
 
     win32_key_to_cstrl_key[0x41] = CSTRL_KEY_A;
     win32_key_to_cstrl_key[0x42] = CSTRL_KEY_B;
@@ -86,6 +100,14 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         if (internal_state->state_common.callbacks.key != NULL)
         {
             internal_state->state_common.callbacks.key(state, win32_key_to_cstrl_key[wparam], scancode, action, 0);
+        }
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            internal_state->state_common.input.most_recent_key_pressed = win32_key_to_cstrl_key[wparam];
+        }
+        else
+        {
+            internal_state->state_common.input.most_recent_key_pressed = CSTRL_KEY_NONE;
         }
         return 0;
     }

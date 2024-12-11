@@ -42,7 +42,7 @@ void cstrl_string_init(string *str, size_t initial_size)
     str->array = malloc(sizeof(char) * initial_size);
     if (str->array == NULL)
     {
-        log_error("Failed to allocate dynamic char array (String)");
+        log_error("Failed to allocate dynamic char array (string)");
         str->capacity = 0;
         return;
     }
@@ -311,6 +311,12 @@ float cstrl_da_float_pop_back(da_float *da)
     return da->array[da->size];
 }
 
+char cstrl_string_pop_back(string *str)
+{
+    str->size--;
+    return str->array[str->size];
+}
+
 string cstrl_da_string_pop_back(da_string *da)
 {
     da->size--;
@@ -358,6 +364,10 @@ void cstrl_string_clear(string *str)
 
 void cstrl_da_string_clear(da_string *da)
 {
+    if (da->size == 0)
+    {
+        return;
+    }
     for (int i = 0; i < da->size; i++)
     {
         cstrl_string_free(&da->array[i]);

@@ -49,14 +49,29 @@ typedef enum cstrl_mouse_button
 #define DEFINE_KEY(name, code) CSTRL_KEY_##name = code
 typedef enum cstrl_key
 {
+    DEFINE_KEY(NONE, 0),
     DEFINE_KEY(LEFT_CONTROL, 17),
     DEFINE_KEY(RIGHT_CONTROL, 18),
     DEFINE_KEY(LEFT_SHIFT, 19),
     DEFINE_KEY(RIGHT_SHIFT, 20),
+    DEFINE_KEY(BACKSPACE, 21),
 
     DEFINE_KEY(TAB, 21),
 
     DEFINE_KEY(ESCAPE, 27),
+
+    DEFINE_KEY(0, 30),
+    DEFINE_KEY(1, 31),
+    DEFINE_KEY(2, 32),
+    DEFINE_KEY(3, 33),
+    DEFINE_KEY(4, 34),
+    DEFINE_KEY(5, 35),
+    DEFINE_KEY(6, 36),
+    DEFINE_KEY(7, 37),
+    DEFINE_KEY(8, 38),
+    DEFINE_KEY(9, 39),
+
+    DEFINE_KEY(PERIOD, 42),
 
     DEFINE_KEY(A, 65),
     DEFINE_KEY(B, 66),

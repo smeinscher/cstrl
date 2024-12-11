@@ -40,6 +40,8 @@ void cstrl_platform_get_cursor_position(cstrl_platform_state *platform_state, in
 
 bool cstrl_platform_is_mouse_button_down(cstrl_platform_state *platform_state, cstrl_mouse_button button);
 
+cstrl_key cstrl_platform_get_most_recent_key_pressed(cstrl_platform_state *platform_state);
+
 cstrl_mouse_mode cstrl_platform_get_mouse_mode(cstrl_platform_state *platform_state);
 
 void cstrl_platform_set_mouse_mode(cstrl_platform_state *platform_state, cstrl_mouse_mode mode);

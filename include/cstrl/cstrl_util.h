@@ -55,6 +55,8 @@ int cstrl_da_int_pop_back(da_int *da);
 
 float cstrl_da_float_pop_back(da_float *da);
 
+char cstrl_string_pop_back(string *str);
+
 string cstrl_da_string_pop_back(da_string *da);
 
 int cstrl_da_int_pop_front(da_int *da);

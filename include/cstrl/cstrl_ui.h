@@ -42,6 +42,10 @@ bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int 
 
 void cstrl_ui_container_end(cstrl_ui_context *context);
 
-bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h);
+bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h,
+                     int id);
+
+bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x, int y,
+                         int w, int h, int id, char *buffer, size_t buffer_size);
 
 #endif // CSTRL_UI_H
