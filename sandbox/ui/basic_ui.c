@@ -9,6 +9,7 @@
 #include "cstrl/cstrl_ui.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)

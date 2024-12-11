@@ -35,10 +35,24 @@ void x11_key_to_cstrl_key_init(internal_state *state)
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_Control_R)] = CSTRL_KEY_RIGHT_CONTROL;
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_Shift_L)] = CSTRL_KEY_LEFT_SHIFT;
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_Shift_R)] = CSTRL_KEY_RIGHT_SHIFT;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_BackSpace)] = CSTRL_KEY_BACKSPACE;
 
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_Tab)] = CSTRL_KEY_TAB;
 
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_Escape)] = CSTRL_KEY_ESCAPE;
+
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_0)] = CSTRL_KEY_0;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_1)] = CSTRL_KEY_1;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_2)] = CSTRL_KEY_2;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_3)] = CSTRL_KEY_3;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_4)] = CSTRL_KEY_4;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_5)] = CSTRL_KEY_5;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_6)] = CSTRL_KEY_6;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_7)] = CSTRL_KEY_7;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_8)] = CSTRL_KEY_8;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_9)] = CSTRL_KEY_9;
+
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_period)] = CSTRL_KEY_PERIOD;
 
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_A)] = CSTRL_KEY_A;
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_B)] = CSTRL_KEY_B;
@@ -154,6 +168,14 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
             {
                 state->state_common.callbacks.key(platform_state, x11_key_to_cstrl_key[event->keycode], event->keycode,
                                                   action, 0);
+            }
+            if (action == CSTRL_ACTION_PRESS)
+            {
+                state->state_common.input.most_recent_key_pressed = x11_key_to_cstrl_key[event->keycode];
+            }
+            else
+            {
+                state->state_common.input.most_recent_key_pressed = CSTRL_KEY_NONE;
             }
             break;
         }
