@@ -81,6 +81,8 @@ void cstrl_da_string_free(da_string *da);
 
 char *cstrl_string_to_c_str(string *str);
 
+void cstrl_da_int_quick_sort(da_int *da, bool descending);
+
 char *cstrl_read_file(const char *file_path, long *file_size);
 
 int cstrl_write_file(const char *file_path, const char *data, unsigned long size);

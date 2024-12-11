@@ -200,9 +200,22 @@ void cstrl_da_string_push_back(da_string *da, string element)
     da->size++;
 }
 
+// TODO: unit test
 void cstrl_da_int_insert(da_int *da, int element, size_t index)
 {
-    log_fatal("da_int_insert not implemented");
+    if ((index >= da->capacity || da->size >= da->capacity) && !cstrl_da_int_reserve(da, da->capacity * 2))
+    {
+        log_error("Failed to insert into dynamic int array");
+        return;
+    }
+    do
+    {
+        int temp = da->array[index];
+        da->array[index] = element;
+        element = temp;
+        index++;
+    } while (index <= da->size);
+    da->size++;
 }
 
 void cstrl_da_float_insert(da_float *da, float element, size_t index)
@@ -401,4 +414,44 @@ char *cstrl_string_to_c_str(string *str)
     }
     temp[str->size] = '\0';
     return temp;
+}
+
+static int cstrl_da_int_quick_sort_partition_internal(da_int *da, int left, int right, bool descending)
+{
+    int pivot = da->array[right];
+
+    int index = left - 1;
+
+    for (int i = left; i < right; i++)
+    {
+        if (!descending && da->array[i] > pivot || descending && da->array[i] < pivot)
+        {
+            index++;
+            int temp = da->array[index];
+            da->array[index] = da->array[i];
+            da->array[i] = temp;
+        }
+    }
+
+    int temp = da->array[index + 1];
+    da->array[index + 1] = da->array[right];
+    da->array[right] = temp;
+
+    return index + 1;
+}
+
+static void cstrl_da_int_quick_sort_internal(da_int *da, int left, int right, bool descending)
+{
+    if (right <= left)
+    {
+        return;
+    }
+    int pivot = cstrl_da_int_quick_sort_partition_internal(da, left, right, descending);
+    cstrl_da_int_quick_sort_internal(da, left, pivot - 1, descending);
+    cstrl_da_int_quick_sort_internal(da, pivot + 1, right, descending);
+}
+
+void cstrl_da_int_quick_sort(da_int *da, bool descending)
+{
+    cstrl_da_int_quick_sort_internal(da, 0, da->size - 1, descending);
 }

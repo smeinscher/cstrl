@@ -38,14 +38,10 @@ bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length
                    cstrl_ui_text_alignment alignment);
 
 bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
-                              int h, int id);
+                              int h, int id, bool is_static, int order_priority);
 
 void cstrl_ui_container_end(cstrl_ui_context *context);
 
-bool cstrl_ui_container(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h);
-
 bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h);
-
-bool cstrl_ui_menu_bar(cstrl_ui_context *context);
 
 #endif // CSTRL_UI_H

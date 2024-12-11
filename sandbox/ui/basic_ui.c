@@ -65,10 +65,23 @@ int basic_ui()
             }
         }
         */
-        if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 100, 300, GEN_ID(0)))
+        if (cstrl_ui_container_begin(context, "Menu", 4, 0, 0, 800, 30, GEN_ID(0), true, 1))
         {
             cstrl_ui_container_end(context);
         }
+        if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 100, 300, GEN_ID(0), false, 2))
+        {
+            cstrl_ui_container_end(context);
+        }
+        if (cstrl_ui_container_begin(context, "Test2", 5, 700, 10, 100, 300, GEN_ID(0), false, 3))
+        {
+            cstrl_ui_container_end(context);
+        }
+        if (cstrl_ui_container_begin(context, "Test3", 5, 700, 300, 100, 300, GEN_ID(0), false, 4))
+        {
+            cstrl_ui_container_end(context);
+        }
+
         cstrl_ui_end(context);
         cstrl_renderer_swap_buffers(&platform_state);
     }
