@@ -184,14 +184,12 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     cstrl_da_float_init(&ui_state->font_colors, 24);
 
     // The real mvp https://sinf.org/opengl-text-using-stb_truetype/
-    long size;
-    unsigned char *font_buffer;
     FILE *font_file = fopen("../resources/fonts/NocturneSerif-Regular.ttf", "rb");
     // FILE *font_file = fopen("C:\\Windows\\Fonts\\times.ttf", "rb");
     fseek(font_file, 0, SEEK_END);
-    size = ftell(font_file);
+    long size = ftell(font_file);
     fseek(font_file, 0, SEEK_SET);
-    font_buffer = malloc(size);
+    unsigned char *font_buffer = malloc(size);
 
     fread(font_buffer, size, 1, font_file);
     fclose(font_file);
@@ -205,6 +203,9 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     stbtt_PackEnd(&pack_context);
 
     ui_state->font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512);
+
+    free(pixels);
+    free(font_buffer);
 
     ui_state->texture = cstrl_texture_generate_from_path("../resources/textures/background.jpg");
 
@@ -226,13 +227,25 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 
     cstrl_da_int_init(&ui_state->element_render_order, 1);
 
-    cstrl_da_int_init(&ui_state->parent_stack, 1);
-
     ui_state->dragged_element_id = -1;
 
+    ui_state->mouse_x = -1;
+    ui_state->mouse_y = -1;
+    ui_state->prev_mouse_x = -1;
+    ui_state->prev_mouse_y = -1;
+
+    ui_state->left_mouse_button_down = false;
     ui_state->left_mouse_button_processed = false;
+    ui_state->left_mouse_button_pressed_x = -1;
+    ui_state->left_mouse_button_pressed_y = -1;
+
+    ui_state->hot_item = -1;
+    ui_state->active_item = -1;
 
     ui_state->key_pressed = CSTRL_KEY_NONE;
+    ui_state->key_press_processed = false;
+
+    cstrl_da_int_init(&ui_state->parent_stack, 1);
 
     return context;
 }
@@ -251,7 +264,6 @@ void cstrl_ui_begin(cstrl_ui_context *context)
     cstrl_da_int_clear(&ui_state->parent_stack);
 
     ui_state->hot_item = -1;
-    // ui_state->active_item = -1;
     ui_state->prev_mouse_x = ui_state->mouse_x;
     ui_state->prev_mouse_y = ui_state->mouse_y;
     cstrl_platform_get_cursor_position(ui_state->platform_state, &ui_state->mouse_x, &ui_state->mouse_y);
@@ -308,6 +320,7 @@ void cstrl_ui_end(cstrl_ui_context *context)
         cstrl_string_init(&s, 7);
         cstrl_string_push_back(&s, "Nothing", 7);
         cstrl_da_string_push_back(&ui_state->element_cache.titles, s);
+        cstrl_string_free(&s);
         cstrl_da_int_push_back(&ui_state->element_cache.parent_index, 0);
         cstrl_da_int_push_back(&ui_state->element_cache.order_priority, 0);
     }
@@ -405,13 +418,6 @@ void cstrl_ui_end(cstrl_ui_context *context)
 
         string s = ui_state->elements.titles.array[index];
 
-        char *str = malloc(6);
-        for (int c = 0; c < s.size; c++)
-        {
-            str[c] = s.array[c];
-        }
-        str[s.size] = '\0';
-        // log_trace("%s %d, %d", str, x0, y0);
         for (int c = 0; c < s.size; c++)
         {
             stbtt_packedchar packedchar = ui_state->char_data[s.array[c]];
@@ -501,6 +507,14 @@ void cstrl_ui_shutdown(cstrl_ui_context *context)
     cstrl_da_float_free(&ui_state->elements.colors);
     cstrl_da_int_free(&ui_state->elements.parent_index);
     cstrl_da_string_free(&ui_state->elements.titles);
+    cstrl_da_int_free(&ui_state->elements.order_priority);
+    cstrl_da_int_free(&ui_state->element_cache.ids);
+    cstrl_da_int_free(&ui_state->element_cache.screen_coords);
+    cstrl_da_float_free(&ui_state->element_cache.colors);
+    cstrl_da_int_free(&ui_state->element_cache.parent_index);
+    cstrl_da_string_free(&ui_state->element_cache.titles);
+    cstrl_da_int_free(&ui_state->element_cache.order_priority);
+    cstrl_da_int_free(&ui_state->element_render_order);
 
     cstrl_renderer_free_render_data(ui_state->render_data);
     cstrl_da_float_free(&ui_state->positions);
@@ -510,6 +524,10 @@ void cstrl_ui_shutdown(cstrl_ui_context *context)
     cstrl_da_float_free(&ui_state->font_positions);
     cstrl_da_float_free(&ui_state->font_uvs);
     cstrl_da_float_free(&ui_state->font_colors);
+
+    free(ui_state->char_data);
+    cstrl_da_int_free(&ui_state->parent_stack);
+    free(ui_state);
     free(context);
 }
 
@@ -546,6 +564,7 @@ bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int 
         return false;
     }
 
+    int original_w = w;
     int original_h = h;
     int original_order_priority = order_priority;
     if (ui_state->element_cache.element_count > 0)
@@ -560,12 +579,14 @@ bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int 
     if (!is_static && cstrl_ui_region_hit(ui_state->mouse_x, ui_state->mouse_y, x, y, 30, 30) &&
         ui_state->left_mouse_button_down && !ui_state->left_mouse_button_processed)
     {
-        if (h == original_h)
+        if (w == original_w && h == original_h)
         {
+            w = 50;
             h = 30;
         }
         else
         {
+            w = original_w;
             h = original_h;
         }
     }
@@ -642,6 +663,7 @@ bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int 
     cstrl_string_init(&s, title_length);
     cstrl_string_push_back(&s, title, title_length);
     cstrl_da_string_push_back(&ui_state->elements.titles, s);
+    cstrl_string_free(&s);
 
     cstrl_da_int_push_back(&ui_state->elements.parent_index, -1);
 
@@ -688,6 +710,7 @@ bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_len
     cstrl_string_init(&s, title_length);
     cstrl_string_push_back(&s, title, title_length);
     cstrl_da_string_push_back(&ui_state->elements.titles, s);
+    cstrl_string_free(&s);
 
     cstrl_da_int_push_back(&ui_state->elements.parent_index, parent_index);
 
@@ -767,9 +790,9 @@ bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int
 
     // TODO: fix this monstrosity
     string s;
+    cstrl_string_init(&s, placeholder_length);
     if (ui_state->element_cache.element_count > 0 && ui_state->active_item == id)
     {
-        cstrl_string_init(&s, 1);
         if (ui_state->element_cache.titles.array[ui_state->elements.element_count].size > 0)
         {
             cstrl_string_push_back(&s, ui_state->element_cache.titles.array[ui_state->elements.element_count].array,
@@ -803,12 +826,10 @@ bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int
     }
     else if (ui_state->element_cache.element_count <= 0)
     {
-        cstrl_string_init(&s, placeholder_length);
         cstrl_string_push_back(&s, placeholder, placeholder_length);
     }
     else
     {
-        cstrl_string_init(&s, 1);
         if (ui_state->element_cache.titles.array[ui_state->elements.element_count].size > 0)
         {
             cstrl_string_push_back(&s, ui_state->element_cache.titles.array[ui_state->elements.element_count].array,
@@ -817,6 +838,7 @@ bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int
     }
 
     cstrl_da_string_push_back(&ui_state->elements.titles, s);
+    cstrl_string_free(&s);
 
     cstrl_da_int_push_back(&ui_state->elements.parent_index, parent_index);
 

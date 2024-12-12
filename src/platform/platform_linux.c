@@ -125,9 +125,19 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
 
     XWarpPointer(state->display, state->main_window, state->main_window, 0, 0, width, height, width / 2, height / 2);
 
-    state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;
     state->state_common.window_width = width;
     state->state_common.window_height = height;
+
+    state->state_common.callbacks.key = NULL;
+    state->state_common.callbacks.mouse_position = NULL;
+
+    memset(state->state_common.input.mouse_buttons, 0, CSTRL_MOUSE_BUTTON_MAX + 1);
+    memset(state->state_common.input.keys, 0, CSTRL_KEY_MAX + 1);
+    state->state_common.input.last_mouse_x = -1;
+    state->state_common.input.last_mouse_y = -1;
+    state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;
+    state->state_common.input.cursor_shown = true;
+    state->state_common.input.most_recent_key_pressed = CSTRL_KEY_NONE;
 
     return true;
 }

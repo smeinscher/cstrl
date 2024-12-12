@@ -86,10 +86,17 @@ int basic_ui()
             }
             cstrl_ui_container_end(context);
         }
+        if (cstrl_ui_container_begin(context, "Console", 7, 10, 390, 780, 200, GEN_ID(0), false, 1))
+        {
+            cstrl_ui_container_end(context);
+        }
         cstrl_ui_end(context);
         cstrl_renderer_swap_buffers(&platform_state);
     }
+    cstrl_camera_free(camera);
     cstrl_ui_shutdown(context);
+    cstrl_renderer_free_render_data(render_data);
+    cstrl_renderer_destroy(&platform_state);
     cstrl_platform_shutdown(&platform_state);
     return 0;
 }

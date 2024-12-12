@@ -21,13 +21,16 @@ unsigned int compile_shader(const char *shader_source, unsigned int type);
 cstrl_shader cstrl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path)
 {
     long file_size;
-    const char *vertex_shader_source = cstrl_read_file(vertex_shader_path, &file_size);
-    const char *fragment_shader_source = cstrl_read_file(fragment_shader_path, &file_size);
+    char *vertex_shader_source = cstrl_read_file(vertex_shader_path, &file_size);
+    char *fragment_shader_source = cstrl_read_file(fragment_shader_path, &file_size);
     cstrl_shader shader = cstrl_load_shaders_from_source(vertex_shader_source, fragment_shader_source);
     shader.vertex_shader_path = vertex_shader_path;
     shader.fragment_shader_path = fragment_shader_path;
     shader.vertex_shader_last_modified_timestamp = cstrl_get_file_timestamp(vertex_shader_path);
     shader.fragment_shader_last_modified_timestamp = cstrl_get_file_timestamp(fragment_shader_path);
+
+    free(vertex_shader_source);
+    free(fragment_shader_source);
 
     return shader;
 }
