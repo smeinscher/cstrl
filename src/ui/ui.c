@@ -77,7 +77,7 @@ typedef struct cstrl_ui_internal_state
 } cstrl_ui_internal_state;
 
 const char *vertex_shader_source = "                            \
-    #version 460 core                                           \
+    #version 460 core\n                                         \
     layout (location = 0) in vec2 a_pos;                        \
     layout (location = 1) in vec2 a_uv;                         \
     layout (location = 2) in vec4 a_color;                      \
@@ -95,7 +95,7 @@ const char *vertex_shader_source = "                            \
     }";
 
 const char *fragment_shader_source = "                          \
-    #version 460 core                                           \
+    #version 460 core\n                                         \
                                                                 \
     out vec4 frag_color;                                        \
                                                                 \
@@ -109,36 +109,36 @@ const char *fragment_shader_source = "                          \
         frag_color = color * texture(texture0, uv);             \
     }";
 
-const char *font_vertex_shader_source = "\
-    #version 460 core\
-    layout (location = 0) in vec2 a_pos;\
-    layout (location = 1) in vec2 a_uv;\
-    layout (location = 2) in vec4 a_color;\
-\
-    out vec2 uv;\
-    out vec4 color;\
-\
-    uniform mat4 projection;\
-\
-    void main()\
-    {\
-        gl_Position = projection * vec4(a_pos, -1.0, 1.0);\
-        uv = a_uv;\
-        color = a_color;\
+const char *font_vertex_shader_source = "                       \
+    #version 460 core\n                                         \
+    layout (location = 0) in vec2 a_pos;                        \
+    layout (location = 1) in vec2 a_uv;                         \
+    layout (location = 2) in vec4 a_color;                      \
+                                                                \
+    out vec2 uv;                                                \
+    out vec4 color;                                             \
+                                                                \
+    uniform mat4 projection;                                    \
+                                                                \
+    void main()                                                 \
+    {                                                           \
+        gl_Position = projection * vec4(a_pos, -1.0, 1.0);      \
+        uv = a_uv;                                              \
+        color = a_color;                                        \
     }";
-const char *font_fragment_shader_source = "\
-    #version 460 core\
-\
-    out vec4 frag_color;\
-\
-    in vec2 uv;\
-    in vec4 color;\
-\
-    uniform sampler2D texture0;\
-\
-    void main()\
-    {\
-        frag_color = vec4(color.rgb, texture(texture0, uv).r);\
+const char *font_fragment_shader_source = "                     \
+    #version 460 core\n                                         \
+                                                                \
+    out vec4 frag_color;                                        \
+                                                                \
+    in vec2 uv;                                                 \
+    in vec4 color;                                              \
+                                                                \
+    uniform sampler2D texture0;                                 \
+                                                                \
+    void main()                                                 \
+    {                                                           \
+        frag_color = vec4(color.rgb, texture(texture0, uv).r);  \
     }";
 
 #define FONT_SIZE 32

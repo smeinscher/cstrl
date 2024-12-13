@@ -97,8 +97,6 @@ add_executable(cstrl-sandbox
         sandbox/main.c
         sandbox/ui/basic_ui.c
         sandbox/ui/basic_ui.h
-        android/basic_android_app.c
-        android/basic_android_app.h
 )
 
 target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)
@@ -106,9 +104,6 @@ if (X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)
 endif ()
 if (ANDROID)
-    #    add_library(android_native_app_glue SHARED
-    #            extern/android/native_app_glue/android_native_app_glue.c
-    #            extern/android/native_app_glue/android_native_app_glue.h)
     target_link_libraries(cstrl PRIVATE EGL)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log.c cstrl m)
