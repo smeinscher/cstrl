@@ -48,6 +48,19 @@ typedef struct internal_state
 
 #endif
 
+#ifdef CSTRL_PLATFORM_ANDROID
+
+#include <GLES/egl.h>
+
+typedef struct internal_state
+{
+    EGLDisplay display;
+    EGLConfig config;
+    EGLSurface surface;
+    internal_state_common state_common;
+} internal_state;
+#endif
+
 #ifdef CSTRL_PLATFORM_LINUX
 
 #include <X11/Xlib.h>

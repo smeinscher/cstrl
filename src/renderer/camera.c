@@ -122,3 +122,9 @@ void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change
         camera->forward = cstrl_vec3_rotate_by_quat(camera->forward, cstrl_quat_conjugate(v));
     }
 }
+
+void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation)
+{
+    camera->forward = cstrl_vec3_rotate_by_quat(camera->forward, rotation);
+    camera->forward = cstrl_vec3_normalize(camera->forward);
+}

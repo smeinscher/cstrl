@@ -7,7 +7,11 @@
 #ifdef CSTRL_RENDERER_OPENGL
 
 #include "cstrl/cstrl_util.h"
+#ifdef CSTRL_PLATFORM_ANDROID
+#include <glad/gles3/glad.h>
+#else
 #include "glad/glad.h"
+#endif
 #include "log.c/log.h"
 #include "stb/stb_image.h"
 

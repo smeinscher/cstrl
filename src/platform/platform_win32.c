@@ -8,7 +8,6 @@
 
 #ifdef CSTRL_PLATFORM_WINDOWS
 
-#include "glad/glad.h"
 #include "log.c/log.h"
 #include "platform_internal.h"
 

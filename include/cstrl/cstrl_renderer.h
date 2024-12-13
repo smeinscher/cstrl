@@ -63,7 +63,7 @@ typedef struct cstrl_render_data
  *
  */
 
-void cstrl_renderer_init(cstrl_platform_state *platform_state);
+bool cstrl_renderer_init(cstrl_platform_state *platform_state);
 
 void cstrl_renderer_clear(float r, float g, float b, float a);
 
@@ -139,5 +139,7 @@ void cstrl_camera_update(cstrl_camera *camera, bool moving_up, bool moving_down,
                          bool turning_up, bool turning_down, bool turning_left, bool turning_right);
 
 void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis);
+
+void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation);
 
 #endif // CSTRL_RENDERER_H

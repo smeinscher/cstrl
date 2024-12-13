@@ -2,8 +2,13 @@
 // Created by 12105 on 11/23/2024.
 //
 
+#include "cstrl/cstrl_defines.h"
 #include "cstrl/cstrl_util.h"
+#ifdef CSTRL_PLATFORM_ANDROID
+#include <glad/gles3/glad.h>
+#else
 #include "glad/glad.h"
+#endif
 #include "log.c/log.h"
 #include "opengl_platform.h"
 
@@ -27,15 +32,21 @@ typedef struct internal_data
     unsigned int *indices;
 } internal_data;
 
-void cstrl_renderer_init(cstrl_platform_state *platform_state)
+bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
-    cstrl_opengl_platform_init(platform_state);
+    if (!cstrl_opengl_platform_init(platform_state))
+    {
+        return false;
+    }
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
     // glEnable(GL_LINE_WIDTH);
     // glLineWidth(1.0f);
+
+    return true;
 }
 
 void cstrl_renderer_clear(float r, float g, float b, float a)

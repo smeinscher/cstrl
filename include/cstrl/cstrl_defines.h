@@ -5,10 +5,14 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#ifdef _WIN32
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 #define CSTRL_PLATFORM_WINDOWS
-#else
+#elif defined(__ANDROID__)
+#define CSTRL_PLATFORM_ANDROID
+#elif defined(__linux__) || defined(__gnu_linux__)
 #define CSTRL_PLATFORM_LINUX
+#else
+#error "Unknown platform"
 #endif
 
 #ifdef CSTRL_EXPORT

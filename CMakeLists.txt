@@ -3,9 +3,11 @@ project(cstrl C)
 project(cstrl-test C)
 project(cstrl-sandbox C)
 
+set(CMAKE_SYSTEM_PROCESSOR arm)
+
 set(CMAKE_C_STANDARD 11)
 
-find_package(OpenGL REQUIRED)
+find_package(OpenGL)
 
 find_package(X11 QUIET)
 
@@ -14,9 +16,17 @@ add_library(log.c SHARED
         extern/log.c/log.h)
 target_compile_options(log.c PRIVATE -DLOG_USE_COLOR)
 
+if (ANDROID)
+    set(GLAD_C extern/glad/gles3/glad.c)
+    set(GLAD_H extern/glad/gles3/glad.h extern/glad/gles3/KHR/khrplatform.h)
+else ()
+    set(GLAD_C extern/glad/glad.c)
+    set(GLAD_H extern/glad/glad.h)
+endif ()
+
 add_library(cstrl SHARED
-        extern/glad/glad.c
-        extern/glad/glad.h
+        ${GLAD_C}
+        ${GLAD_H}
         include/cstrl/cstrl_defines.h
         include/cstrl/cstrl_math.h
         src/util/dynamic_array.c
@@ -46,6 +56,8 @@ add_library(cstrl SHARED
         extern/stb/stb_truetype.h
         extern/stb/stb_image_write.c
         extern/stb/stb_image_write.h
+        src/platform/platform_android.c
+        src/renderer/opengl/opengl_platform_android.c
 )
 
 add_executable(cstrl-test
@@ -85,11 +97,19 @@ add_executable(cstrl-sandbox
         sandbox/main.c
         sandbox/ui/basic_ui.c
         sandbox/ui/basic_ui.h
+        android/basic_android_app.c
+        android/basic_android_app.h
 )
 
 target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)
 if (X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)
+endif ()
+if (ANDROID)
+    #    add_library(android_native_app_glue SHARED
+    #            extern/android/native_app_glue/android_native_app_glue.c
+    #            extern/android/native_app_glue/android_native_app_glue.h)
+    target_link_libraries(cstrl PRIVATE EGL)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log.c cstrl m)
 target_link_libraries(cstrl-sandbox PRIVATE cstrl m)

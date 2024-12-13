@@ -2,8 +2,6 @@
 // Created by sterling on 11/23/24.
 //
 
-#include "glad/glad.h"
-
 #include <cstrl/cstrl_platform.h>
 
 #ifdef CSTRL_PLATFORM_LINUX
