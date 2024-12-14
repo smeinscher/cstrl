@@ -137,6 +137,7 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     state->state_common.input.cursor_shown = true;
     state->state_common.input.most_recent_key_pressed = CSTRL_KEY_NONE;
 
+    XMapWindow(state->display, state->main_window);
     return true;
 }
 

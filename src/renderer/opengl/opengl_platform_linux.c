@@ -56,7 +56,6 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
     gladLoadGL();
     glViewport(0, 0, 800, 600);
 
-    XMapWindow(state->display, state->main_window);
     return true;
 }
 
