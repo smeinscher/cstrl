@@ -6,7 +6,7 @@
 
 #include <cstrl/cstrl_platform.h>
 
-#ifdef CSTRL_PLATFORM_WINDOWS
+#if defined(CSTRL_PLATFORM_WINDOWS)
 
 #include "log.c/log.h"
 #include "platform_internal.h"
@@ -282,6 +282,8 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
 
     state->state_common.window_width = width;
     state->state_common.window_height = height;
+
+    ShowWindow(state->hwnd, SW_SHOW);
 
     return true;
 }

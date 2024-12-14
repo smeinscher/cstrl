@@ -30,8 +30,7 @@ typedef enum cstrl_render_attribute_type
     CSTRL_RENDER_ATTRIBUTE_MAX
 } cstrl_render_attribute_type;
 
-#define CSTRL_RENDERER_OPENGL
-#ifdef CSTRL_RENDERER_OPENGL
+#if defined(CSTRL_RENDER_API_OPENGL)
 
 typedef struct cstrl_shader
 {
@@ -50,6 +49,16 @@ typedef struct cstrl_texture
     time_t last_modified_timestamp;
 } cstrl_texture;
 
+#elif defined(CSTRL_RENDER_API_VULKAN)
+typedef struct cstrl_shader
+{
+    int program;
+} cstrl_shader;
+
+typedef struct cstrl_texture
+{
+    int id;
+} cstrl_texture;
 #endif
 
 typedef struct cstrl_render_data

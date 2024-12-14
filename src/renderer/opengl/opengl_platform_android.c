@@ -4,7 +4,8 @@
 
 #include "opengl_platform.h"
 
-#ifdef CSTRL_PLATFORM_ANDROID
+#if defined(CSTRL_RENDER_API_OPENGL)
+#if defined(CSTRL_PLATFORM_ANDROID)
 
 #include "../../platform/platform_internal.h"
 
@@ -64,4 +65,5 @@ void cstrl_opengl_platform_swap_buffers(cstrl_platform_state *platform_state)
     }
 }
 
+#endif
 #endif

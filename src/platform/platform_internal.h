@@ -35,7 +35,7 @@ typedef struct internal_state_common
     input_state input;
 } internal_state_common;
 
-#ifdef CSTRL_PLATFORM_WINDOWS
+#if defined(CSTRL_PLATFORM_WINDOWS)
 
 #include <windows.h>
 
@@ -48,7 +48,7 @@ typedef struct internal_state
 
 #endif
 
-#ifdef CSTRL_PLATFORM_ANDROID
+#if defined(CSTRL_PLATFORM_ANDROID)
 
 #include <GLES/egl.h>
 
@@ -61,7 +61,7 @@ typedef struct internal_state
 } internal_state;
 #endif
 
-#ifdef CSTRL_PLATFORM_LINUX
+#if defined(CSTRL_PLATFORM_LINUX)
 
 #include <X11/Xlib.h>
 #include <xcb/xcb.h>

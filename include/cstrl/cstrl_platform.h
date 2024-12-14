@@ -13,7 +13,7 @@
 typedef struct cstrl_platform_state
 {
     void *internal_state;
-#ifdef CSTRL_PLATFORM_ANDROID
+#if defined(CSTRL_PLATFORM_ANDROID)
     void *app_window;
     const char *debug_message;
 #endif

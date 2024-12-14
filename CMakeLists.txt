@@ -9,6 +9,8 @@ set(CMAKE_C_STANDARD 11)
 
 find_package(OpenGL)
 
+find_package(Vulkan)
+
 find_package(X11 QUIET)
 
 add_library(log.c SHARED
@@ -58,6 +60,11 @@ add_library(cstrl SHARED
         extern/stb/stb_image_write.h
         src/platform/platform_android.c
         src/renderer/opengl/opengl_platform_android.c
+        src/renderer/vulkan/vulkan_renderer.c
+        sandbox/vulkan-tutorial/vulkan_triangle.c
+        sandbox/vulkan-tutorial/vulkan_triangle.h
+        src/renderer/vulkan/vulkan_shader.c
+        src/renderer/vulkan/vulkan_texture.c
 )
 
 add_executable(cstrl-test
@@ -105,6 +112,8 @@ if (X11_FOUND)
 endif ()
 if (ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
+else ()
+    target_link_libraries(cstrl PRIVATE Vulkan::Vulkan)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log.c cstrl m)
 target_link_libraries(cstrl-sandbox PRIVATE cstrl m)
@@ -112,3 +121,5 @@ target_link_libraries(cstrl-sandbox PRIVATE cstrl m)
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+add_compile_definitions(CSTRL_RENDER_API_VULKAN)

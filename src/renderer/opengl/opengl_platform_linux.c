@@ -4,7 +4,7 @@
 
 #include <cstrl/cstrl_defines.h>
 
-#ifdef CSTRL_PLATFORM_LINUX
+#if defined(CSTRL_RENDER_API_OPENGL) && defined(CSTRL_PLATFORM_LINUX)
 
 #include "../../platform/platform_internal.h"
 #include "glad/glad.h"

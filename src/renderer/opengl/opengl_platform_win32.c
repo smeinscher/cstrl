@@ -4,7 +4,7 @@
 
 #include <cstrl/cstrl_defines.h>
 
-#ifdef CSTRL_PLATFORM_WINDOWS
+#if defined(CSTRL_RENDER_API_OPENGL) && defined(CSTRL_PLATFORM_WINDOWS)
 
 #include "glad/glad.h"
 #include "opengl_platform.h"
@@ -69,8 +69,6 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
 
     gladLoadGL();
     glViewport(0, 0, 800, 600);
-
-    ShowWindow(state->hwnd, SW_SHOW);
 
     return true;
 }

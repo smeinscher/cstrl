@@ -3,7 +3,7 @@
 //
 
 #include "cstrl/cstrl_platform.h"
-#ifdef CSTRL_PLATFORM_ANDROID
+#if defined(CSTRL_PLATFORM_ANDROID)
 #include "log.c/log.h"
 #include "platform_internal.h"
 

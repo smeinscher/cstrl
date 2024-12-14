@@ -15,14 +15,14 @@
 #error "Unknown platform"
 #endif
 
-#ifdef CSTRL_EXPORT
-#ifdef _MSC_VER
+#if defined(CSTRL_EXPORT)
+#if defined(_MSC_VER)
 #define CSTRL_API _declspec(dllexport)
 #else
 #define CSTRL_API __attribute__((visibility("default")))
 #endif
 #else
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #define CSTRL_API __declspec(dllimport)
 #else
 #define CSTRL_API

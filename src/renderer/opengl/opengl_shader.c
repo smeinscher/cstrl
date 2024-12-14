@@ -4,12 +4,12 @@
 
 #include "cstrl/cstrl_renderer.h"
 
-#ifdef CSTRL_RENDERER_OPENGL
+#if defined(CSTRL_RENDER_API_OPENGL)
 
 #include <stdio.h>
 
 #include "cstrl/cstrl_util.h"
-#ifdef CSTRL_PLATFORM_ANDROID
+#if defined(CSTRL_PLATFORM_ANDROID)
 #include <glad/gles3/glad.h>
 #else
 #include "glad/glad.h"

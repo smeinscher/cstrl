@@ -5,6 +5,7 @@
 #include "learnopengl.h"
 
 #include "cstrl/cstrl_platform.h"
+#define CSTRL_RENDER_API_OPENGL
 #include "cstrl/cstrl_renderer.h"
 
 static cstrl_camera *g_main_camera;

@@ -4,9 +4,10 @@
 
 #include "learnopengl/learnopengl.h"
 #include "ui/basic_ui.h"
+#include "vulkan-tutorial/vulkan_triangle.h"
 
 int main()
 {
-    int result = basic_ui();
+    int result = vulkan_triangle();
     return result;
 }

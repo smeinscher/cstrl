@@ -2,9 +2,10 @@
 // Created by 12105 on 11/23/2024.
 //
 
+#if defined(CSTRL_RENDER_API_OPENGL)
 #include "cstrl/cstrl_defines.h"
 #include "cstrl/cstrl_util.h"
-#ifdef CSTRL_PLATFORM_ANDROID
+#if defined(CSTRL_PLATFORM_ANDROID)
 #include <glad/gles3/glad.h>
 #else
 #include "glad/glad.h"
@@ -272,3 +273,5 @@ void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state)
 {
     cstrl_opengl_platform_swap_buffers(platform_state);
 }
+
+#endif

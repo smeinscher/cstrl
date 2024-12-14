@@ -4,7 +4,7 @@
 
 #include <cstrl/cstrl_platform.h>
 
-#ifdef CSTRL_PLATFORM_LINUX
+#if defined(CSTRL_PLATFORM_LINUX)
 
 #include "cstrl/cstrl_types.h"
 #include "log.c/log.h"
