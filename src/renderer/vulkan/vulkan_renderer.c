@@ -17,6 +17,7 @@
 #endif
 
 VkInstance g_instance;
+VkDebugUtilsMessengerEXT g_debug_messenger;
 
 const char *validation_layers[] = {"VK_LAYER_KHRONOS_validation"};
 int validation_layer_size = 1;
@@ -76,31 +77,6 @@ const char **get_required_extensions(uint32_t *extension_count)
     return extensions;
 }
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-                                                     VkDebugUtilsMessageTypeFlagsEXT message_type,
-                                                     const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
-                                                     void *user_data)
-{
-    switch (message_severity)
-    {
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        log_trace("Validation layer: %s", callback_data->pMessage);
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        log_info("Validation layer: %s", callback_data->pMessage);
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        log_warn("Validation layer: %s", callback_data->pMessage);
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        log_error("Validation layer: %s", callback_data->pMessage);
-        break;
-    default:
-        break;
-    }
-    return VK_FALSE;
-}
-
 VkInstance create_instance()
 {
 #if defined(CSTRL_VULKAN_ENABLE_VALIDATION_LAYERS)
@@ -148,9 +124,50 @@ VkInstance create_instance()
     return instance;
 }
 
+#if defined(CSTRL_VULKAN_ENABLE_VALIDATION_LAYERS)
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                                                     VkDebugUtilsMessageTypeFlagsEXT message_type,
+                                                     const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
+                                                     void *user_data)
+{
+    switch (message_severity)
+    {
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+        log_trace("Validation layer: %s", callback_data->pMessage);
+        break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+        log_info("Validation layer: %s", callback_data->pMessage);
+        break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+        log_warn("Validation layer: %s", callback_data->pMessage);
+        break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+        log_error("Validation layer: %s", callback_data->pMessage);
+        break;
+    default:
+        break;
+    }
+    return VK_FALSE;
+}
+
+void setup_debug_messenger()
+{
+    VkDebugUtilsMessengerCreateInfoEXT create_info = {0};
+    create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                              VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    create_info.pfnUserCallback = debug_callback;
+    create_info.pUserData = NULL;
+}
+#endif
+
 bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
     g_instance = create_instance();
+#if defined(CSTRL_VULKAN_ENABLE_VALIDATION_LAYERS)
+    setup_debug_messenger();
+#endif
     log_trace("Using Vulkan!");
 
     return true;
