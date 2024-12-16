@@ -2,9 +2,7 @@
 // Created by sterling on 7/5/24.
 //
 
-#include "cstrl/cstrl_platform.h"
-#include "cstrl/cstrl_renderer.h"
-#include "log.c/log.h"
+#include "cstrl/cstrl_camera.h"
 
 #include <stdlib.h>
 
@@ -31,51 +29,47 @@ void cstrl_camera_free(cstrl_camera *camera)
     free(camera);
 }
 
-void cstrl_camera_update(cstrl_camera *camera, bool moving_up, bool moving_down, bool moving_left, bool moving_right,
-                         bool turning_up, bool turning_down, bool turning_left, bool turning_right)
+void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movement,
+                         cstrl_camera_direction_mask rotation)
 {
     vec3 forward = cstrl_vec3_rotate_by_quat((vec3){0.0f, 0.0f, -1.0f}, camera->transform.rotation);
     forward = cstrl_vec3_normalize(forward);
     forward = camera->forward;
     vec3 velocity = {0.0f, 0.0f, 0.0f};
-    if (moving_up)
+    if (movement & CSTRL_CAMERA_DIRECTION_UP)
     {
         velocity = cstrl_vec3_add(velocity, forward);
-        // velocity.y -= 1.0f;
     }
-    if (moving_down)
+    if (movement & CSTRL_CAMERA_DIRECTION_DOWN)
     {
         velocity = cstrl_vec3_sub(velocity, forward);
-        // velocity.y += 1.0f;
     }
-    if (moving_left)
+    if (movement & CSTRL_CAMERA_DIRECTION_LEFT)
     {
         velocity = cstrl_vec3_sub(velocity, cstrl_vec3_normalize(cstrl_vec3_cross(forward, (vec3){0.0f, 1.0f, 0.0f})));
-        // velocity.x -= 1.0f;
     }
-    if (moving_right)
+    if (movement & CSTRL_CAMERA_DIRECTION_RIGHT)
     {
         velocity = cstrl_vec3_add(velocity, cstrl_vec3_normalize(cstrl_vec3_cross(forward, (vec3){0.0f, 1.0f, 0.0f})));
-        // velocity.x += 1.0f;
     }
     velocity = cstrl_vec3_normalize(velocity);
     velocity = cstrl_vec3_mult_scalar(velocity, 0.1f);
     camera->transform.position = cstrl_vec3_add(camera->transform.position, velocity);
 
     vec3 rotation_velocity = {0.0f, 0.0f, 0.0f};
-    if (turning_up)
+    if (rotation & CSTRL_CAMERA_DIRECTION_UP)
     {
         rotation_velocity.y -= 1.0f;
     }
-    if (turning_down)
+    if (rotation & CSTRL_CAMERA_DIRECTION_DOWN)
     {
         rotation_velocity.y += 1.0f;
     }
-    if (turning_left)
+    if (rotation & CSTRL_CAMERA_DIRECTION_LEFT)
     {
         rotation_velocity.x -= 1.0f;
     }
-    if (turning_right)
+    if (rotation & CSTRL_CAMERA_DIRECTION_RIGHT)
     {
         rotation_velocity.x += 1.0f;
     }
@@ -85,11 +79,6 @@ void cstrl_camera_update(cstrl_camera *camera, bool moving_up, bool moving_down,
     camera->view =
         cstrl_mat4_look_at(camera->transform.position, cstrl_vec3_add(camera->transform.position, forward), up);
 
-    // float left = (float)g_viewport_width - (float)g_viewport_width / (g_zoom_factor / g_zoom);
-    // float right = (float)g_viewport_width / (g_zoom_factor / g_zoom);
-    // float bottom = (float)g_viewport_height / (g_zoom_factor / g_zoom);
-    // float top = (float)g_viewport_height - (float)g_viewport_height / (g_zoom_factor / g_zoom);
-    // g_projection = cstrl_ortho(left, right, bottom, top, 0.1f, 1000.0f);
     if (!camera->is_orthographic)
     {
         camera->projection =
@@ -100,7 +89,6 @@ void cstrl_camera_update(cstrl_camera *camera, bool moving_up, bool moving_down,
         camera->projection =
             cstrl_mat4_ortho(0.0f, (float)camera->viewport.x, (float)camera->viewport.y, 0.0f, 0.1f, 100.0f);
     }
-    // g_projection = cstrl_ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
 }
 
 void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis)

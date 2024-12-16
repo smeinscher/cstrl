@@ -6,6 +6,7 @@
 
 #include "cstrl/cstrl_platform.h"
 #define CSTRL_RENDER_API_OPENGL
+#include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_ui.h"
 
@@ -55,7 +56,7 @@ int basic_ui()
         cstrl_load_shaders_from_files("../resources/shaders/default.vert", "../resources/shaders/default.frag");
     cstrl_texture texture = cstrl_texture_generate_from_path("../resources/textures/background.jpg");
     cstrl_camera *camera = cstrl_camera_create(800, 600, true);
-    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
+    cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     cstrl_set_uniform_mat4(shader.program, "view", camera->view);
     cstrl_set_uniform_mat4(shader.program, "projection", camera->projection);
     cstrl_ui_context *context = cstrl_ui_init(&platform_state);

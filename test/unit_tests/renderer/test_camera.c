@@ -5,13 +5,13 @@
 #include "test_camera.h"
 
 #include "../../test_manager/test_types.h"
-#include "cstrl/cstrl_renderer.h"
+#include "cstrl/cstrl_camera.h"
 
 int test_camera_process_mouse_movement()
 {
     cstrl_camera *camera = cstrl_camera_create(800, 600, false);
     cstrl_camera_rotate(camera, 0, 0);
-    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
+    cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     quat rotation_expected = {1.0f, 0.0f, 0.0f, 0.0f};
     quat rotation_result = camera->transform.rotation;
 
@@ -21,7 +21,7 @@ int test_camera_process_mouse_movement()
     expect_float_to_be(rotation_expected.z, rotation_result.z);
 
     cstrl_camera_rotate(camera, 0, 2000);
-    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
+    cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     rotation_expected = cstrl_quat_from_euler_angles((vec3){-69.0f * (cstrl_pi / 180.0f), 0.0f, 0.0f});
     rotation_result = camera->transform.rotation;
 
@@ -34,7 +34,7 @@ int test_camera_process_mouse_movement()
     camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
 
     cstrl_camera_rotate(camera, 0, -2000);
-    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
+    cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     rotation_expected = cstrl_quat_from_euler_angles((vec3){69.0f * (cstrl_pi / 180.0f), 0.0f, 0.0f});
     rotation_result = camera->transform.rotation;
 
@@ -46,7 +46,7 @@ int test_camera_process_mouse_movement()
     camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
 
     cstrl_camera_rotate(camera, 0.2f, 0.0f);
-    cstrl_camera_update(camera, false, false, false, false, false, false, false, false);
+    cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     rotation_expected = cstrl_quat_from_euler_angles((vec3){0.0f, -0.2f, 0.0f});
     rotation_result = camera->transform.rotation;
 

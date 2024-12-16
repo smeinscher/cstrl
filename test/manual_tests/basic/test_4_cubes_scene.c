@@ -6,20 +6,15 @@
 
 #include "../../../src/renderer/glsl_shader_programs.h"
 #include "../../test_manager/test_types.h"
+#include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_ui.h"
 
 static cstrl_camera *g_main_camera;
-static bool g_camera_moving_up = false;
-static bool g_camera_moving_down = false;
-static bool g_camera_moving_left = false;
-static bool g_camera_moving_right = false;
-static bool g_camera_turning_up = false;
-static bool g_camera_turning_down = false;
-static bool g_camera_turning_left = false;
-static bool g_camera_turning_right = false;
+static cstrl_camera_direction_mask g_movement;
+static cstrl_camera_direction_mask g_rotation;
 
 static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -34,81 +29,81 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_W:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_camera_moving_up = true;
+            g_movement |= CSTRL_CAMERA_DIRECTION_UP;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_camera_moving_up = false;
+            g_movement &= ~CSTRL_CAMERA_DIRECTION_UP;
         }
         break;
     case CSTRL_KEY_S:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_camera_moving_down = true;
+            g_movement |= CSTRL_CAMERA_DIRECTION_DOWN;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_camera_moving_down = false;
+            g_movement &= ~CSTRL_CAMERA_DIRECTION_DOWN;
         }
         break;
     case CSTRL_KEY_A:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_camera_moving_left = true;
+            g_movement |= CSTRL_CAMERA_DIRECTION_LEFT;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_camera_moving_left = false;
+            g_movement &= ~CSTRL_CAMERA_DIRECTION_LEFT;
         }
         break;
     case CSTRL_KEY_D:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_camera_moving_right = true;
+            g_movement |= CSTRL_CAMERA_DIRECTION_RIGHT;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_camera_moving_right = false;
+            g_movement &= ~CSTRL_CAMERA_DIRECTION_RIGHT;
         }
         break;
     case CSTRL_KEY_Z:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_camera_turning_up = true;
+            g_rotation |= CSTRL_CAMERA_DIRECTION_UP;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_camera_turning_up = false;
+            g_rotation &= ~CSTRL_CAMERA_DIRECTION_UP;
         }
         break;
     case CSTRL_KEY_X:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_camera_turning_down = true;
+            g_rotation |= CSTRL_CAMERA_DIRECTION_DOWN;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_camera_turning_down = false;
+            g_rotation &= ~CSTRL_CAMERA_DIRECTION_DOWN;
         }
         break;
     case CSTRL_KEY_Q:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_camera_turning_left = true;
+            g_rotation |= CSTRL_CAMERA_DIRECTION_LEFT;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_camera_turning_left = false;
+            g_rotation &= ~CSTRL_CAMERA_DIRECTION_LEFT;
         }
         break;
     case CSTRL_KEY_E:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_camera_turning_right = true;
+            g_rotation |= CSTRL_CAMERA_DIRECTION_RIGHT;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_camera_turning_right = false;
+            g_rotation &= ~CSTRL_CAMERA_DIRECTION_RIGHT;
         }
         break;
     case CSTRL_KEY_R:
@@ -278,9 +273,7 @@ int test_4_cubes_scene()
         lag += elapsed_time;
         while (lag >= 1.0 / 60.0)
         {
-            cstrl_camera_update(g_main_camera, g_camera_moving_up, g_camera_moving_down, g_camera_moving_left,
-                                g_camera_moving_right, g_camera_turning_up, g_camera_turning_down,
-                                g_camera_turning_left, g_camera_turning_right);
+            cstrl_camera_update(g_main_camera, g_movement, g_rotation);
             lag -= 1.0 / 60.0;
         }
         cstrl_renderer_clear(0.1f, 0.2f, 0.4f, 1.0f);

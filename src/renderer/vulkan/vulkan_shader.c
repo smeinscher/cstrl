@@ -2,6 +2,8 @@
 // Created by 12105 on 12/13/2024.
 //
 
+#if defined(CSTRL_RENDER_API_VULKAN)
+
 #include "cstrl/cstrl_renderer.h"
 
 cstrl_shader cstrl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path)
@@ -38,3 +40,5 @@ void cstrl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat)
 void cstrl_shader_hot_reload(cstrl_shader *shader)
 {
 }
+
+#endif

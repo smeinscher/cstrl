@@ -65,6 +65,7 @@ add_library(cstrl SHARED
         sandbox/vulkan-tutorial/vulkan_triangle.h
         src/renderer/vulkan/vulkan_shader.c
         src/renderer/vulkan/vulkan_texture.c
+        include/cstrl/cstrl_camera.h
 )
 
 add_executable(cstrl-test
@@ -122,4 +123,4 @@ target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOUR
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-add_compile_definitions(CSTRL_RENDER_API_VULKAN)
+add_compile_definitions(CSTRL_RENDER_API_OPENGL)
