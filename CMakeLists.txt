@@ -3,7 +3,9 @@ project(cstrl C)
 project(cstrl-test C)
 project(cstrl-sandbox C)
 
-set(CMAKE_SYSTEM_PROCESSOR arm)
+#set(CMAKE_SYSTEM_PROCESSOR arm)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_STANDARD 11)
 
@@ -13,10 +15,12 @@ find_package(Vulkan)
 
 find_package(X11 QUIET)
 
-add_library(log.c SHARED
+add_library(log_c STATIC
         extern/log.c/log.c
         extern/log.c/log.h)
-target_compile_options(log.c PRIVATE -DLOG_USE_COLOR)
+target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
+
+add_compile_definitions(CSTRL_RENDER_API_VULKAN)
 
 if (ANDROID)
     set(GLAD_C extern/glad/gles3/glad.c)
@@ -61,8 +65,6 @@ add_library(cstrl SHARED
         src/platform/platform_android.c
         src/renderer/opengl/opengl_platform_android.c
         src/renderer/vulkan/vulkan_renderer.c
-        sandbox/vulkan-tutorial/vulkan_triangle.c
-        sandbox/vulkan-tutorial/vulkan_triangle.h
         src/renderer/vulkan/vulkan_shader.c
         src/renderer/vulkan/vulkan_texture.c
         include/cstrl/cstrl_camera.h
@@ -105,22 +107,29 @@ add_executable(cstrl-sandbox
         sandbox/main.c
         sandbox/ui/basic_ui.c
         sandbox/ui/basic_ui.h
+        sandbox/vulkan-tutorial/vulkan_triangle.c
+        sandbox/vulkan-tutorial/vulkan_triangle.h
 )
 
-target_link_libraries(cstrl PRIVATE log.c ${OPENGL_LIBRARIES} m)
+target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
+target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES})
 if (X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)
+endif ()
+if (UNIX)
+    target_link_libraries(cstrl PRIVATE m)
+    target_link_libraries(cstrl-test PRIVATE m)
+    target_link_libraries(cstrl-sandbox PRIVATE m)
 endif ()
 if (ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
 else ()
     target_link_libraries(cstrl PRIVATE Vulkan::Vulkan)
 endif ()
-target_link_libraries(cstrl-test PRIVATE log.c cstrl m)
-target_link_libraries(cstrl-sandbox PRIVATE cstrl m)
+target_link_libraries(cstrl-test PRIVATE log_c cstrl)
+target_link_libraries(cstrl-sandbox PRIVATE cstrl)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-add_compile_definitions(CSTRL_RENDER_API_OPENGL)

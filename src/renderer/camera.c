@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 
-cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool is_orthographic)
+CSTRL_API cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool is_orthographic)
 {
     cstrl_camera *new_camera = malloc(sizeof(cstrl_camera));
 
@@ -24,13 +24,13 @@ cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool 
     return new_camera;
 }
 
-void cstrl_camera_free(cstrl_camera *camera)
+CSTRL_API void cstrl_camera_free(cstrl_camera *camera)
 {
     free(camera);
 }
 
-void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movement,
-                         cstrl_camera_direction_mask rotation)
+CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movement,
+                                   cstrl_camera_direction_mask rotation)
 {
     vec3 forward = cstrl_vec3_rotate_by_quat((vec3){0.0f, 0.0f, -1.0f}, camera->transform.rotation);
     forward = cstrl_vec3_normalize(forward);
@@ -91,7 +91,7 @@ void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movem
     }
 }
 
-void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis)
+CSTRL_API void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis)
 {
     if (change_y_axis == 0.0f && change_x_axis == 0.0f)
     {
@@ -111,7 +111,7 @@ void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change
     }
 }
 
-void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation)
+CSTRL_API void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation)
 {
     camera->forward = cstrl_vec3_rotate_by_quat(camera->forward, rotation);
     camera->forward = cstrl_vec3_normalize(camera->forward);

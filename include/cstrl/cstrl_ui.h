@@ -22,30 +22,30 @@ typedef enum cstrl_ui_text_alignment
     CSTRL_UI_TEXT_ALIGN_RIGHT
 } cstrl_ui_text_alignment;
 
-cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state);
+CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state);
 
-void cstrl_ui_begin(cstrl_ui_context *context);
+CSTRL_API void cstrl_ui_begin(cstrl_ui_context *context);
 
-void cstrl_ui_end(cstrl_ui_context *context);
+CSTRL_API void cstrl_ui_end(cstrl_ui_context *context);
 
-void cstrl_ui_shutdown(cstrl_ui_context *context);
+CSTRL_API void cstrl_ui_shutdown(cstrl_ui_context *context);
 
-bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int object_width, int object_height);
+CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int object_width, int object_height);
 
-float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale);
+CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale);
 
-bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
+CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
                    cstrl_ui_text_alignment alignment);
 
-bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
+CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
                               int h, int id, bool is_static, int order_priority);
 
-void cstrl_ui_container_end(cstrl_ui_context *context);
+CSTRL_API void cstrl_ui_container_end(cstrl_ui_context *context);
 
-bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h,
+CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h,
                      int id);
 
-bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x, int y,
+CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x, int y,
                          int w, int h, int id, char *buffer, size_t buffer_size);
 
 #endif // CSTRL_UI_H

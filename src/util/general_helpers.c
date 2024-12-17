@@ -6,7 +6,7 @@
 #include <malloc.h>
 #include <stdio.h>
 
-void cstrl_realloc_int(int **int_ptr, size_t size)
+CSTRL_API void cstrl_realloc_int(int **int_ptr, size_t size)
 {
     int *temp_int_ptr = realloc(*int_ptr, size * sizeof(int));
     if (temp_int_ptr == NULL)
@@ -17,7 +17,7 @@ void cstrl_realloc_int(int **int_ptr, size_t size)
     *int_ptr = temp_int_ptr;
 }
 
-void cstrl_realloc_float(float **float_ptr, size_t size)
+CSTRL_API void cstrl_realloc_float(float **float_ptr, size_t size)
 {
     float *temp_float_ptr = realloc(*float_ptr, size * sizeof(float));
     if (temp_float_ptr == NULL)
@@ -28,7 +28,7 @@ void cstrl_realloc_float(float **float_ptr, size_t size)
     *float_ptr = temp_float_ptr;
 }
 
-void cstrl_realloc_string(string **str_ptr, size_t size)
+CSTRL_API void cstrl_realloc_string(string **str_ptr, size_t size)
 {
     string *temp_str_ptr = realloc(*str_ptr, size * sizeof(string));
     if (temp_str_ptr == NULL)

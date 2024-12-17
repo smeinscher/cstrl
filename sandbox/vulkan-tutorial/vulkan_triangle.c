@@ -25,12 +25,12 @@ int vulkan_triangle()
     }
     cstrl_platform_set_key_callback(&platform_state, key_callback);
 
-    if (!cstrl_renderer_init(NULL))
+    if (!cstrl_renderer_init(&platform_state))
     {
         cstrl_platform_shutdown(&platform_state);
         return 1;
     }
-    while (!cstrl_platform_should_exit(&platform_state))
+    while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&platform_state);
     }

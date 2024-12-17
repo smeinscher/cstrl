@@ -12,14 +12,20 @@
 #include "../../platform/platform_internal.h"
 #include "cstrl/cstrl_platform.h"
 
-#include <GL/wglext.h>
+/*#include <GL/wglext.h>*/
 #include <gl/gl.h>
 #include <windows.h>
+
+typedef HGLRC WINAPI wglCreateContextAttribsARB_type(HDC hdc, HGLRC h_share_context, const int *attrib_list);
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
 
 HDC dc;
 HGLRC rc;
 
-bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
+CSTRL_API bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
 {
     internal_state *state = (internal_state *)platform_state->internal_state;
     PIXELFORMATDESCRIPTOR pfd = {
@@ -60,8 +66,8 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
     int attribs[] = {
         WGL_CONTEXT_MAJOR_VERSION_ARB,    4, WGL_CONTEXT_MINOR_VERSION_ARB, 6, WGL_CONTEXT_PROFILE_MASK_ARB,
         WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 0};
-    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB =
-        (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+    wglCreateContextAttribsARB_type *wglCreateContextAttribsARB =
+        (wglCreateContextAttribsARB_type *)wglGetProcAddress("wglCreateContextAttribsARB");
     rc = wglCreateContextAttribsARB(dc, 0, attribs);
     wglMakeCurrent(NULL, NULL);
     wglDeleteContext(temp_context);
@@ -73,14 +79,14 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
     return true;
 }
 
-void cstrl_opengl_platform_destroy(cstrl_platform_state *platform_state)
+CSTRL_API void cstrl_opengl_platform_destroy(cstrl_platform_state *platform_state)
 {
     internal_state *state = (internal_state *)platform_state->internal_state;
     ReleaseDC(state->hwnd, dc);
     wglDeleteContext(rc);
 }
 
-void cstrl_opengl_platform_swap_buffers(cstrl_platform_state *platform_state)
+CSTRL_API void cstrl_opengl_platform_swap_buffers(cstrl_platform_state *platform_state)
 {
     internal_state *state = (internal_state *)platform_state->internal_state;
     HDC dc = GetDC(state->hwnd);

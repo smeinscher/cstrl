@@ -33,7 +33,7 @@ typedef struct internal_data
     unsigned int *indices;
 } internal_data;
 
-bool cstrl_renderer_init(cstrl_platform_state *platform_state)
+CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
     if (!cstrl_opengl_platform_init(platform_state))
     {
@@ -50,13 +50,13 @@ bool cstrl_renderer_init(cstrl_platform_state *platform_state)
     return true;
 }
 
-void cstrl_renderer_clear(float r, float g, float b, float a)
+CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a)
 {
     glClearColor(r, g, b, a);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-cstrl_render_data *cstrl_renderer_create_render_data()
+CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data()
 {
     cstrl_render_data *data = malloc(sizeof(cstrl_render_data));
     data->internal_data = malloc(sizeof(internal_data));
@@ -81,7 +81,7 @@ cstrl_render_data *cstrl_renderer_create_render_data()
     return data;
 }
 
-void cstrl_renderer_free_render_data(cstrl_render_data *render_data)
+CSTRL_API void cstrl_renderer_free_render_data(cstrl_render_data *render_data)
 {
     internal_data *internal_data = render_data->internal_data;
     glDeleteVertexArrays(1, &internal_data->vao);
@@ -97,8 +97,8 @@ void cstrl_renderer_free_render_data(cstrl_render_data *render_data)
     free(render_data);
 }
 
-void cstrl_renderer_add_positions(cstrl_render_data *render_data, float *positions, unsigned int dimensions,
-                                  unsigned int vertex_count)
+CSTRL_API void cstrl_renderer_add_positions(cstrl_render_data *render_data, float *positions, unsigned int dimensions,
+                                            unsigned int vertex_count)
 {
     internal_data *data = render_data->internal_data;
     data->positions = malloc(vertex_count * dimensions * sizeof(float));
@@ -122,7 +122,7 @@ void cstrl_renderer_add_positions(cstrl_render_data *render_data, float *positio
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs)
+CSTRL_API void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs)
 {
     internal_data *data = render_data->internal_data;
     data->uvs = malloc(data->count * 2 * sizeof(float));
@@ -144,7 +144,7 @@ void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs)
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors)
+CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors)
 {
     internal_data *data = render_data->internal_data;
     data->colors = malloc(data->count * 4 * sizeof(float));
@@ -167,7 +167,7 @@ void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors)
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals)
+CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals)
 {
     internal_data *data = render_data->internal_data;
     data->normals = malloc(data->count * data->dimensions * sizeof(float));
@@ -190,8 +190,8 @@ void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals)
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions, const float *uvs,
-                                             const float *colors, size_t count)
+CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions,
+                                                       const float *uvs, const float *colors, size_t count)
 {
     if (count == 0)
     {
@@ -257,19 +257,19 @@ void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, con
     glBindVertexArray(0);
 }
 
-void cstrl_renderer_draw(cstrl_render_data *data)
+CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data)
 {
     internal_data *internal_data = data->internal_data;
     glBindVertexArray(internal_data->vao);
     glDrawArrays(GL_TRIANGLES, 0, internal_data->count);
 }
 
-void cstrl_renderer_destroy(cstrl_platform_state *platform_state)
+CSTRL_API void cstrl_renderer_destroy(cstrl_platform_state *platform_state)
 {
     cstrl_opengl_platform_destroy(platform_state);
 }
 
-void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state)
+CSTRL_API void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state)
 {
     cstrl_opengl_platform_swap_buffers(platform_state);
 }

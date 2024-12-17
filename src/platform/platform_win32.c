@@ -204,8 +204,8 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
     }
 }
 
-bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y, int width,
-                         int height)
+CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y,
+                                   int width, int height)
 {
     platform_state->internal_state = malloc(sizeof(internal_state));
     internal_state *state = platform_state->internal_state;
@@ -288,7 +288,7 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     return true;
 }
 
-void cstrl_platform_shutdown(cstrl_platform_state *platform_state)
+CSTRL_API void cstrl_platform_shutdown(cstrl_platform_state *platform_state)
 {
     internal_state *state = platform_state->internal_state;
 
@@ -299,7 +299,7 @@ void cstrl_platform_shutdown(cstrl_platform_state *platform_state)
     }
 }
 
-void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
+CSTRL_API void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
 {
     MSG msg = {};
     while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE))
@@ -309,29 +309,29 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
     }
 }
 
-double cstrl_platform_get_absolute_time()
+CSTRL_API double cstrl_platform_get_absolute_time()
 {
     LARGE_INTEGER current_time;
     QueryPerformanceCounter(&current_time);
     return (double)current_time.QuadPart * clock_frequency;
 }
 
-void cstrl_platform_sleep(unsigned long long ms)
+CSTRL_API void cstrl_platform_sleep(unsigned long long ms)
 {
     Sleep(ms);
 }
 
-bool cstrl_platform_should_exit()
+CSTRL_API bool cstrl_platform_should_exit()
 {
     return g_should_exit;
 }
 
-void cstrl_platform_set_should_exit(bool should_exit)
+CSTRL_API void cstrl_platform_set_should_exit(bool should_exit)
 {
     g_should_exit = should_exit;
 }
 
-void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_state, bool show_cursor)
+CSTRL_API void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_state, bool show_cursor)
 {
     internal_state *state = platform_state->internal_state;
     state->state_common.input.cursor_shown = show_cursor;

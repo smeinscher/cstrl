@@ -10,10 +10,11 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-char *cstrl_read_file(const char *file_path, long *file_size)
+CSTRL_API char *cstrl_read_file(const char *file_path, long *file_size)
 {
     *file_size = 0;
-    FILE *file = fopen(file_path, "rb");
+    FILE *file;
+    fopen_s(&file, file_path, "rb");
     if (file == NULL)
     {
         log_error("Error opening file %s", file_path);
@@ -37,9 +38,10 @@ char *cstrl_read_file(const char *file_path, long *file_size)
     return buffer;
 }
 
-int cstrl_write_file(const char *file_path, const char *data, const unsigned long size)
+CSTRL_API int cstrl_write_file(const char *file_path, const char *data, const unsigned long size)
 {
-    FILE *output_file = fopen(file_path, "wb");
+    FILE *output_file;
+    fopen_s(&output_file, file_path, "wb");
     if (output_file == NULL)
     {
         log_error("Error opening output file %s", file_path);
@@ -56,12 +58,13 @@ int cstrl_write_file(const char *file_path, const char *data, const unsigned lon
     return 0;
 }
 
-int cstrl_copy_file(const char *file_path, const char *output_file_path)
+CSTRL_API int cstrl_copy_file(const char *file_path, const char *output_file_path)
 {
     long file_size = 0;
     char *data = cstrl_read_file(file_path, &file_size);
 
-    FILE *output_file = fopen(output_file_path, "wb");
+    FILE *output_file;
+    fopen_s(&output_file, output_file_path, "wb");
     if (output_file == NULL)
     {
         log_error("Error opening output file %s", output_file_path);
@@ -80,7 +83,7 @@ int cstrl_copy_file(const char *file_path, const char *output_file_path)
     return 0;
 }
 
-time_t cstrl_get_file_timestamp(const char *path)
+CSTRL_API time_t cstrl_get_file_timestamp(const char *path)
 {
     struct stat st = {0};
     int ierr = stat(path, &st);

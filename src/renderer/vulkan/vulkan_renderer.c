@@ -2,12 +2,11 @@
 // Created by 12105 on 12/13/2024.
 //
 
-#include "log.c/log.h"
-
-#include <stdlib.h>
-#include <string.h>
 #if defined(CSTRL_RENDER_API_VULKAN)
 #include "cstrl/cstrl_renderer.h"
+#include "log.c/log.h"
+#include <stdlib.h>
+#include <string.h>
 #include <vulkan/vulkan.h>
 
 #ifdef NDEBUG
@@ -70,7 +69,7 @@ const char **get_required_extensions(uint32_t *extension_count)
     for (int i = 0; i < *extension_count; i++)
     {
         char *name = malloc(256 * sizeof(char));
-        strcpy(name, extension_properties[i].extensionName);
+        strcpy_s(name, 256, extension_properties[i].extensionName);
         extensions[i] = name;
     }
 

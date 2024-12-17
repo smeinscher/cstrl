@@ -15,18 +15,21 @@
 int main()
 {
 #if CSTRL_TEST_RUN_UNIT_TESTS
+    log_info("Starting unit tests");
     if (run_unit_tests() == cstrl_test_failure)
     {
         log_warn("Failed unit tests");
     }
 #endif
 #if CSTRL_TEST_RUN_INTEGRATION_TESTS
+    log_info("Starting integration tests");
     if (run_integration_tests() == cstrl_test_failure)
     {
         log_warn("Failed integration tests");
     }
 #endif
 #if CSTRL_TEST_RUN_MANUAL_TESTS
+    log_info("Starting manual tests");
     if (run_manual_tests() == cstrl_test_failure)
     {
         log_warn("Failed manual tests");

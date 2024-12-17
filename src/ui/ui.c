@@ -143,7 +143,7 @@ const char *font_fragment_shader_source = "                     \
 
 #define FONT_SIZE 32
 
-cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
+CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 {
     cstrl_ui_context *context = malloc(sizeof(cstrl_ui_context));
 
@@ -153,9 +153,9 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 
     ui_state->platform_state = platform_state;
 
-    ui_state->render_data = cstrl_renderer_create_render_data(platform_state);
+    ui_state->render_data = cstrl_renderer_create_render_data();
     ui_state->shader = cstrl_load_shaders_from_source(vertex_shader_source, fragment_shader_source);
-    ui_state->font_render_data = cstrl_renderer_create_render_data(platform_state);
+    ui_state->font_render_data = cstrl_renderer_create_render_data();
     ui_state->font_shader = cstrl_load_shaders_from_source(font_vertex_shader_source, font_fragment_shader_source);
     float vertices[] = {10.0f, 320.0f, 210.0f, 10.0f, 10.0f, 10.0f, 10.0f, 320.0f, 210.0f, 10.0f, 210.0f, 320.0f};
     float uvs[] = {0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f};
@@ -185,7 +185,8 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     cstrl_da_float_init(&ui_state->font_colors, 24);
 
     // The real mvp https://sinf.org/opengl-text-using-stb_truetype/
-    FILE *font_file = fopen("../resources/fonts/NocturneSerif-Regular.ttf", "rb");
+    FILE *font_file;
+    fopen_s(&font_file, "resources/fonts/NocturneSerif-Regular.ttf", "rb");
     // FILE *font_file = fopen("C:\\Windows\\Fonts\\times.ttf", "rb");
     fseek(font_file, 0, SEEK_END);
     long size = ftell(font_file);
@@ -208,7 +209,7 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     free(pixels);
     free(font_buffer);
 
-    ui_state->texture = cstrl_texture_generate_from_path("../resources/textures/background.jpg");
+    ui_state->texture = cstrl_texture_generate_from_path("resources/textures/background.jpg");
 
     ui_state->elements.element_count = 0;
     cstrl_da_int_init(&ui_state->elements.ids, 1);
@@ -251,7 +252,7 @@ cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     return context;
 }
 
-void cstrl_ui_begin(cstrl_ui_context *context)
+CSTRL_API void cstrl_ui_begin(cstrl_ui_context *context)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
     ui_state->elements.element_count = 0;
@@ -290,7 +291,7 @@ void cstrl_ui_begin(cstrl_ui_context *context)
     }
 }
 
-void cstrl_ui_end(cstrl_ui_context *context)
+CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
 
@@ -499,7 +500,7 @@ void cstrl_ui_end(cstrl_ui_context *context)
     }
 }
 
-void cstrl_ui_shutdown(cstrl_ui_context *context)
+CSTRL_API void cstrl_ui_shutdown(cstrl_ui_context *context)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
 
@@ -532,7 +533,8 @@ void cstrl_ui_shutdown(cstrl_ui_context *context)
     free(context);
 }
 
-bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int object_width, int object_height)
+CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int object_width,
+                                   int object_height)
 {
     if (test_x < object_x || test_y < object_y || test_x > object_x + object_width || test_y > object_y + object_height)
     {
@@ -541,7 +543,7 @@ bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int
     return true;
 }
 
-float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale)
+CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
 
@@ -555,8 +557,8 @@ float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float sca
     return (float)width * scale;
 }
 
-bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
-                              int h, int id, bool is_static, int order_priority)
+CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
+                                        int w, int h, int id, bool is_static, int order_priority)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
     if (ui_state->parent_stack.size != 0)
@@ -673,13 +675,14 @@ bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int 
     return true;
 }
 
-void cstrl_ui_container_end(cstrl_ui_context *context)
+CSTRL_API void cstrl_ui_container_end(cstrl_ui_context *context)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
     cstrl_da_int_pop_back(&ui_state->parent_stack);
 }
 
-bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h, int id)
+CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
+                               int h, int id)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
 
@@ -760,8 +763,8 @@ bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_len
     return false;
 }
 
-bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x, int y,
-                         int w, int h, int id, char *buffer, size_t buffer_size)
+CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x,
+                                   int y, int w, int h, int id, char *buffer, size_t buffer_size)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
 

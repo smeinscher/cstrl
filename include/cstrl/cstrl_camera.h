@@ -28,15 +28,15 @@ typedef enum cstrl_camera_direction_mask
     CSTRL_CAMERA_DIRECTION_RIGHT = 8,
 } cstrl_camera_direction_mask;
 
-cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool is_orthographic);
+CSTRL_API cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool is_orthographic);
 
-void cstrl_camera_free(cstrl_camera *camera);
+CSTRL_API void cstrl_camera_free(cstrl_camera *camera);
 
-void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movement,
+CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movement,
                          cstrl_camera_direction_mask rotation);
 
-void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis);
+CSTRL_API void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis);
 
-void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation);
+CSTRL_API void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation);
 
 #endif // CSTRL_CAMERA_H

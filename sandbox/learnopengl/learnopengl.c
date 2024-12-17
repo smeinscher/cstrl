@@ -218,15 +218,15 @@ int learnopengl()
 
     g_main_camera = cstrl_camera_create(800, 600, false);
     g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
-    cstrl_shader color_shader = cstrl_load_shaders_from_files("../resources/shaders/learnopengl/colors.vert",
-                                                              "../resources/shaders/learnopengl/colors.frag");
-    cstrl_shader light_shader = cstrl_load_shaders_from_files("../resources/shaders/learnopengl/light_cube.vert",
-                                                              "../resources/shaders/learnopengl/light_cube.frag");
-    // Texture texture = generate_opengl_texture("../resources/textures/wall.jpg");
+    cstrl_shader color_shader = cstrl_load_shaders_from_files("resources/shaders/learnopengl/colors.vert",
+                                                              "resources/shaders/learnopengl/colors.frag");
+    cstrl_shader light_shader = cstrl_load_shaders_from_files("resources/shaders/learnopengl/light_cube.vert",
+                                                              "resources/shaders/learnopengl/light_cube.frag");
+    // Texture texture = generate_opengl_texture("resources/textures/wall.jpg");
 
     double previous_time = cstrl_platform_get_absolute_time();
     double lag = 0.0;
-    while (!cstrl_platform_should_exit(&state))
+    while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&state);
         double current_time = cstrl_platform_get_absolute_time();

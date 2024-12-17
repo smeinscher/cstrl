@@ -15,7 +15,7 @@
 #include "log.c/log.h"
 #include "stb/stb_image.h"
 
-int upload_opengl_texture(const char *path)
+CSTRL_API int upload_opengl_texture(const char *path)
 {
     stbi_set_flip_vertically_on_load(true);
     int nr_channels;
@@ -31,7 +31,7 @@ int upload_opengl_texture(const char *path)
     return 0;
 }
 
-cstrl_texture cstrl_texture_generate_from_path(const char *path)
+CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path)
 {
     cstrl_texture texture = {0};
     unsigned int texture_id;
@@ -56,7 +56,7 @@ cstrl_texture cstrl_texture_generate_from_path(const char *path)
     return texture;
 }
 
-cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height)
+CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height)
 {
     cstrl_texture texture = {0};
     unsigned int texture_id;
@@ -78,7 +78,7 @@ cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int widt
     return texture;
 }
 
-void cstrl_texture_hot_reload(cstrl_texture *texture)
+CSTRL_API void cstrl_texture_hot_reload(cstrl_texture *texture)
 {
     time_t current_timestamp = cstrl_get_file_timestamp(texture->path);
 
@@ -91,7 +91,7 @@ void cstrl_texture_hot_reload(cstrl_texture *texture)
     }
 }
 
-void cstrl_texture_bind(cstrl_texture texture)
+CSTRL_API void cstrl_texture_bind(cstrl_texture texture)
 {
     glBindTexture(GL_TEXTURE_2D, texture.id);
 }

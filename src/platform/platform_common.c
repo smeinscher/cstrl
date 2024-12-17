@@ -6,21 +6,21 @@
 #include "log.c/log.h"
 #include "platform_internal.h"
 
-void cstrl_platform_get_window_size(cstrl_platform_state *platform_state, int *width, int *height)
+CSTRL_API void cstrl_platform_get_window_size(cstrl_platform_state *platform_state, int *width, int *height)
 {
     internal_state *state = platform_state->internal_state;
     *width = state->state_common.window_width;
     *height = state->state_common.window_height;
 }
 
-void cstrl_platform_get_cursor_position(cstrl_platform_state *platform_state, int *x, int *y)
+CSTRL_API void cstrl_platform_get_cursor_position(cstrl_platform_state *platform_state, int *x, int *y)
 {
     internal_state *state = platform_state->internal_state;
     *x = state->state_common.input.last_mouse_x;
     *y = state->state_common.input.last_mouse_y;
 }
 
-bool cstrl_platform_is_mouse_button_down(cstrl_platform_state *platform_state, cstrl_mouse_button button)
+CSTRL_API bool cstrl_platform_is_mouse_button_down(cstrl_platform_state *platform_state, cstrl_mouse_button button)
 {
     internal_state *state = platform_state->internal_state;
     if (button >= CSTRL_MOUSE_BUTTON_MAX)
@@ -31,32 +31,32 @@ bool cstrl_platform_is_mouse_button_down(cstrl_platform_state *platform_state, c
     return state->state_common.input.mouse_buttons[button] == CSTRL_ACTION_PRESS;
 }
 
-cstrl_key cstrl_platform_get_most_recent_key_pressed(cstrl_platform_state *platform_state)
+CSTRL_API cstrl_key cstrl_platform_get_most_recent_key_pressed(cstrl_platform_state *platform_state)
 {
     internal_state *state = platform_state->internal_state;
     return state->state_common.input.most_recent_key_pressed;
 }
 
-cstrl_mouse_mode cstrl_platform_get_mouse_mode(cstrl_platform_state *platform_state)
+CSTRL_API cstrl_mouse_mode cstrl_platform_get_mouse_mode(cstrl_platform_state *platform_state)
 {
     internal_state *state = platform_state->internal_state;
     return state->state_common.input.mouse_mode;
 }
 
-void cstrl_platform_set_mouse_mode(cstrl_platform_state *platform_state, cstrl_mouse_mode mode)
+CSTRL_API void cstrl_platform_set_mouse_mode(cstrl_platform_state *platform_state, cstrl_mouse_mode mode)
 {
     internal_state *state = platform_state->internal_state;
     state->state_common.input.mouse_mode = mode;
 }
 
-void cstrl_platform_set_key_callback(cstrl_platform_state *platform_state, cstrl_key_callback key_callback)
+CSTRL_API void cstrl_platform_set_key_callback(cstrl_platform_state *platform_state, cstrl_key_callback key_callback)
 {
     internal_state *state = platform_state->internal_state;
     state->state_common.callbacks.key = key_callback;
 }
 
-void cstrl_platform_set_mouse_position_callback(cstrl_platform_state *platform_state,
-                                                cstrl_mouse_position_callback mouse_position_callback)
+CSTRL_API void cstrl_platform_set_mouse_position_callback(cstrl_platform_state *platform_state,
+                                                          cstrl_mouse_position_callback mouse_position_callback)
 {
     internal_state *state = platform_state->internal_state;
     state->state_common.callbacks.mouse_position = mouse_position_callback;

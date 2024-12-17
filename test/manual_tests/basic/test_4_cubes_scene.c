@@ -264,7 +264,7 @@ int test_4_cubes_scene()
 
     double previous_time = cstrl_platform_get_absolute_time();
     double lag = 0.0;
-    while (!cstrl_platform_should_exit(&state))
+    while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&state);
         double current_time = cstrl_platform_get_absolute_time();

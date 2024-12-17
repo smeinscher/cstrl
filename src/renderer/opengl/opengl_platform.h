@@ -8,10 +8,10 @@
 
 #include <stdbool.h>
 
-bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state);
+CSTRL_API bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state);
 
-void cstrl_opengl_platform_destroy(cstrl_platform_state *platform_state);
+CSTRL_API void cstrl_opengl_platform_destroy(cstrl_platform_state *platform_state);
 
-void cstrl_opengl_platform_swap_buffers(cstrl_platform_state *platform_state);
+CSTRL_API void cstrl_opengl_platform_swap_buffers(cstrl_platform_state *platform_state);
 
 #endif // CSTRL_OPENGL_PLATFORM_H

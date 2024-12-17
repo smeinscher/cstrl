@@ -22,7 +22,7 @@
 
 unsigned int compile_shader(const char *shader_source, unsigned int type);
 
-cstrl_shader cstrl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path)
+CSTRL_API cstrl_shader cstrl_load_shaders_from_files(const char *vertex_shader_path, const char *fragment_shader_path)
 {
     long file_size;
     char *vertex_shader_source = cstrl_read_file(vertex_shader_path, &file_size);
@@ -39,7 +39,8 @@ cstrl_shader cstrl_load_shaders_from_files(const char *vertex_shader_path, const
     return shader;
 }
 
-cstrl_shader cstrl_load_shaders_from_source(const char *vertex_shader_source, const char *fragment_shader_source)
+CSTRL_API cstrl_shader cstrl_load_shaders_from_source(const char *vertex_shader_source,
+                                                      const char *fragment_shader_source)
 {
     cstrl_shader shader = {0};
     const unsigned int vertex_shader = compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
@@ -79,44 +80,6 @@ cstrl_shader cstrl_load_shaders_from_source(const char *vertex_shader_source, co
     return shader;
 }
 
-char *get_file_contents(const char *path)
-{
-    char *source = NULL;
-    FILE *fp = fopen(path, "r");
-    if (fp == NULL)
-    {
-        log_error("Failed to open file %s", path);
-        return 0;
-    }
-
-    if (fseek(fp, 0L, SEEK_END) == 0)
-    {
-        const long buffer_size = ftell(fp);
-        if (buffer_size == -1)
-        {
-            log_error("Failed to get size of file");
-            return 0;
-        }
-        source = malloc(sizeof(char) * (buffer_size + 1));
-        if (fseek(fp, 0L, SEEK_SET) != 0)
-        {
-            log_error("Failed to return to start of file\n");
-            return 0;
-        }
-
-        size_t new_length = fread(source, sizeof(char), buffer_size, fp);
-        if (ferror(fp) != 0)
-        {
-            log_error("Failed to read file");
-            return 0;
-        }
-        source[new_length++] = '\0';
-    }
-    fclose(fp);
-
-    return source;
-}
-
 unsigned int compile_shader(const char *shader_source, unsigned int type)
 {
     const unsigned int shader = glCreateShader(type);
@@ -136,36 +99,36 @@ unsigned int compile_shader(const char *shader_source, unsigned int type)
     return shader;
 }
 
-void cstrl_use_shader(cstrl_shader shader)
+CSTRL_API void cstrl_use_shader(cstrl_shader shader)
 {
     glUseProgram(shader.program);
 }
 
-void cstrl_set_uniform_float(unsigned int program, const char *name, float f)
+CSTRL_API void cstrl_set_uniform_float(unsigned int program, const char *name, float f)
 {
     glUseProgram(program);
     glUniform1f(glGetUniformLocation(program, name), f);
 }
 
-void cstrl_set_uniform_3f(unsigned int program, const char *name, float x, float y, float z)
+CSTRL_API void cstrl_set_uniform_3f(unsigned int program, const char *name, float x, float y, float z)
 {
     glUseProgram(program);
     glUniform3f(glGetUniformLocation(program, name), x, y, z);
 }
 
-void cstrl_set_uniform_4f(unsigned int program, const char *name, float x, float y, float z, float w)
+CSTRL_API void cstrl_set_uniform_4f(unsigned int program, const char *name, float x, float y, float z, float w)
 {
     glUseProgram(program);
     glUniform4f(glGetUniformLocation(program, name), x, y, z, w);
 }
 
-void cstrl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat)
+CSTRL_API void cstrl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat)
 {
     glUseProgram(program);
     glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, &mat.m[0]);
 }
 
-void cstrl_shader_hot_reload(cstrl_shader *shader)
+CSTRL_API void cstrl_shader_hot_reload(cstrl_shader *shader)
 {
     time_t vertex_current_timestamp = cstrl_get_file_timestamp(shader->vertex_shader_path);
     time_t fragment_current_timestamp = cstrl_get_file_timestamp(shader->fragment_shader_path);

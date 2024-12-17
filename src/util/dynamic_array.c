@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-void cstrl_da_int_init(da_int *da, size_t initial_size)
+CSTRL_API void cstrl_da_int_init(da_int *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(int) * initial_size);
@@ -23,7 +23,7 @@ void cstrl_da_int_init(da_int *da, size_t initial_size)
     da->capacity = initial_size;
 }
 
-void cstrl_da_float_init(da_float *da, size_t initial_size)
+CSTRL_API void cstrl_da_float_init(da_float *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(float) * initial_size);
@@ -36,7 +36,7 @@ void cstrl_da_float_init(da_float *da, size_t initial_size)
     da->capacity = initial_size;
 }
 
-void cstrl_string_init(string *str, size_t initial_size)
+CSTRL_API void cstrl_string_init(string *str, size_t initial_size)
 {
     str->size = 0;
     str->array = malloc(sizeof(char) * initial_size);
@@ -49,7 +49,7 @@ void cstrl_string_init(string *str, size_t initial_size)
     str->capacity = initial_size;
 }
 
-void cstrl_da_string_init(da_string *da, size_t initial_size)
+CSTRL_API void cstrl_da_string_init(da_string *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(string) * initial_size);
@@ -66,7 +66,7 @@ void cstrl_da_string_init(da_string *da, size_t initial_size)
     da->capacity = initial_size;
 }
 
-bool cstrl_da_int_reserve(da_int *da, size_t new_capacity)
+CSTRL_API bool cstrl_da_int_reserve(da_int *da, size_t new_capacity)
 {
     if (da == NULL || da->array == NULL)
     {
@@ -89,7 +89,7 @@ bool cstrl_da_int_reserve(da_int *da, size_t new_capacity)
     return true;
 }
 
-bool cstrl_da_float_reserve(da_float *da, size_t new_capacity)
+CSTRL_API bool cstrl_da_float_reserve(da_float *da, size_t new_capacity)
 {
     if (da == NULL || da->array == NULL)
     {
@@ -112,7 +112,7 @@ bool cstrl_da_float_reserve(da_float *da, size_t new_capacity)
     return true;
 }
 
-bool cstrl_string_reserve(string *str, size_t new_capacity)
+CSTRL_API bool cstrl_string_reserve(string *str, size_t new_capacity)
 {
     if (str == NULL || str->array == NULL)
     {
@@ -135,7 +135,7 @@ bool cstrl_string_reserve(string *str, size_t new_capacity)
     return true;
 }
 
-bool cstrl_da_string_reserve(da_string *da, size_t new_capacity)
+CSTRL_API bool cstrl_da_string_reserve(da_string *da, size_t new_capacity)
 {
     if (da == NULL || da->array == NULL)
     {
@@ -158,7 +158,7 @@ bool cstrl_da_string_reserve(da_string *da, size_t new_capacity)
     return true;
 }
 
-void cstrl_da_int_push_back(da_int *da, int element)
+CSTRL_API void cstrl_da_int_push_back(da_int *da, int element)
 {
     if (da->size >= da->capacity && !cstrl_da_int_reserve(da, da->capacity * 2))
     {
@@ -167,7 +167,7 @@ void cstrl_da_int_push_back(da_int *da, int element)
     da->array[da->size++] = element;
 }
 
-void cstrl_da_float_push_back(da_float *da, float element)
+CSTRL_API void cstrl_da_float_push_back(da_float *da, float element)
 {
     if (da->size >= da->capacity && !cstrl_da_float_reserve(da, da->capacity * 2))
     {
@@ -176,7 +176,7 @@ void cstrl_da_float_push_back(da_float *da, float element)
     da->array[da->size++] = element;
 }
 
-void cstrl_string_push_back(string *str, const char *characters, size_t length)
+CSTRL_API void cstrl_string_push_back(string *str, const char *characters, size_t length)
 {
     for (int i = 0; i < length; i++)
     {
@@ -189,7 +189,7 @@ void cstrl_string_push_back(string *str, const char *characters, size_t length)
     }
 }
 
-void cstrl_da_string_push_back(da_string *da, string element)
+CSTRL_API void cstrl_da_string_push_back(da_string *da, string element)
 {
     if (da->size >= da->capacity && !cstrl_da_string_reserve(da, da->capacity * 2))
     {
@@ -201,7 +201,7 @@ void cstrl_da_string_push_back(da_string *da, string element)
 }
 
 // TODO: unit test
-void cstrl_da_int_insert(da_int *da, int element, size_t index)
+CSTRL_API void cstrl_da_int_insert(da_int *da, int element, size_t index)
 {
     if ((index >= da->capacity || da->size >= da->capacity) && !cstrl_da_int_reserve(da, da->capacity * 2))
     {
@@ -218,22 +218,22 @@ void cstrl_da_int_insert(da_int *da, int element, size_t index)
     da->size++;
 }
 
-void cstrl_da_float_insert(da_float *da, float element, size_t index)
+CSTRL_API void cstrl_da_float_insert(da_float *da, float element, size_t index)
 {
     log_fatal("da_float_insert not implemented");
 }
 
-void cstrl_string_insert(string *str, const char *element, size_t length, size_t index)
+CSTRL_API void cstrl_string_insert(string *str, const char *element, size_t length, size_t index)
 {
     log_fatal("string_insert not implemented");
 }
 
-void cstrl_da_string_insert(da_string *da, string element, size_t index)
+CSTRL_API void cstrl_da_string_insert(da_string *da, string element, size_t index)
 {
     log_fatal("da_string_insert not implemented");
 }
 
-void cstrl_da_int_remove(da_int *da, int index)
+CSTRL_API void cstrl_da_int_remove(da_int *da, int index)
 {
     if (index >= da->size)
     {
@@ -253,7 +253,7 @@ void cstrl_da_int_remove(da_int *da, int index)
     da->size--;
 }
 
-void cstrl_da_float_remove(da_float *da, int index)
+CSTRL_API void cstrl_da_float_remove(da_float *da, int index)
 {
     if (index >= da->size)
     {
@@ -273,12 +273,12 @@ void cstrl_da_float_remove(da_float *da, int index)
     da->size--;
 }
 
-void cstrl_string_remove(string *str, int index)
+CSTRL_API void cstrl_string_remove(string *str, int index)
 {
     log_fatal("string_remove not implemented");
 }
 
-void cstrl_da_string_remove(da_string *da, int index)
+CSTRL_API void cstrl_da_string_remove(da_string *da, int index)
 {
     if (index >= da->size)
     {
@@ -299,70 +299,70 @@ void cstrl_da_string_remove(da_string *da, int index)
     da->size--;
 }
 
-int cstrl_da_int_pop_back(da_int *da)
+CSTRL_API int cstrl_da_int_pop_back(da_int *da)
 {
     da->size--;
     return da->array[da->size];
 }
 
-float cstrl_da_float_pop_back(da_float *da)
+CSTRL_API float cstrl_da_float_pop_back(da_float *da)
 {
     da->size--;
     return da->array[da->size];
 }
 
-char cstrl_string_pop_back(string *str)
+CSTRL_API char cstrl_string_pop_back(string *str)
 {
     str->size--;
     return str->array[str->size];
 }
 
-string cstrl_da_string_pop_back(da_string *da)
+CSTRL_API string cstrl_da_string_pop_back(da_string *da)
 {
     da->size--;
     return da->array[da->size];
 }
 
-int cstrl_da_int_pop_front(da_int *da)
+CSTRL_API int cstrl_da_int_pop_front(da_int *da)
 {
     int temp = da->array[0];
     cstrl_da_int_remove(da, 0);
     return temp;
 }
 
-float cstrl_da_float_pop_front(da_float *da)
+CSTRL_API float cstrl_da_float_pop_front(da_float *da)
 {
     float temp = da->array[0];
     cstrl_da_float_remove(da, 0);
     return temp;
 }
 
-string cstrl_da_string_pop_front(da_string *da)
+CSTRL_API string cstrl_da_string_pop_front(da_string *da)
 {
     string temp = da->array[0];
     cstrl_da_string_remove(da, 0);
     return temp;
 }
 
-void cstrl_da_int_clear(da_int *da)
+CSTRL_API void cstrl_da_int_clear(da_int *da)
 {
     memset(da->array, 0, sizeof(int) * da->size);
     da->size = 0;
 }
 
-void cstrl_da_float_clear(da_float *da)
+CSTRL_API void cstrl_da_float_clear(da_float *da)
 {
     memset(da->array, 0, sizeof(float) * da->size);
     da->size = 0;
 }
 
-void cstrl_string_clear(string *str)
+CSTRL_API void cstrl_string_clear(string *str)
 {
     memset(str->array, 0, sizeof(char) * str->size);
     str->size = 0;
 }
 
-void cstrl_da_string_clear(da_string *da)
+CSTRL_API void cstrl_da_string_clear(da_string *da)
 {
     if (da->size == 0)
     {
@@ -376,7 +376,7 @@ void cstrl_da_string_clear(da_string *da)
     da->size = 0;
 }
 
-void cstrl_da_int_free(da_int *da)
+CSTRL_API void cstrl_da_int_free(da_int *da)
 {
     if (da == NULL)
     {
@@ -388,7 +388,7 @@ void cstrl_da_int_free(da_int *da)
     da->capacity = 0;
 }
 
-void cstrl_da_float_free(da_float *da)
+CSTRL_API void cstrl_da_float_free(da_float *da)
 {
     free(da->array);
     da->array = NULL;
@@ -396,7 +396,7 @@ void cstrl_da_float_free(da_float *da)
     da->capacity = 0;
 }
 
-void cstrl_string_free(string *str)
+CSTRL_API void cstrl_string_free(string *str)
 {
     free(str->array);
     str->array = NULL;
@@ -404,7 +404,7 @@ void cstrl_string_free(string *str)
     str->capacity = 0;
 }
 
-void cstrl_da_string_free(da_string *da)
+CSTRL_API void cstrl_da_string_free(da_string *da)
 {
     for (int i = 0; i < da->size; i++)
     {
@@ -415,7 +415,7 @@ void cstrl_da_string_free(da_string *da)
     da->capacity = 0;
 }
 
-char *cstrl_string_to_c_str(string *str)
+CSTRL_API char *cstrl_string_to_c_str(string *str)
 {
     char *temp = malloc(sizeof(char) * str->size + 1);
     for (int i = 0; i < str->size; i++)
@@ -461,7 +461,7 @@ static void cstrl_da_int_quick_sort_internal(da_int *da, int left, int right, bo
     cstrl_da_int_quick_sort_internal(da, pivot + 1, right, descending);
 }
 
-void cstrl_da_int_quick_sort(da_int *da, bool descending)
+CSTRL_API void cstrl_da_int_quick_sort(da_int *da, bool descending)
 {
     cstrl_da_int_quick_sort_internal(da, 0, da->size - 1, descending);
 }
