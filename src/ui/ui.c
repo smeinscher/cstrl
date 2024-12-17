@@ -185,8 +185,7 @@ CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     cstrl_da_float_init(&ui_state->font_colors, 24);
 
     // The real mvp https://sinf.org/opengl-text-using-stb_truetype/
-    FILE *font_file;
-    fopen_s(&font_file, "resources/fonts/NocturneSerif-Regular.ttf", "rb");
+    FILE *font_file = fopen("resources/fonts/NocturneSerif-Regular.ttf", "rb");
     // FILE *font_file = fopen("C:\\Windows\\Fonts\\times.ttf", "rb");
     fseek(font_file, 0, SEEK_END);
     long size = ftell(font_file);

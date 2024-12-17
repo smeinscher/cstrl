@@ -130,10 +130,8 @@ static void init_event(log_Event *ev, void *udata)
 {
     if (!ev->time)
     {
-        struct tm *new_time;
-        time_t now = time(NULL);
-        localtime_s(new_time, &now);
-        ev->time = new_time;
+        time_t t = time(NULL);
+        ev->time = localtime(&t);
     }
     ev->udata = udata;
 }

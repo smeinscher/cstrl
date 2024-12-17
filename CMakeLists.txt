@@ -20,7 +20,14 @@ add_library(log_c STATIC
         extern/log.c/log.h)
 target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
 
-add_compile_definitions(CSTRL_RENDER_API_VULKAN)
+option(RENDER_API_VULKAN "Vulkan Render API" OFF)
+option(RENDER_API_OPENGL "OpenGL Render API" ON)
+
+if (RENDER_API_OPENGL)
+    add_compile_definitions(CSTRL_RENDER_API_OPENGL)
+elseif (RENDER_API_VULKAN)
+    add_compile_definitions(CSTRL_RENDER_API_VULKAN)
+endif ()
 
 if (ANDROID)
     set(GLAD_C extern/glad/gles3/glad.c)

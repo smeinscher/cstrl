@@ -7,6 +7,7 @@
 
 #include "cstrl_math.h"
 #include "cstrl_platform.h"
+#include <time.h>
 
 typedef enum cstrl_render_attribute_type
 {

@@ -69,7 +69,7 @@ const char **get_required_extensions(uint32_t *extension_count)
     for (int i = 0; i < *extension_count; i++)
     {
         char *name = malloc(256 * sizeof(char));
-        strcpy_s(name, 256, extension_properties[i].extensionName);
+        strcpy(name, extension_properties[i].extensionName);
         extensions[i] = name;
     }
 
