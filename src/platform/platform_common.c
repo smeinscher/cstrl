@@ -61,3 +61,10 @@ CSTRL_API void cstrl_platform_set_mouse_position_callback(cstrl_platform_state *
     internal_state *state = platform_state->internal_state;
     state->state_common.callbacks.mouse_position = mouse_position_callback;
 }
+
+CSTRL_API void cstrl_platform_set_framebuffer_size_callback(cstrl_platform_state *platform_state,
+                                                            cstrl_framebuffer_size_callback framebuffer_size_callback)
+{
+    internal_state *state = platform_state->internal_state;
+    state->state_common.callbacks.framebuffer_size = framebuffer_size_callback;
+}

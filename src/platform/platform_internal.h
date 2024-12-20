@@ -13,6 +13,7 @@ typedef struct user_callbacks
 {
     cstrl_key_callback key;
     cstrl_mouse_position_callback mouse_position;
+    cstrl_framebuffer_size_callback framebuffer_size;
 } user_callbacks;
 
 typedef struct input_state

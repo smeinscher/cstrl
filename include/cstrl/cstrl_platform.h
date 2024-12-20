@@ -23,8 +23,10 @@ typedef void (*cstrl_key_callback)(cstrl_platform_state *state, int key, int sca
 
 typedef void (*cstrl_mouse_position_callback)(cstrl_platform_state *state, int x, int y);
 
-CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y, int width,
-                         int height);
+typedef void (*cstrl_framebuffer_size_callback)(cstrl_platform_state *state, int width, int height);
+
+CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y,
+                                   int width, int height);
 
 CSTRL_API void cstrl_platform_shutdown(cstrl_platform_state *platform_state);
 
@@ -61,6 +63,9 @@ CSTRL_API void cstrl_platform_set_mouse_mode(cstrl_platform_state *platform_stat
 CSTRL_API void cstrl_platform_set_key_callback(cstrl_platform_state *platform_state, cstrl_key_callback key_callback);
 
 CSTRL_API void cstrl_platform_set_mouse_position_callback(cstrl_platform_state *platform_state,
-                                                cstrl_mouse_position_callback mouse_position_callback);
+                                                          cstrl_mouse_position_callback mouse_position_callback);
+
+CSTRL_API void cstrl_platform_set_framebuffer_size_callback(cstrl_platform_state *platform_state,
+                                                            cstrl_framebuffer_size_callback framebuffer_size_callback);
 
 #endif // CSTRL_PLATFORM_H
