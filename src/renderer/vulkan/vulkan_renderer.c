@@ -1030,11 +1030,10 @@ void cstrl_renderer_draw(cstrl_render_data *data)
     uint32_t image_index;
     VkResult result = vkAcquireNextImageKHR(g_device, g_swap_chain, UINT64_MAX,
                                             g_image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR && result != VK_SUBOPTIMAL_KHR || framebuffer_resized)
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized)
     {
-        framebuffer_resized = true;
+        framebuffer_resized = false;
         recreate_swap_chain();
-        return;
     }
     else if (result != VK_SUCCESS)
     {
