@@ -21,7 +21,9 @@ add_library(log_c STATIC
 target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
 
 option(RENDER_API_VULKAN "Vulkan Render API" OFF)
-option(RENDER_API_OPENGL "OpenGL Render API" ON)
+if (NOT RENDER_API_VULKAN)
+    option(RENDER_API_OPENGL "OpenGL Render API" ON)
+endif ()
 
 if (RENDER_API_OPENGL)
     add_compile_definitions(CSTRL_RENDER_API_OPENGL)
@@ -75,6 +77,8 @@ add_library(cstrl SHARED
         src/renderer/vulkan/vulkan_shader.c
         src/renderer/vulkan/vulkan_texture.c
         include/cstrl/cstrl_camera.h
+        src/renderer/vulkan/vulkan_platform.h
+        src/renderer/vulkan/vulkan_platform_win32.c
 )
 
 add_executable(cstrl-test

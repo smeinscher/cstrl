@@ -33,6 +33,7 @@ int vulkan_triangle()
     while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&platform_state);
+        cstrl_renderer_draw(NULL);
     }
 
     cstrl_renderer_destroy(&platform_state);

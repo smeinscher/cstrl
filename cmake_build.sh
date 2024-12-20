@@ -5,7 +5,7 @@ if [[ ! -v $1 ]]; then
 fi
 mkdir build-${1,};
 cd build-${1,};
-cmake -G Ninja -DCMAKE_C_COMPILER="clang" -DCMAKE_BUILD_TYPE="$1" -DRENDER_API_OPENGL=ON ..;
+cmake -G Ninja -DCMAKE_C_COMPILER="clang" -DCMAKE_BUILD_TYPE="$1" -DRENDER_API_VULKAN=ON ..;
 ninja;
 
 cd ..;
