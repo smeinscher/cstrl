@@ -79,6 +79,7 @@ add_library(cstrl SHARED
         include/cstrl/cstrl_camera.h
         src/renderer/vulkan/vulkan_platform.h
         src/renderer/vulkan/vulkan_platform_win32.c
+        src/renderer/vulkan/vulkan_platform_linux.c
 )
 
 add_executable(cstrl-test

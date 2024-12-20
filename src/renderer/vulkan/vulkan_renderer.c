@@ -113,7 +113,6 @@ static const char **get_required_extensions(uint32_t *extension_count)
     const char **extensions = malloc(*extension_count * sizeof(char *));
     for (int i = 0; i < *extension_count; i++)
     {
-        // TODO: free this stuff
         char *name = malloc(256 * sizeof(char));
         strcpy(name, extension_properties[i].extensionName);
         extensions[i] = name;
@@ -211,10 +210,9 @@ static VkInstance create_instance()
     create_info.enabledLayerCount = 0;
 #endif
 
-    uint32_t extension_count = 0;
-    const char **extensions = get_required_extensions(&extension_count);
+    const char **extensions = cstrl_vulkan_get_required_instance_extensions();
 
-    create_info.enabledExtensionCount = extension_count;
+    create_info.enabledExtensionCount = CSTRL_VULKAN_REQUIRED_INSTANCE_EXTENSIONS_COUNT;
     create_info.ppEnabledExtensionNames = extensions;
 
     VkInstance instance = VK_NULL_HANDLE;
@@ -224,8 +222,6 @@ static VkInstance create_instance()
         log_fatal("Failed to create instance; vkCreateInstance failed (%d)", result);
         return VK_NULL_HANDLE;
     }
-
-    free(extensions);
 
     return instance;
 }
@@ -324,7 +320,6 @@ static swap_chain_support_details query_swap_chain_support(VkPhysicalDevice devi
 
     if (format_count != 0)
     {
-        // TODO: free this somewhere
         details.formats = malloc(format_count * sizeof(VkSurfaceFormatKHR));
         details.formats_size = format_count;
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, details.formats);
@@ -339,7 +334,6 @@ static swap_chain_support_details query_swap_chain_support(VkPhysicalDevice devi
 
     if (present_mode_count != 0)
     {
-        // TODO: free this somewhere
         details.present_modes = malloc(present_mode_count * sizeof(VkPresentModeKHR));
         details.present_modes_size = present_mode_count;
         vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, details.present_modes);
@@ -448,6 +442,8 @@ static void create_logical_device()
 
     vkGetDeviceQueue(g_device, indices.graphics_family, 0, &g_graphics_queue);
     vkGetDeviceQueue(g_device, indices.present_family, 0, &g_present_queue);
+
+    cstrl_da_int_free(&unique_queue_families);
 }
 
 static VkSurfaceFormatKHR choose_swap_surface_format(VkSurfaceFormatKHR *available_formats, int available_formats_size)
@@ -657,14 +653,16 @@ static VkShaderModule create_shader_module(const char *shader_code, long file_si
 static void create_graphics_pipeline()
 {
     long vertex_shader_file_size;
-    const char *vertex_shader_code =
-        cstrl_read_file("resources/shaders/vulkan-tutorial/vert.spv", &vertex_shader_file_size);
+    char *vertex_shader_code = cstrl_read_file("resources/shaders/vulkan-tutorial/vert.spv", &vertex_shader_file_size);
     long fragment_shader_file_size;
-    const char *fragment_shader_code =
+    char *fragment_shader_code =
         cstrl_read_file("resources/shaders/vulkan-tutorial/frag.spv", &fragment_shader_file_size);
 
     VkShaderModule vertex_shader_module = create_shader_module(vertex_shader_code, vertex_shader_file_size);
     VkShaderModule fragment_shader_module = create_shader_module(fragment_shader_code, fragment_shader_file_size);
+
+    free(vertex_shader_code);
+    free(fragment_shader_code);
 
     VkPipelineShaderStageCreateInfo vertex_shader_stage_info = {0};
     vertex_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1098,6 +1096,7 @@ void cstrl_renderer_destroy(cstrl_platform_state *platform_state)
     free(g_render_finished_semaphores);
     free(g_in_flight_fences);
     vkDestroyCommandPool(g_device, g_command_pool, NULL);
+    free(g_command_buffers);
     cleanup_swap_chain();
     vkDestroyPipeline(g_device, g_graphics_pipeline, NULL);
     vkDestroyPipelineLayout(g_device, g_pipeline_layout, NULL);
