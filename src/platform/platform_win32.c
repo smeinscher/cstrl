@@ -14,64 +14,64 @@
 #include <windows.h>
 #include <windowsx.h>
 
-static double clock_frequency;
-static LARGE_INTEGER start_time;
+static double g_clock_frequency;
+static LARGE_INTEGER g_start_time;
 
 static bool g_should_exit = false;
 
-short win32_key_to_cstrl_key[512];
+short g_win32_key_to_cstrl_key[512];
 
 void win32_key_to_cstrl_key_init()
 {
-    win32_key_to_cstrl_key[VK_LCONTROL] = CSTRL_KEY_LEFT_CONTROL;
-    win32_key_to_cstrl_key[VK_RCONTROL] = CSTRL_KEY_RIGHT_CONTROL;
-    win32_key_to_cstrl_key[VK_LSHIFT] = CSTRL_KEY_LEFT_SHIFT;
-    win32_key_to_cstrl_key[VK_RSHIFT] = CSTRL_KEY_RIGHT_SHIFT;
-    win32_key_to_cstrl_key[VK_BACK] = CSTRL_KEY_BACKSPACE;
+    g_win32_key_to_cstrl_key[VK_LCONTROL] = CSTRL_KEY_LEFT_CONTROL;
+    g_win32_key_to_cstrl_key[VK_RCONTROL] = CSTRL_KEY_RIGHT_CONTROL;
+    g_win32_key_to_cstrl_key[VK_LSHIFT] = CSTRL_KEY_LEFT_SHIFT;
+    g_win32_key_to_cstrl_key[VK_RSHIFT] = CSTRL_KEY_RIGHT_SHIFT;
+    g_win32_key_to_cstrl_key[VK_BACK] = CSTRL_KEY_BACKSPACE;
 
-    win32_key_to_cstrl_key[VK_TAB] = CSTRL_KEY_TAB;
+    g_win32_key_to_cstrl_key[VK_TAB] = CSTRL_KEY_TAB;
 
-    win32_key_to_cstrl_key[VK_ESCAPE] = CSTRL_KEY_ESCAPE;
+    g_win32_key_to_cstrl_key[VK_ESCAPE] = CSTRL_KEY_ESCAPE;
 
-    win32_key_to_cstrl_key[0x30] = CSTRL_KEY_0;
-    win32_key_to_cstrl_key[0x31] = CSTRL_KEY_1;
-    win32_key_to_cstrl_key[0x32] = CSTRL_KEY_2;
-    win32_key_to_cstrl_key[0x33] = CSTRL_KEY_3;
-    win32_key_to_cstrl_key[0x34] = CSTRL_KEY_4;
-    win32_key_to_cstrl_key[0x35] = CSTRL_KEY_5;
-    win32_key_to_cstrl_key[0x36] = CSTRL_KEY_6;
-    win32_key_to_cstrl_key[0x37] = CSTRL_KEY_7;
-    win32_key_to_cstrl_key[0x38] = CSTRL_KEY_8;
-    win32_key_to_cstrl_key[0x39] = CSTRL_KEY_9;
+    g_win32_key_to_cstrl_key[0x30] = CSTRL_KEY_0;
+    g_win32_key_to_cstrl_key[0x31] = CSTRL_KEY_1;
+    g_win32_key_to_cstrl_key[0x32] = CSTRL_KEY_2;
+    g_win32_key_to_cstrl_key[0x33] = CSTRL_KEY_3;
+    g_win32_key_to_cstrl_key[0x34] = CSTRL_KEY_4;
+    g_win32_key_to_cstrl_key[0x35] = CSTRL_KEY_5;
+    g_win32_key_to_cstrl_key[0x36] = CSTRL_KEY_6;
+    g_win32_key_to_cstrl_key[0x37] = CSTRL_KEY_7;
+    g_win32_key_to_cstrl_key[0x38] = CSTRL_KEY_8;
+    g_win32_key_to_cstrl_key[0x39] = CSTRL_KEY_9;
 
-    win32_key_to_cstrl_key[VK_OEM_PERIOD] = CSTRL_KEY_PERIOD;
+    g_win32_key_to_cstrl_key[VK_OEM_PERIOD] = CSTRL_KEY_PERIOD;
 
-    win32_key_to_cstrl_key[0x41] = CSTRL_KEY_A;
-    win32_key_to_cstrl_key[0x42] = CSTRL_KEY_B;
-    win32_key_to_cstrl_key[0x43] = CSTRL_KEY_C;
-    win32_key_to_cstrl_key[0x44] = CSTRL_KEY_D;
-    win32_key_to_cstrl_key[0x45] = CSTRL_KEY_E;
-    win32_key_to_cstrl_key[0x46] = CSTRL_KEY_F;
-    win32_key_to_cstrl_key[0x47] = CSTRL_KEY_G;
-    win32_key_to_cstrl_key[0x48] = CSTRL_KEY_H;
-    win32_key_to_cstrl_key[0x49] = CSTRL_KEY_I;
-    win32_key_to_cstrl_key[0x4A] = CSTRL_KEY_J;
-    win32_key_to_cstrl_key[0x4B] = CSTRL_KEY_K;
-    win32_key_to_cstrl_key[0x4C] = CSTRL_KEY_L;
-    win32_key_to_cstrl_key[0x4D] = CSTRL_KEY_M;
-    win32_key_to_cstrl_key[0x4E] = CSTRL_KEY_N;
-    win32_key_to_cstrl_key[0x4F] = CSTRL_KEY_O;
-    win32_key_to_cstrl_key[0x50] = CSTRL_KEY_P;
-    win32_key_to_cstrl_key[0x51] = CSTRL_KEY_Q;
-    win32_key_to_cstrl_key[0x52] = CSTRL_KEY_R;
-    win32_key_to_cstrl_key[0x53] = CSTRL_KEY_S;
-    win32_key_to_cstrl_key[0x54] = CSTRL_KEY_T;
-    win32_key_to_cstrl_key[0x55] = CSTRL_KEY_U;
-    win32_key_to_cstrl_key[0x56] = CSTRL_KEY_V;
-    win32_key_to_cstrl_key[0x57] = CSTRL_KEY_W;
-    win32_key_to_cstrl_key[0x58] = CSTRL_KEY_X;
-    win32_key_to_cstrl_key[0x59] = CSTRL_KEY_Y;
-    win32_key_to_cstrl_key[0x5A] = CSTRL_KEY_Z;
+    g_win32_key_to_cstrl_key[0x41] = CSTRL_KEY_A;
+    g_win32_key_to_cstrl_key[0x42] = CSTRL_KEY_B;
+    g_win32_key_to_cstrl_key[0x43] = CSTRL_KEY_C;
+    g_win32_key_to_cstrl_key[0x44] = CSTRL_KEY_D;
+    g_win32_key_to_cstrl_key[0x45] = CSTRL_KEY_E;
+    g_win32_key_to_cstrl_key[0x46] = CSTRL_KEY_F;
+    g_win32_key_to_cstrl_key[0x47] = CSTRL_KEY_G;
+    g_win32_key_to_cstrl_key[0x48] = CSTRL_KEY_H;
+    g_win32_key_to_cstrl_key[0x49] = CSTRL_KEY_I;
+    g_win32_key_to_cstrl_key[0x4A] = CSTRL_KEY_J;
+    g_win32_key_to_cstrl_key[0x4B] = CSTRL_KEY_K;
+    g_win32_key_to_cstrl_key[0x4C] = CSTRL_KEY_L;
+    g_win32_key_to_cstrl_key[0x4D] = CSTRL_KEY_M;
+    g_win32_key_to_cstrl_key[0x4E] = CSTRL_KEY_N;
+    g_win32_key_to_cstrl_key[0x4F] = CSTRL_KEY_O;
+    g_win32_key_to_cstrl_key[0x50] = CSTRL_KEY_P;
+    g_win32_key_to_cstrl_key[0x51] = CSTRL_KEY_Q;
+    g_win32_key_to_cstrl_key[0x52] = CSTRL_KEY_R;
+    g_win32_key_to_cstrl_key[0x53] = CSTRL_KEY_S;
+    g_win32_key_to_cstrl_key[0x54] = CSTRL_KEY_T;
+    g_win32_key_to_cstrl_key[0x55] = CSTRL_KEY_U;
+    g_win32_key_to_cstrl_key[0x56] = CSTRL_KEY_V;
+    g_win32_key_to_cstrl_key[0x57] = CSTRL_KEY_W;
+    g_win32_key_to_cstrl_key[0x58] = CSTRL_KEY_X;
+    g_win32_key_to_cstrl_key[0x59] = CSTRL_KEY_Y;
+    g_win32_key_to_cstrl_key[0x5A] = CSTRL_KEY_Z;
 }
 
 LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -98,11 +98,11 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
 
         if (internal_state->state_common.callbacks.key != NULL)
         {
-            internal_state->state_common.callbacks.key(state, win32_key_to_cstrl_key[wparam], scancode, action, 0);
+            internal_state->state_common.callbacks.key(state, g_win32_key_to_cstrl_key[wparam], scancode, action, 0);
         }
         if (action == CSTRL_ACTION_PRESS)
         {
-            internal_state->state_common.input.most_recent_key_pressed = win32_key_to_cstrl_key[wparam];
+            internal_state->state_common.input.most_recent_key_pressed = g_win32_key_to_cstrl_key[wparam];
         }
         else
         {
@@ -185,20 +185,34 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
 
         return 0;
     }
+    case WM_SIZE: {
+        const int width = LOWORD(lparam);
+        const int height = HIWORD(lparam);
+        cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
+        if (state == NULL)
+        {
+            log_trace("State is NULL, skipping keyboard input");
+            return 0;
+        }
+        internal_state *internal_state = state->internal_state;
+
+        if (internal_state->state_common.window_width != width || internal_state->state_common.window_height != height)
+        {
+            internal_state->state_common.window_width = width;
+            internal_state->state_common.window_height = height;
+
+            if (internal_state->state_common.callbacks.framebuffer_size != NULL)
+            {
+                internal_state->state_common.callbacks.framebuffer_size(state, width, height);
+            }
+        }
+        return 0;
+    }
     case WM_CLOSE:
     case WM_DESTROY:
         g_should_exit = true;
         PostQuitMessage(0);
         return 0;
-    // case WM_PAINT: {
-    //     PAINTSTRUCT ps;
-    //     hdc = BeginPaint(hwnd, &ps);
-    //
-    //     FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
-    //
-    //     EndPaint(hwnd, &ps);
-    //     return 0;
-    // }
     default:
         return DefWindowProc(hwnd, msg, wparam, lparam);
     }
@@ -262,11 +276,12 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
 
     LARGE_INTEGER frequency;
     QueryPerformanceFrequency(&frequency);
-    clock_frequency = 1.0 / (double)frequency.QuadPart;
-    QueryPerformanceCounter(&start_time);
+    g_clock_frequency = 1.0 / (double)frequency.QuadPart;
+    QueryPerformanceCounter(&g_start_time);
 
     state->state_common.callbacks.key = NULL;
     state->state_common.callbacks.mouse_position = NULL;
+    state->state_common.callbacks.framebuffer_size = NULL;
 
     win32_key_to_cstrl_key_init();
 
@@ -313,7 +328,7 @@ CSTRL_API double cstrl_platform_get_absolute_time()
 {
     LARGE_INTEGER current_time;
     QueryPerformanceCounter(&current_time);
-    return (double)current_time.QuadPart * clock_frequency;
+    return (double)current_time.QuadPart * g_clock_frequency;
 }
 
 CSTRL_API void cstrl_platform_sleep(unsigned long long ms)

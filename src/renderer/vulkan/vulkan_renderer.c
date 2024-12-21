@@ -66,6 +66,44 @@ static uint32_t current_frame = 0;
 
 static bool framebuffer_resized = false;
 
+static VkBuffer g_vertex_buffer;
+static VkDeviceMemory g_vertex_buffer_memory;
+
+typedef struct vertex
+{
+    vec2 pos;
+    vec3 color;
+
+} vertex_t;
+
+const vertex_t g_vertices[] = {
+    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+
+static VkVertexInputBindingDescription get_binding_description()
+{
+    VkVertexInputBindingDescription binding_description = {0};
+    binding_description.binding = 0;
+    binding_description.stride = sizeof(vertex_t);
+    binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+    return binding_description;
+}
+
+static VkVertexInputAttributeDescription *get_attribute_descriptions()
+{
+    VkVertexInputAttributeDescription *attribute_description = malloc(2 * sizeof(VkVertexInputAttributeDescription));
+    attribute_description[0].binding = 0;
+    attribute_description[0].location = 0;
+    attribute_description[0].format = VK_FORMAT_R32G32_SFLOAT;
+    attribute_description[0].offset = offsetof(vertex_t, pos);
+    attribute_description[1].binding = 0;
+    attribute_description[1].location = 1;
+    attribute_description[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attribute_description[1].offset = offsetof(vertex_t, color);
+
+    return attribute_description;
+}
+
 static bool check_validation_layer_support()
 {
     uint32_t layer_count;
@@ -653,10 +691,11 @@ static VkShaderModule create_shader_module(const char *shader_code, long file_si
 static void create_graphics_pipeline()
 {
     long vertex_shader_file_size;
-    char *vertex_shader_code = cstrl_read_file("resources/shaders/vulkan-tutorial/vert.spv", &vertex_shader_file_size);
+    char *vertex_shader_code =
+        cstrl_read_file("resources/shaders/vulkan-tutorial/vertex_buffer/vert.spv", &vertex_shader_file_size);
     long fragment_shader_file_size;
     char *fragment_shader_code =
-        cstrl_read_file("resources/shaders/vulkan-tutorial/frag.spv", &fragment_shader_file_size);
+        cstrl_read_file("resources/shaders/vulkan-tutorial/vertex_buffer/frag.spv", &fragment_shader_file_size);
 
     VkShaderModule vertex_shader_module = create_shader_module(vertex_shader_code, vertex_shader_file_size);
     VkShaderModule fragment_shader_module = create_shader_module(fragment_shader_code, fragment_shader_file_size);
@@ -685,12 +724,15 @@ static void create_graphics_pipeline()
     dynamic_state.dynamicStateCount = 2;
     dynamic_state.pDynamicStates = dynamic_states;
 
+    VkVertexInputBindingDescription binding_description = get_binding_description();
+    VkVertexInputAttributeDescription *attribute_description = get_attribute_descriptions();
+
     VkPipelineVertexInputStateCreateInfo vertex_input_info = {0};
     vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_info.vertexBindingDescriptionCount = 0;
-    vertex_input_info.pVertexBindingDescriptions = NULL;
-    vertex_input_info.vertexAttributeDescriptionCount = 0;
-    vertex_input_info.pVertexAttributeDescriptions = NULL;
+    vertex_input_info.vertexBindingDescriptionCount = 1;
+    vertex_input_info.pVertexBindingDescriptions = &binding_description;
+    vertex_input_info.vertexAttributeDescriptionCount = 2;
+    vertex_input_info.pVertexAttributeDescriptions = attribute_description;
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {0};
     input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -854,6 +896,57 @@ static void create_command_buffers()
     }
 }
 
+static uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties mem_properties;
+    vkGetPhysicalDeviceMemoryProperties(g_physical_device, &mem_properties);
+
+    for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
+    {
+        if ((type_filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
+        {
+            return i;
+        }
+    }
+    log_error("Failed to find suitable memory type");
+    return UINT32_MAX;
+}
+
+static void create_vertex_buffer()
+{
+    VkBufferCreateInfo buffer_info = {0};
+    buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    buffer_info.size = sizeof(vertex_t) * 3;
+    buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(g_device, &buffer_info, NULL, &g_vertex_buffer) != VK_SUCCESS)
+    {
+        log_error("Failed to create vertex buffer");
+    }
+
+    VkMemoryRequirements mem_requirements;
+    vkGetBufferMemoryRequirements(g_device, g_vertex_buffer, &mem_requirements);
+
+    VkMemoryAllocateInfo alloc_info = {0};
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex = find_memory_type(
+        mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    if (vkAllocateMemory(g_device, &alloc_info, NULL, &g_vertex_buffer_memory) != VK_SUCCESS)
+    {
+        log_error("Failed to allocate vertex buffer memory");
+    }
+
+    vkBindBufferMemory(g_device, g_vertex_buffer, g_vertex_buffer_memory, 0);
+
+    void *data;
+    vkMapMemory(g_device, g_vertex_buffer_memory, 0, buffer_info.size, 0, &data);
+    memcpy(data, g_vertices, sizeof(vertex_t) * 3);
+    vkUnmapMemory(g_device, g_vertex_buffer_memory);
+}
+
 static void record_command_buffer(VkCommandBuffer command_buffer, uint32_t image_index)
 {
     VkCommandBufferBeginInfo begin_info = {0};
@@ -881,6 +974,10 @@ static void record_command_buffer(VkCommandBuffer command_buffer, uint32_t image
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_graphics_pipeline);
 
+    VkBuffer vertex_buffers[] = {g_vertex_buffer};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+
     VkViewport viewport = {0};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -905,7 +1002,7 @@ static void record_command_buffer(VkCommandBuffer command_buffer, uint32_t image
     }
 }
 
-void create_sync_objects()
+static void create_sync_objects()
 {
     g_image_available_semaphores = malloc(MAX_FRAMES_IN_FLIGHT * sizeof(VkSemaphore));
     g_render_finished_semaphores = malloc(MAX_FRAMES_IN_FLIGHT * sizeof(VkSemaphore));
@@ -954,6 +1051,13 @@ static void cleanup_swap_chain()
 
 static void recreate_swap_chain()
 {
+    /* vulkan-tutorial code to possibly implement */
+    // int width = 0, height = 0;
+    // glfwGetFramebufferSize(window, &width, &height);
+    // while (width == 0 || height == 0) {
+    // glfwGetFramebufferSize(window, &width, &height);
+    // glfwWaitEvents();
+    // }
     vkDeviceWaitIdle(g_device);
 
     cleanup_swap_chain();
@@ -981,6 +1085,7 @@ bool cstrl_renderer_init(cstrl_platform_state *platform_state)
     create_graphics_pipeline();
     create_framebuffers();
     create_command_pool();
+    create_vertex_buffer();
     create_command_buffers();
     create_sync_objects();
     log_trace("Using Vulkan!");
@@ -1097,6 +1202,8 @@ void cstrl_renderer_destroy(cstrl_platform_state *platform_state)
     vkDestroyCommandPool(g_device, g_command_pool, NULL);
     free(g_command_buffers);
     cleanup_swap_chain();
+    vkDestroyBuffer(g_device, g_vertex_buffer, NULL);
+    vkFreeMemory(g_device, g_vertex_buffer_memory, NULL);
     vkDestroyPipeline(g_device, g_graphics_pipeline, NULL);
     vkDestroyPipelineLayout(g_device, g_pipeline_layout, NULL);
     vkDestroyRenderPass(g_device, g_render_pass, NULL);
