@@ -912,38 +912,45 @@ static uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags pro
     return UINT32_MAX;
 }
 
-static void create_vertex_buffer()
+static void create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
+                          VkBuffer *buffer, VkDeviceMemory *buffer_memory)
 {
     VkBufferCreateInfo buffer_info = {0};
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_info.size = sizeof(vertex_t) * 3;
-    buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    buffer_info.size = size;
+    buffer_info.usage = usage;
     buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateBuffer(g_device, &buffer_info, NULL, &g_vertex_buffer) != VK_SUCCESS)
+    if (vkCreateBuffer(g_device, &buffer_info, NULL, buffer) != VK_SUCCESS)
     {
         log_error("Failed to create vertex buffer");
     }
 
     VkMemoryRequirements mem_requirements;
-    vkGetBufferMemoryRequirements(g_device, g_vertex_buffer, &mem_requirements);
+    vkGetBufferMemoryRequirements(g_device, *buffer, &mem_requirements);
 
     VkMemoryAllocateInfo alloc_info = {0};
     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     alloc_info.allocationSize = mem_requirements.size;
-    alloc_info.memoryTypeIndex = find_memory_type(
-        mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    alloc_info.memoryTypeIndex = find_memory_type(mem_requirements.memoryTypeBits, properties);
 
-    if (vkAllocateMemory(g_device, &alloc_info, NULL, &g_vertex_buffer_memory) != VK_SUCCESS)
+    if (vkAllocateMemory(g_device, &alloc_info, NULL, buffer_memory) != VK_SUCCESS)
     {
         log_error("Failed to allocate vertex buffer memory");
     }
 
-    vkBindBufferMemory(g_device, g_vertex_buffer, g_vertex_buffer_memory, 0);
+    vkBindBufferMemory(g_device, *buffer, *buffer_memory, 0);
+}
 
+static void create_vertex_buffer()
+{
+    VkDeviceSize buffer_size = sizeof(vertex_t) * 3;
+    create_buffer(buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &g_vertex_buffer,
+                  &g_vertex_buffer_memory);
     void *data;
-    vkMapMemory(g_device, g_vertex_buffer_memory, 0, buffer_info.size, 0, &data);
-    memcpy(data, g_vertices, sizeof(vertex_t) * 3);
+    vkMapMemory(g_device, g_vertex_buffer_memory, 0, buffer_size, 0, &data);
+    memcpy(data, g_vertices, (size_t)buffer_size);
     vkUnmapMemory(g_device, g_vertex_buffer_memory);
 }
 

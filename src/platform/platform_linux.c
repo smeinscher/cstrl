@@ -256,7 +256,7 @@ void cstrl_platform_sleep(unsigned long long ms)
     nanosleep(&ts, 0);
 }
 
-bool cstrl_platform_should_exit(cstrl_platform_state *platform_state)
+bool cstrl_platform_should_exit()
 {
     return g_should_exit;
 }
