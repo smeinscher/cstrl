@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ ! -v $1 ]]; then
+if [[ -z "$1" ]]; then
   set "Debug"
 fi
 mkdir build-${1,};
