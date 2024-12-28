@@ -20,14 +20,13 @@ add_library(log_c STATIC
         extern/log.c/log.h)
 target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
 
-option(RENDER_API_VULKAN "Vulkan Render API" OFF)
-if (NOT RENDER_API_VULKAN)
-    option(RENDER_API_OPENGL "OpenGL Render API" ON)
+if (NOT DEFINED RENDER_API)
+    set(RENDER_API "OPENGL")
 endif ()
 
-if (RENDER_API_OPENGL)
+if (${RENDER_API} STREQUAL "OPENGL")
     add_compile_definitions(CSTRL_RENDER_API_OPENGL)
-elseif (RENDER_API_VULKAN)
+elseif (${RENDER_API} STREQUAL "VULKAN")
     add_compile_definitions(CSTRL_RENDER_API_VULKAN)
 endif ()
 
