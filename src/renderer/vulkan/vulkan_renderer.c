@@ -2,6 +2,8 @@
 // Created by 12105 on 12/13/2024.
 //
 
+#include "cstrl/cstrl_math.h"
+#include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_util.h"
 #if defined(CSTRL_RENDER_API_VULKAN)
 #include "cstrl/cstrl_renderer.h"
@@ -17,6 +19,8 @@
 #else
 #define CSTRL_VULKAN_ENABLE_VALIDATION_LAYERS 1
 #endif
+
+#define MAX_FRAMES_IN_FLIGHT 2
 
 static VkInstance g_instance;
 static VkDebugUtilsMessengerEXT g_debug_messenger;
@@ -46,6 +50,7 @@ static VkExtent2D g_swap_chain_extent;
 static VkImageView *g_swap_chain_image_views;
 
 static VkRenderPass g_render_pass;
+static VkDescriptorSetLayout g_descriptor_set_layout;
 static VkPipelineLayout g_pipeline_layout;
 
 static VkPipeline g_graphics_pipeline;
@@ -54,20 +59,28 @@ static VkFramebuffer *g_swap_chain_framebuffers;
 
 static VkCommandPool g_command_pool;
 
-static VkCommandBuffer *g_command_buffers;
+static VkCommandBuffer g_command_buffers[MAX_FRAMES_IN_FLIGHT];
 
-static VkSemaphore *g_image_available_semaphores;
-static VkSemaphore *g_render_finished_semaphores;
-static VkFence *g_in_flight_fences;
+static VkSemaphore g_image_available_semaphores[MAX_FRAMES_IN_FLIGHT];
+static VkSemaphore g_render_finished_semaphores[MAX_FRAMES_IN_FLIGHT];
+static VkFence g_in_flight_fences[MAX_FRAMES_IN_FLIGHT];
 
-#define MAX_FRAMES_IN_FLIGHT 2
+static uint32_t g_current_frame = 0;
 
-static uint32_t current_frame = 0;
-
-static bool framebuffer_resized = false;
+static bool g_framebuffer_resized = false;
 
 static VkBuffer g_vertex_buffer;
 static VkDeviceMemory g_vertex_buffer_memory;
+static VkBuffer g_index_buffer;
+static VkDeviceMemory g_index_buffer_memory;
+
+static VkBuffer g_uniform_buffers[MAX_FRAMES_IN_FLIGHT];
+static VkDeviceMemory g_uniform_buffers_memory[MAX_FRAMES_IN_FLIGHT];
+static void *g_uniform_buffers_mapped[MAX_FRAMES_IN_FLIGHT];
+
+static VkDescriptorPool g_descriptor_pool;
+
+static VkDescriptorSet g_descriptor_sets[MAX_FRAMES_IN_FLIGHT];
 
 typedef struct vertex
 {
@@ -76,8 +89,18 @@ typedef struct vertex
 
 } vertex_t;
 
-const vertex_t g_vertices[] = {
-    {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}}, {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}}, {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+const vertex_t g_vertices[] = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                               {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                               {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                               {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+const uint16_t g_indices[] = {0, 1, 2, 2, 3, 0};
+
+typedef struct uniform_buffer_object
+{
+    mat4 model;
+    mat4 view;
+    mat4 projection;
+} uniform_buffer_object;
 
 static VkVertexInputBindingDescription get_binding_description()
 {
@@ -692,10 +715,10 @@ static void create_graphics_pipeline()
 {
     long vertex_shader_file_size;
     char *vertex_shader_code =
-        cstrl_read_file("resources/shaders/vulkan-tutorial/vertex_buffer/vert.spv", &vertex_shader_file_size);
+        cstrl_read_file("resources/shaders/vulkan-tutorial/uniform_buffers/vert.spv", &vertex_shader_file_size);
     long fragment_shader_file_size;
     char *fragment_shader_code =
-        cstrl_read_file("resources/shaders/vulkan-tutorial/vertex_buffer/frag.spv", &fragment_shader_file_size);
+        cstrl_read_file("resources/shaders/vulkan-tutorial/uniform_buffers/frag.spv", &fragment_shader_file_size);
 
     VkShaderModule vertex_shader_module = create_shader_module(vertex_shader_code, vertex_shader_file_size);
     VkShaderModule fragment_shader_module = create_shader_module(fragment_shader_code, fragment_shader_file_size);
@@ -770,6 +793,8 @@ static void create_graphics_pipeline()
     rasterizer.depthBiasConstantFactor = 0.0f;
     rasterizer.depthBiasClamp = 0.0f;
     rasterizer.depthBiasSlopeFactor = 0.0f;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     VkPipelineMultisampleStateCreateInfo multisampling = {0};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -804,8 +829,8 @@ static void create_graphics_pipeline()
 
     VkPipelineLayoutCreateInfo pipeline_layout_info = {0};
     pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_info.setLayoutCount = 0;
-    pipeline_layout_info.pSetLayouts = NULL;
+    pipeline_layout_info.setLayoutCount = 1;
+    pipeline_layout_info.pSetLayouts = &g_descriptor_set_layout;
     pipeline_layout_info.pushConstantRangeCount = 0;
     pipeline_layout_info.pPushConstantRanges = NULL;
 
@@ -883,7 +908,6 @@ static void create_command_pool()
 
 static void create_command_buffers()
 {
-    g_command_buffers = malloc(MAX_FRAMES_IN_FLIGHT * sizeof(VkCommandBuffer));
     VkCommandBufferAllocateInfo alloc_info = {0};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.commandPool = g_command_pool;
@@ -942,16 +966,90 @@ static void create_buffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryP
     vkBindBufferMemory(g_device, *buffer, *buffer_memory, 0);
 }
 
+static void copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)
+{
+    VkCommandBufferAllocateInfo alloc_info = {0};
+    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandPool = g_command_pool;
+    alloc_info.commandBufferCount = 1;
+
+    VkCommandBuffer command_buffer;
+    vkAllocateCommandBuffers(g_device, &alloc_info, &command_buffer);
+
+    VkCommandBufferBeginInfo begin_info = {0};
+    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(command_buffer, &begin_info);
+
+    VkBufferCopy copy_region = {0};
+    copy_region.srcOffset = 0;
+    copy_region.dstOffset = 0;
+    copy_region.size = size;
+
+    vkCmdCopyBuffer(command_buffer, src_buffer, dst_buffer, 1, &copy_region);
+
+    vkEndCommandBuffer(command_buffer);
+
+    VkSubmitInfo submit_info = {0};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &command_buffer;
+
+    vkQueueSubmit(g_graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(g_graphics_queue);
+
+    vkFreeCommandBuffers(g_device, g_command_pool, 1, &command_buffer);
+}
+
 static void create_vertex_buffer()
 {
-    VkDeviceSize buffer_size = sizeof(vertex_t) * 3;
-    create_buffer(buffer_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    VkDeviceSize buffer_size = sizeof(vertex_t) * 4;
+
+    VkBuffer staging_buffer;
+    VkDeviceMemory staging_buffer_memory;
+    create_buffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer,
+                  &staging_buffer_memory);
+
+    void *data;
+    vkMapMemory(g_device, staging_buffer_memory, 0, buffer_size, 0, &data);
+    memcpy(data, g_vertices, (size_t)buffer_size);
+    vkUnmapMemory(g_device, staging_buffer_memory);
+
+    create_buffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &g_vertex_buffer,
                   &g_vertex_buffer_memory);
+
+    copy_buffer(staging_buffer, g_vertex_buffer, buffer_size);
+
+    vkDestroyBuffer(g_device, staging_buffer, NULL);
+    vkFreeMemory(g_device, staging_buffer_memory, NULL);
+}
+
+void create_index_buffer()
+{
+    VkDeviceSize buffer_size = sizeof(g_indices[0]) * 6;
+
+    VkBuffer staging_buffer;
+    VkDeviceMemory staging_buffer_memory;
+    create_buffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer,
+                  &staging_buffer_memory);
+
     void *data;
-    vkMapMemory(g_device, g_vertex_buffer_memory, 0, buffer_size, 0, &data);
-    memcpy(data, g_vertices, (size_t)buffer_size);
-    vkUnmapMemory(g_device, g_vertex_buffer_memory);
+    vkMapMemory(g_device, staging_buffer_memory, 0, buffer_size, 0, &data);
+    memcpy(data, g_indices, (size_t)buffer_size);
+    vkUnmapMemory(g_device, staging_buffer_memory);
+
+    create_buffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &g_index_buffer, &g_index_buffer_memory);
+
+    copy_buffer(staging_buffer, g_index_buffer, buffer_size);
+
+    vkDestroyBuffer(g_device, staging_buffer, NULL);
+    vkFreeMemory(g_device, staging_buffer_memory, NULL);
 }
 
 static void record_command_buffer(VkCommandBuffer command_buffer, uint32_t image_index)
@@ -985,6 +1083,8 @@ static void record_command_buffer(VkCommandBuffer command_buffer, uint32_t image
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 
+    vkCmdBindIndexBuffer(command_buffer, g_index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
     VkViewport viewport = {0};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -999,7 +1099,10 @@ static void record_command_buffer(VkCommandBuffer command_buffer, uint32_t image
     scissor.extent = g_swap_chain_extent;
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-    vkCmdDraw(command_buffer, 3, 1, 0, 0);
+    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, g_pipeline_layout, 0, 1,
+                            &g_descriptor_sets[g_current_frame], 0, NULL);
+
+    vkCmdDrawIndexed(command_buffer, 6, 1, 0, 0, 0);
 
     vkCmdEndRenderPass(command_buffer);
 
@@ -1011,10 +1114,6 @@ static void record_command_buffer(VkCommandBuffer command_buffer, uint32_t image
 
 static void create_sync_objects()
 {
-    g_image_available_semaphores = malloc(MAX_FRAMES_IN_FLIGHT * sizeof(VkSemaphore));
-    g_render_finished_semaphores = malloc(MAX_FRAMES_IN_FLIGHT * sizeof(VkSemaphore));
-    g_in_flight_fences = malloc(MAX_FRAMES_IN_FLIGHT * sizeof(VkFence));
-
     VkSemaphoreCreateInfo semaphore_info = {0};
     semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -1074,6 +1173,98 @@ static void recreate_swap_chain()
     create_framebuffers();
 }
 
+static void create_descriptor_set_layout()
+{
+    VkDescriptorSetLayoutBinding ubo_layout_binding = {0};
+    ubo_layout_binding.binding = 0;
+    ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    ubo_layout_binding.descriptorCount = 1;
+    ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    ubo_layout_binding.pImmutableSamplers = NULL;
+
+    VkDescriptorSetLayoutCreateInfo layout_info = {0};
+    layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layout_info.bindingCount = 1;
+    layout_info.pBindings = &ubo_layout_binding;
+
+    if (vkCreateDescriptorSetLayout(g_device, &layout_info, NULL, &g_descriptor_set_layout) != VK_SUCCESS)
+    {
+        log_error("Failed to create descriptor set layout");
+    }
+}
+
+void create_uniform_buffers()
+{
+    VkDeviceSize buffer_size = sizeof(uniform_buffer_object);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        create_buffer(buffer_size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &g_uniform_buffers[i],
+                      &g_uniform_buffers_memory[i]);
+        vkMapMemory(g_device, g_uniform_buffers_memory[i], 0, buffer_size, 0, &g_uniform_buffers_mapped[i]);
+    }
+}
+
+void create_descriptor_pool()
+{
+    VkDescriptorPoolSize pool_size = {0};
+    pool_size.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    pool_size.descriptorCount = MAX_FRAMES_IN_FLIGHT;
+
+    VkDescriptorPoolCreateInfo pool_info = {0};
+    pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    pool_info.poolSizeCount = 1;
+    pool_info.pPoolSizes = &pool_size;
+    pool_info.maxSets = MAX_FRAMES_IN_FLIGHT;
+
+    if (vkCreateDescriptorPool(g_device, &pool_info, NULL, &g_descriptor_pool) != VK_SUCCESS)
+    {
+        log_error("Failed to create descriptor pool");
+    }
+}
+
+void create_descriptor_sets()
+{
+    VkDescriptorSetLayout layouts[MAX_FRAMES_IN_FLIGHT];
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        layouts[i] = g_descriptor_set_layout;
+    }
+
+    VkDescriptorSetAllocateInfo alloc_info = {0};
+    alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    alloc_info.descriptorPool = g_descriptor_pool;
+    alloc_info.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
+    alloc_info.pSetLayouts = layouts;
+
+    if (vkAllocateDescriptorSets(g_device, &alloc_info, g_descriptor_sets) != VK_SUCCESS)
+    {
+        log_error("Failed to allocate descriptor sets");
+    }
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        VkDescriptorBufferInfo buffer_info = {0};
+        buffer_info.buffer = g_uniform_buffers[i];
+        buffer_info.offset = 0;
+        buffer_info.range = sizeof(uniform_buffer_object);
+
+        VkWriteDescriptorSet descriptor_write = {0};
+        descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptor_write.dstSet = g_descriptor_sets[i];
+        descriptor_write.dstBinding = 0;
+        descriptor_write.dstArrayElement = 0;
+        descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptor_write.descriptorCount = 1;
+        descriptor_write.pBufferInfo = &buffer_info;
+        descriptor_write.pImageInfo = NULL;
+        descriptor_write.pTexelBufferView = NULL;
+
+        vkUpdateDescriptorSets(g_device, 1, &descriptor_write, 0, NULL);
+    }
+}
+
 bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
     g_instance = create_instance();
@@ -1089,10 +1280,15 @@ bool cstrl_renderer_init(cstrl_platform_state *platform_state)
     create_swap_chain();
     create_image_views();
     create_render_pass();
+    create_descriptor_set_layout();
     create_graphics_pipeline();
     create_framebuffers();
     create_command_pool();
     create_vertex_buffer();
+    create_index_buffer();
+    create_uniform_buffers();
+    create_descriptor_pool();
+    create_descriptor_sets();
     create_command_buffers();
     create_sync_objects();
     log_trace("Using Vulkan!");
@@ -1135,16 +1331,33 @@ void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, con
 {
 }
 
+static void update_uniform_buffer(uint32_t current_image)
+{
+    double current_time = cstrl_platform_get_absolute_time();
+    // double time = current_time - start_time;
+    // start_time = current_time;
+    uniform_buffer_object ubo = {0};
+    ubo.model = cstrl_mat4_identity();
+    ubo.model = cstrl_mat4_rotate(ubo.model, sin(current_time), (vec3){0.0f, 0.0f, 1.0f});
+    ubo.view = cstrl_mat4_look_at((vec3){2.0f, 2.0f, 2.0f}, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 0.0f, 1.0f});
+    ubo.projection = cstrl_mat4_perspective(
+        cstrl_pi / 4.0f, (float)g_swap_chain_extent.width / (float)g_swap_chain_extent.height, 0.1f, 10.0f);
+    ubo.projection.yy *= -1.0f;
+
+    memcpy(g_uniform_buffers_mapped[current_image], &ubo, sizeof(ubo));
+}
+
 void cstrl_renderer_draw(cstrl_render_data *data)
 {
-    vkWaitForFences(g_device, 1, &g_in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(g_device, 1, &g_in_flight_fences[g_current_frame], VK_TRUE, UINT64_MAX);
 
     uint32_t image_index;
-    VkResult result = vkAcquireNextImageKHR(g_device, g_swap_chain, UINT64_MAX,
-                                            g_image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized)
+    VkResult result =
+        vkAcquireNextImageKHR(g_device, g_swap_chain, UINT64_MAX, g_image_available_semaphores[g_current_frame],
+                              VK_NULL_HANDLE, &image_index);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || g_framebuffer_resized)
     {
-        framebuffer_resized = false;
+        g_framebuffer_resized = false;
         recreate_swap_chain();
     }
     else if (result != VK_SUCCESS)
@@ -1153,27 +1366,29 @@ void cstrl_renderer_draw(cstrl_render_data *data)
         return;
     }
 
-    vkResetFences(g_device, 1, &g_in_flight_fences[current_frame]);
+    update_uniform_buffer(g_current_frame);
 
-    vkResetCommandBuffer(g_command_buffers[current_frame], 0);
+    vkResetFences(g_device, 1, &g_in_flight_fences[g_current_frame]);
 
-    record_command_buffer(g_command_buffers[current_frame], image_index);
+    vkResetCommandBuffer(g_command_buffers[g_current_frame], 0);
+
+    record_command_buffer(g_command_buffers[g_current_frame], image_index);
 
     VkSubmitInfo submit_info = {0};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore wait_semaphores[] = {g_image_available_semaphores[current_frame]};
+    VkSemaphore wait_semaphores[] = {g_image_available_semaphores[g_current_frame]};
     VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submit_info.waitSemaphoreCount = 1;
     submit_info.pWaitSemaphores = wait_semaphores;
     submit_info.pWaitDstStageMask = wait_stages;
     submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &g_command_buffers[current_frame];
-    VkSemaphore signal_semaphores[] = {g_render_finished_semaphores[current_frame]};
+    submit_info.pCommandBuffers = &g_command_buffers[g_current_frame];
+    VkSemaphore signal_semaphores[] = {g_render_finished_semaphores[g_current_frame]};
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = signal_semaphores;
 
-    if (vkQueueSubmit(g_graphics_queue, 1, &submit_info, g_in_flight_fences[current_frame]) != VK_SUCCESS)
+    if (vkQueueSubmit(g_graphics_queue, 1, &submit_info, g_in_flight_fences[g_current_frame]) != VK_SUCCESS)
     {
         log_error("Failed to submit draw command buffer");
     }
@@ -1189,33 +1404,60 @@ void cstrl_renderer_draw(cstrl_render_data *data)
     present_info.pImageIndices = &image_index;
     present_info.pResults = NULL;
 
-    vkQueuePresentKHR(g_present_queue, &present_info);
+    result = vkQueuePresentKHR(g_present_queue, &present_info);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || g_framebuffer_resized)
+    {
+        g_framebuffer_resized = false;
+        recreate_swap_chain();
+    }
+    else if (result != VK_SUCCESS)
+    {
+        log_error("Failed to acquire swap chain image");
+        return;
+    }
 
-    current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+    g_current_frame = (g_current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void cstrl_renderer_destroy(cstrl_platform_state *platform_state)
 {
     vkDeviceWaitIdle(g_device);
+
+    cleanup_swap_chain();
+
+    vkDestroyPipeline(g_device, g_graphics_pipeline, NULL);
+    vkDestroyPipelineLayout(g_device, g_pipeline_layout, NULL);
+    vkDestroyRenderPass(g_device, g_render_pass, NULL);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        vkDestroyBuffer(g_device, g_uniform_buffers[i], NULL);
+        vkFreeMemory(g_device, g_uniform_buffers_memory[i], NULL);
+    }
+
+    vkDestroyDescriptorPool(g_device, g_descriptor_pool, NULL);
+    // free(g_descriptor_sets);
+    vkDestroyDescriptorSetLayout(g_device, g_descriptor_set_layout, NULL);
+
+    vkDestroyBuffer(g_device, g_index_buffer, NULL);
+    vkFreeMemory(g_device, g_index_buffer_memory, NULL);
+
+    vkDestroyBuffer(g_device, g_vertex_buffer, NULL);
+    vkFreeMemory(g_device, g_vertex_buffer_memory, NULL);
+
+    free(g_swap_chain_images);
+
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         vkDestroySemaphore(g_device, g_image_available_semaphores[i], NULL);
         vkDestroySemaphore(g_device, g_render_finished_semaphores[i], NULL);
         vkDestroyFence(g_device, g_in_flight_fences[i], NULL);
     }
-    free(g_image_available_semaphores);
-    free(g_render_finished_semaphores);
-    free(g_in_flight_fences);
+
     vkDestroyCommandPool(g_device, g_command_pool, NULL);
-    free(g_command_buffers);
-    cleanup_swap_chain();
-    vkDestroyBuffer(g_device, g_vertex_buffer, NULL);
-    vkFreeMemory(g_device, g_vertex_buffer_memory, NULL);
-    vkDestroyPipeline(g_device, g_graphics_pipeline, NULL);
-    vkDestroyPipelineLayout(g_device, g_pipeline_layout, NULL);
-    vkDestroyRenderPass(g_device, g_render_pass, NULL);
-    free(g_swap_chain_images);
+
     vkDestroyDevice(g_device, NULL);
+
 #if defined(CSTRL_VULKAN_ENABLE_VALIDATION_LAYERS)
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT =
         (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(g_instance, "vkDestroyDebugUtilsMessengerEXT");
