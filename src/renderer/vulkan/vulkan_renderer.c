@@ -1333,13 +1333,12 @@ void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, con
 
 static void update_uniform_buffer(uint32_t current_image)
 {
-    double start_time = 0.0;
-
     double current_time = cstrl_platform_get_absolute_time();
-    double time = current_time - start_time;
-
+    // double time = current_time - start_time;
+    // start_time = current_time;
     uniform_buffer_object ubo = {0};
     ubo.model = cstrl_mat4_identity();
+    ubo.model = cstrl_mat4_rotate(ubo.model, sin(current_time), (vec3){0.0f, 0.0f, 1.0f});
     ubo.view = cstrl_mat4_look_at((vec3){2.0f, 2.0f, 2.0f}, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 0.0f, 1.0f});
     ubo.projection = cstrl_mat4_perspective(
         cstrl_pi / 4.0f, (float)g_swap_chain_extent.width / (float)g_swap_chain_extent.height, 0.1f, 10.0f);

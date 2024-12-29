@@ -421,6 +421,32 @@ CSTRL_INLINE mat4 cstrl_mat4_identity()
 }
 
 // TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_add(const mat4 a, const mat4 b)
+{
+    mat4 m;
+
+    for (int i = 0; i < 16; i++)
+    {
+        m.m[i] = a.m[i] + b.m[i];
+    }
+
+    return m;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_add_scalar(const mat4 m, const float s)
+{
+    mat4 result;
+    
+    for (int i = 0; i < 16; i++)
+    {
+        result.m[i] = m.m[i] + s;
+    }
+
+    return result;
+}
+
+// TODO: add to unit tests
 CSTRL_INLINE mat4 cstrl_mat4_look_at(const vec3 eye, const vec3 center, const vec3 up)
 {
     vec3 z = cstrl_vec3_sub(eye, center);
@@ -521,6 +547,30 @@ CSTRL_INLINE mat4 cstrl_mat4_scale(mat4 m, vec3 v)
     m.zz *= v.z;
 
     return m;
+}
+
+// TODO: add to unit tests
+// Rodrigues' rotation formula
+CSTRL_INLINE mat4 cstrl_mat4_rotate(mat4 m, float angle, vec3 axis)
+{
+    mat4 result = cstrl_mat4_identity();
+
+    mat4 k = {0};
+    k.yx = -axis.z;
+    k.zx = axis.y;
+    k.xy = axis.z;
+    k.zy = -axis.x;
+    k.xz = -axis.y;
+    k.yz = axis.x;
+
+    mat4 m0 = cstrl_mat4_mult_scalar(k, sinf(angle));
+    mat4 m1 = cstrl_mat4_mult(k, k);
+    m1 = cstrl_mat4_mult_scalar(m1, (1 - cosf(angle)));
+
+    result = cstrl_mat4_add(result, m0);
+    result = cstrl_mat4_add(result, m1);
+
+    return result;
 }
 
 /*
