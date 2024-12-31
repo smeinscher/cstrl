@@ -2,6 +2,7 @@
 // Created by sterling on 7/11/24.
 //
 
+#define _CRT_SECURE_NO_WARNINGS
 #include "cstrl/cstrl_util.h"
 
 #include "log.c/log.h"

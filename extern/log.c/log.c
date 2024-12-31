@@ -20,6 +20,7 @@
  * IN THE SOFTWARE.
  */
 
+#define _CRT_SECURE_NO_WARNINGS
 #include "log.h"
 
 #define MAX_CALLBACKS 32

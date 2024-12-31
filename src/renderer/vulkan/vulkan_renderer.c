@@ -2,6 +2,7 @@
 // Created by 12105 on 12/13/2024.
 //
 
+#define _CRT_SECURE_NO_WARNINGS
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_util.h"
