@@ -10,6 +10,7 @@
 #include "cstrl/cstrl_renderer.h"
 #include "log.c/log.h"
 #include "vulkan_platform.h"
+#include <stb/stb_image.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vulkan/vulkan.h>
@@ -102,6 +103,9 @@ typedef struct uniform_buffer_object
     mat4 view;
     mat4 projection;
 } uniform_buffer_object;
+
+static VkImage g_texture_image;
+static VkDeviceMemory g_texture_image_memory;
 
 static VkVertexInputBindingDescription get_binding_description()
 {
@@ -1266,6 +1270,77 @@ void create_descriptor_sets()
     }
 }
 
+void create_image(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                  VkMemoryPropertyFlags properties, VkImage image, VkDeviceMemory image_memory)
+{
+    VkImageCreateInfo image_info = {0};
+    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    image_info.imageType = VK_IMAGE_TYPE_2D;
+    image_info.extent.width = width;
+    image_info.extent.height = height;
+    image_info.extent.depth = 1;
+    image_info.mipLevels = 1;
+    image_info.arrayLayers = 1;
+    image_info.format = format;
+    image_info.tiling = tiling;
+    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    image_info.usage = usage;
+    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+    image_info.flags = 0;
+
+    if (vkCreateImage(g_device, &image_info, NULL, &g_texture_image) != VK_SUCCESS)
+    {
+        log_error("Failed to create image");
+    }
+
+    VkMemoryRequirements mem_requirements;
+    vkGetImageMemoryRequirements(g_device, image, &mem_requirements);
+
+    VkMemoryAllocateInfo alloc_info = {0};
+    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    alloc_info.allocationSize = mem_requirements.size;
+    alloc_info.memoryTypeIndex = find_memory_type(mem_requirements.memoryTypeBits, properties);
+
+    if (vkAllocateMemory(g_device, &alloc_info, NULL, &image_memory) != VK_SUCCESS)
+    {
+        log_error("Failed to allocate image memory");
+    }
+
+    vkBindImageMemory(g_device, image, image_memory, 0);
+}
+
+void create_texture_image()
+{
+    int tex_width, tex_height, tex_channels;
+    stbi_uc *pixels =
+        stbi_load("resources/textures/texture.jpg", &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
+    VkDeviceSize image_size = tex_width * tex_height * 4;
+
+    if (!pixels)
+    {
+        log_error("Failed to load texture image");
+    }
+
+    VkBuffer staging_buffer;
+    VkDeviceMemory staging_buffer_memory;
+
+    create_buffer(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer,
+                  &staging_buffer_memory);
+
+    void *data;
+    vkMapMemory(g_device, staging_buffer_memory, 0, image_size, 0, &data);
+    memcpy(data, pixels, (size_t)image_size);
+    vkUnmapMemory(g_device, staging_buffer_memory);
+
+    stbi_image_free(pixels);
+
+    create_image(tex_width, tex_height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 g_texture_image, g_texture_image_memory);
+}
+
 bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
     g_instance = create_instance();
@@ -1285,6 +1360,7 @@ bool cstrl_renderer_init(cstrl_platform_state *platform_state)
     create_graphics_pipeline();
     create_framebuffers();
     create_command_pool();
+    create_texture_image();
     create_vertex_buffer();
     create_index_buffer();
     create_uniform_buffers();
