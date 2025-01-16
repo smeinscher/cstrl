@@ -5,6 +5,7 @@
 #include "learnopengl.h"
 
 #include "cstrl/cstrl_camera.h"
+#include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 
@@ -176,43 +177,30 @@ int learnopengl()
     cstrl_renderer_init(&state);
     cstrl_render_data *color_render_data = cstrl_renderer_create_render_data();
     cstrl_render_data *light_render_data = cstrl_renderer_create_render_data();
-    float vertices[] = {-0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f,
-                        0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
-
-                        -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
-                        0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,
-
-                        -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
-                        -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,
-
-                        0.5f,  0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f,
-                        0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,  0.5f,
-
-                        -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,
-                        0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f,
-
-                        -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  0.5f,
-                        0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f};
-
-    float normals[] = {0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f,
-                       0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f,
-
-                       0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-                       0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
-
-                       -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,
-                       -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,
-
-                       1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-                       1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
-
-                       0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,
-                       0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,
-
-                       0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
-                       0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f};
+    float vertices[] = {-0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f, -0.5f, -0.5f, 0.5f,
+                        -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  0.5f, 0.5f,  0.5f,  0.5f,
+                        0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f, -0.5f, 0.5f,  -0.5f,
+                        -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f, 0.5f,  0.5f,  0.5f,
+                        0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f, -0.5f, 0.5f,  0.5f,
+                        0.5f,  0.5f,  -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f, 0.5f,  -0.5f, 0.5f,
+                        -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, 0.5f,  0.5f, -0.5f, 0.5f,  0.5f,
+                        0.5f,  0.5f,  0.5f,  0.5f,  -0.5f, 0.5f,  0.5f,  -0.5f, 0.5f,  -0.5f};
+    float uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                   0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+                   0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+                   0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+                   0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+    float normals[] = {0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f, -1.0f, 0.0f,  0.0f, -1.0f, 0.0f,  0.0f,
+                       -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  1.0f,  0.0f, 0.0f,  1.0f,  0.0f, 0.0f,  1.0f,  0.0f,
+                       0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f, -1.0f, 0.0f,  0.0f, -1.0f, 0.0f,  0.0f,
+                       -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f,  -1.0f, 0.0f, 0.0f,  1.0f,  0.0f,
+                       0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,  0.0f,  1.0f, 0.0f,  0.0f,  1.0f,
+                       0.0f,  0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f, 0.0f,  -1.0f, 0.0f, 0.0f,  -1.0f, 0.0f,
+                       0.0f,  -1.0f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  1.0f, 0.0f,  0.0f,  1.0f, 0.0f,  0.0f,  1.0f,
+                       0.0f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,  0.0f};
 
     cstrl_renderer_add_positions(color_render_data, vertices, 3, 36);
+    cstrl_renderer_add_uvs(color_render_data, uvs);
     cstrl_renderer_add_normals(color_render_data, normals);
     cstrl_renderer_add_positions(light_render_data, vertices, 3, 36);
 
@@ -222,8 +210,19 @@ int learnopengl()
                                                               "resources/shaders/learnopengl/colors.frag");
     cstrl_shader light_shader = cstrl_load_shaders_from_files("resources/shaders/learnopengl/light_cube.vert",
                                                               "resources/shaders/learnopengl/light_cube.frag");
-    // Texture texture = generate_opengl_texture("resources/textures/wall.jpg");
+    cstrl_set_active_texture(0);
+    cstrl_texture diffuse_texture = cstrl_texture_generate_from_path("resources/textures/container2.png");
+    cstrl_texture_bind(diffuse_texture);
+    cstrl_set_uniform_int(color_shader.program, "material.diffuse", 0);
 
+    cstrl_set_active_texture(1);
+    cstrl_texture specular_texture = cstrl_texture_generate_from_path("resources/textures/container2_specular.png");
+    cstrl_texture_bind(specular_texture);
+    cstrl_set_uniform_int(color_shader.program, "material.specular", 1);
+
+    cstrl_set_uniform_3f(color_shader.program, "material.specular", 0.5f, 0.5f, 0.5f);
+    cstrl_set_uniform_float(color_shader.program, "material.shininess", 64.0);
+    cstrl_set_uniform_3f(color_shader.program, "light.specular", 1.0f, 1.0f, 1.0f);
     double previous_time = cstrl_platform_get_absolute_time();
     double lag = 0.0;
     while (!cstrl_platform_should_exit())
@@ -241,17 +240,20 @@ int learnopengl()
 
         cstrl_renderer_clear(0.1f, 0.1f, 0.1f, 1.0f);
 
-        vec3 light_position = {sin(cstrl_platform_get_absolute_time()), cos(cstrl_platform_get_absolute_time()), 0.0f};
+        // vec3 light_position = {sin(cstrl_platform_get_absolute_time()), cos(cstrl_platform_get_absolute_time()),
+        // 0.0f};
+        vec3 light_position = {1.2f, 1.0f, 1.0f};
         cstrl_set_uniform_mat4(color_shader.program, "model", cstrl_mat4_identity());
         cstrl_set_uniform_mat4(color_shader.program, "view", g_main_camera->view);
         cstrl_set_uniform_mat4(color_shader.program, "projection", g_main_camera->projection);
-        cstrl_set_uniform_3f(color_shader.program, "object_color", 1.0f, 0.5f, 0.31f);
-        cstrl_set_uniform_3f(color_shader.program, "light_color", 1.0f, 1.0f, 1.0f);
-        cstrl_set_uniform_3f(color_shader.program, "light_position", light_position.x, light_position.y,
-                             light_position.z);
         cstrl_set_uniform_3f(color_shader.program, "view_position", g_main_camera->transform.position.x,
                              g_main_camera->transform.position.y, g_main_camera->transform.position.z);
+        cstrl_set_uniform_3f(color_shader.program, "light.position", light_position.x, light_position.y,
+                             light_position.z);
+        cstrl_set_uniform_3f(color_shader.program, "light.ambient", 0.2f, 0.2f, 0.2f);
+        cstrl_set_uniform_3f(color_shader.program, "light.diffuse", 0.5f, 0.5f, 0.5f);
         cstrl_renderer_draw(color_render_data);
+
         mat4 model = cstrl_mat4_identity();
         model = cstrl_mat4_translate(model, light_position);
         model = cstrl_mat4_scale(model, (vec3){0.2f, 0.2f, 0.2f});

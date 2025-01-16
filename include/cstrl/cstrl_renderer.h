@@ -98,6 +98,8 @@ CSTRL_API cstrl_shader cstrl_load_shaders_from_source(const char *vertex_shader_
 
 CSTRL_API void cstrl_use_shader(cstrl_shader shader);
 
+CSTRL_API void cstrl_set_uniform_int(unsigned int program, const char *name, int d);
+
 CSTRL_API void cstrl_set_uniform_float(unsigned int program, const char *name, float f);
 
 CSTRL_API void cstrl_set_uniform_3f(unsigned int program, const char *name, float x, float y, float z);
@@ -121,5 +123,7 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap
 CSTRL_API void cstrl_texture_hot_reload(cstrl_texture *texture);
 
 CSTRL_API void cstrl_texture_bind(cstrl_texture texture);
+
+CSTRL_API void cstrl_set_active_texture(unsigned int active_texture);
 
 #endif // CSTRL_RENDERER_H

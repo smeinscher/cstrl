@@ -57,6 +57,25 @@ CSTRL_API int cstrl_write_file(const char *file_path, const char *data, const un
     return 0;
 }
 
+CSTRL_API int cstrl_append_file(const char *file_path, const char *data, const unsigned long size)
+{
+    FILE *output_file = fopen(file_path, "ab");
+    if (output_file == NULL)
+    {
+        log_error("Error opening output file %s", file_path);
+        return -1;
+    }
+
+    unsigned long result = fwrite(data, sizeof(char), size, output_file);
+    fclose(output_file);
+    if (result != size)
+    {
+        log_error("Error writing to output file %s", file_path);
+        return -1;
+    }
+    return 0;
+}
+
 CSTRL_API int cstrl_copy_file(const char *file_path, const char *output_file_path)
 {
     long file_size = 0;

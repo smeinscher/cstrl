@@ -96,4 +96,9 @@ CSTRL_API void cstrl_texture_bind(cstrl_texture texture)
     glBindTexture(GL_TEXTURE_2D, texture.id);
 }
 
+CSTRL_API void cstrl_set_active_texture(unsigned int active_texture)
+{
+    glActiveTexture(GL_TEXTURE0 + active_texture);
+}
+
 #endif

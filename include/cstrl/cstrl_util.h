@@ -90,6 +90,8 @@ CSTRL_API char *cstrl_read_file(const char *file_path, long *file_size);
 
 CSTRL_API int cstrl_write_file(const char *file_path, const char *data, unsigned long size);
 
+CSTRL_API int cstrl_append_file(const char *file_path, const char *data, unsigned long size);
+
 CSTRL_API int cstrl_copy_file(const char *file_path, const char *output_file_path);
 
 CSTRL_API time_t cstrl_get_file_timestamp(const char *path);

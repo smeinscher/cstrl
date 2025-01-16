@@ -88,13 +88,13 @@ typedef struct vertex
 {
     vec2 pos;
     vec3 color;
-
+    vec2 uv;
 } vertex_t;
 
-const vertex_t g_vertices[] = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                               {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                               {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                               {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+const vertex_t g_vertices[] = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+                               {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+                               {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+                               {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
 const uint16_t g_indices[] = {0, 1, 2, 2, 3, 0};
 
 typedef struct uniform_buffer_object
@@ -123,7 +123,7 @@ static VkVertexInputBindingDescription get_binding_description()
 
 static VkVertexInputAttributeDescription *get_attribute_descriptions()
 {
-    VkVertexInputAttributeDescription *attribute_description = malloc(2 * sizeof(VkVertexInputAttributeDescription));
+    VkVertexInputAttributeDescription *attribute_description = malloc(3 * sizeof(VkVertexInputAttributeDescription));
     attribute_description[0].binding = 0;
     attribute_description[0].location = 0;
     attribute_description[0].format = VK_FORMAT_R32G32_SFLOAT;
@@ -132,6 +132,10 @@ static VkVertexInputAttributeDescription *get_attribute_descriptions()
     attribute_description[1].location = 1;
     attribute_description[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     attribute_description[1].offset = offsetof(vertex_t, color);
+    attribute_description[2].binding = 0;
+    attribute_description[2].location = 2;
+    attribute_description[2].format = VK_FORMAT_R32G32_SFLOAT;
+    attribute_description[2].offset = offsetof(vertex_t, uv);
 
     return attribute_description;
 }
@@ -730,10 +734,10 @@ static void create_graphics_pipeline()
 {
     long vertex_shader_file_size;
     char *vertex_shader_code =
-        cstrl_read_file("resources/shaders/vulkan-tutorial/uniform_buffers/vert.spv", &vertex_shader_file_size);
+        cstrl_read_file("resources/shaders/vulkan-tutorial/texture_mapping/vert.spv", &vertex_shader_file_size);
     long fragment_shader_file_size;
     char *fragment_shader_code =
-        cstrl_read_file("resources/shaders/vulkan-tutorial/uniform_buffers/frag.spv", &fragment_shader_file_size);
+        cstrl_read_file("resources/shaders/vulkan-tutorial/texture_mapping/frag.spv", &fragment_shader_file_size);
 
     VkShaderModule vertex_shader_module = create_shader_module(vertex_shader_code, vertex_shader_file_size);
     VkShaderModule fragment_shader_module = create_shader_module(fragment_shader_code, fragment_shader_file_size);
@@ -769,7 +773,7 @@ static void create_graphics_pipeline()
     vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertex_input_info.vertexBindingDescriptionCount = 1;
     vertex_input_info.pVertexBindingDescriptions = &binding_description;
-    vertex_input_info.vertexAttributeDescriptionCount = 2;
+    vertex_input_info.vertexAttributeDescriptionCount = 3;
     vertex_input_info.pVertexAttributeDescriptions = attribute_description;
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly = {0};
@@ -880,6 +884,8 @@ static void create_graphics_pipeline()
 
     vkDestroyShaderModule(g_device, vertex_shader_module, NULL);
     vkDestroyShaderModule(g_device, fragment_shader_module, NULL);
+    // TODO: see if this causes issues
+    free(attribute_description);
 }
 
 static void create_framebuffers()
@@ -1353,18 +1359,31 @@ void create_descriptor_sets()
         buffer_info.offset = 0;
         buffer_info.range = sizeof(uniform_buffer_object);
 
-        VkWriteDescriptorSet descriptor_write = {0};
-        descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptor_write.dstSet = g_descriptor_sets[i];
-        descriptor_write.dstBinding = 0;
-        descriptor_write.dstArrayElement = 0;
-        descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptor_write.descriptorCount = 1;
-        descriptor_write.pBufferInfo = &buffer_info;
-        descriptor_write.pImageInfo = NULL;
-        descriptor_write.pTexelBufferView = NULL;
+        VkDescriptorImageInfo image_info = {0};
+        image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        image_info.imageView = g_texture_image_view;
+        image_info.sampler = g_texture_sampler;
 
-        vkUpdateDescriptorSets(g_device, 1, &descriptor_write, 0, NULL);
+        VkWriteDescriptorSet descriptor_writes[2] = {0};
+        descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptor_writes[0].dstSet = g_descriptor_sets[i];
+        descriptor_writes[0].dstBinding = 0;
+        descriptor_writes[0].dstArrayElement = 0;
+        descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptor_writes[0].descriptorCount = 1;
+        descriptor_writes[0].pBufferInfo = &buffer_info;
+        descriptor_writes[0].pImageInfo = NULL;
+        descriptor_writes[0].pTexelBufferView = NULL;
+
+        descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptor_writes[1].dstSet = g_descriptor_sets[i];
+        descriptor_writes[1].dstBinding = 1;
+        descriptor_writes[1].dstArrayElement = 0;
+        descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptor_writes[1].descriptorCount = 1;
+        descriptor_writes[1].pImageInfo = &image_info;
+
+        vkUpdateDescriptorSets(g_device, 2, descriptor_writes, 0, NULL);
     }
 }
 

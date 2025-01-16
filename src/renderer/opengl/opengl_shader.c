@@ -104,6 +104,12 @@ CSTRL_API void cstrl_use_shader(cstrl_shader shader)
     glUseProgram(shader.program);
 }
 
+CSTRL_API void cstrl_set_uniform_int(unsigned int program, const char *name, int i)
+{
+    glUseProgram(program);
+    glUniform1d(glGetUniformLocation(program, name), i);
+}
+
 CSTRL_API void cstrl_set_uniform_float(unsigned int program, const char *name, float f)
 {
     glUseProgram(program);
