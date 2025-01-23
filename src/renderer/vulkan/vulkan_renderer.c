@@ -1660,7 +1660,7 @@ void cstrl_renderer_draw(cstrl_render_data *data)
     g_current_frame = (g_current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void cstrl_renderer_destroy(cstrl_platform_state *platform_state)
+void cstrl_renderer_shutdown(cstrl_platform_state *platform_state)
 {
     vkDeviceWaitIdle(g_device);
 

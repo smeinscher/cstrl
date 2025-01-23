@@ -3,12 +3,13 @@
 //
 
 #include "learnopengl/learnopengl.h"
-#include "ray_tracing/ray_tracing.h"
+#include "pong/pong.h"
+#include "the_ray_tracer_challenge/challenge.h"
 #include "ui/basic_ui.h"
 #include "vulkan-tutorial/vulkan_triangle.h"
 
 int main()
 {
-    int result = ray_tracing_in_one_weekend();
+    int result = pong();
     return result;
 }

@@ -239,6 +239,12 @@ CSTRL_INLINE float cstrl_vec2_dot(const vec2 a, const vec2 b)
     return a.x * b.x + a.y * b.y;
 }
 
+// TODO: add to unit tests
+CSTRL_INLINE vec2 cstrl_vec2_negate(const vec2 v)
+{
+    return (vec2){-v.x, -v.y};
+}
+
 /*
  *
  *      vec3 math functions
@@ -340,6 +346,12 @@ CSTRL_INLINE vec3 cstrl_euler_angles_from_quat(quat q)
     return v;
 }
 
+// TODO: add to unit tests
+CSTRL_INLINE vec3 cstrl_vec3_negate(const vec3 v)
+{
+    return (vec3){-v.x, -v.y, -v.z};
+}
+
 /*
  *
  *      vec4 math functions
@@ -401,6 +413,18 @@ CSTRL_INLINE vec4 cstrl_vec4_div(const vec4 a, const vec4 b)
 CSTRL_INLINE float cstrl_vec4_dot(const vec4 a, const vec4 b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE vec4 cstrl_vec4_negate(const vec4 v)
+{
+    return (vec4){-v.x, -v.y, -v.z, -v.w};
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE vec3 cstrl_vec4_to_vec3(const vec4 v)
+{
+    return (vec3){v.x, v.y, v.z};
 }
 
 /*

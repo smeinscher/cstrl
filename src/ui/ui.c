@@ -557,6 +557,14 @@ CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text,
     return (float)width * scale;
 }
 
+CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
+                             cstrl_ui_text_alignment alignment)
+{
+    // TODO: implement this
+    log_warn("cstrl_ui_text has not been implemented");
+    return true;
+}
+
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
                                         int w, int h, int id, bool is_static, int order_priority)
 {

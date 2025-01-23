@@ -97,7 +97,7 @@ int basic_ui()
     cstrl_camera_free(camera);
     cstrl_ui_shutdown(context);
     cstrl_renderer_free_render_data(render_data);
-    cstrl_renderer_destroy(&platform_state);
+    cstrl_renderer_shutdown(&platform_state);
     cstrl_platform_shutdown(&platform_state);
     return 0;
 }
