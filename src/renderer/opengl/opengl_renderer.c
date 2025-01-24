@@ -2,6 +2,7 @@
 // Created by 12105 on 11/23/2024.
 //
 
+#include "cstrl/cstrl_platform.h"
 #if defined(CSTRL_RENDER_API_OPENGL)
 #include "cstrl/cstrl_defines.h"
 #include "cstrl/cstrl_util.h"
@@ -199,18 +200,19 @@ CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, f
         return;
     }
     internal_data *data = render_data->internal_data;
-    if (count + start_index >= data->count)
+    if (count + start_index > data->count * data->dimensions)
     {
-        log_warn("Modifying positions with index out of bounds, skipping to avoid bugs");
+        log_warn("Modifying positions with index out of bounds (data count is %d), skipping to avoid bugs",
+                 data->count);
         return;
     }
 
     if (positions != NULL)
     {
         glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
-        memcpy(data->positions, positions + start_index, count * data->dimensions * sizeof(float));
-        glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * data->dimensions * sizeof(float),
-                        data->positions);
+        glBindVertexArray(data->vao);
+        memcpy(data->positions, positions + start_index, count * sizeof(float));
+        glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), data->positions);
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
