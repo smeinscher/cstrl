@@ -2,6 +2,7 @@
 // Created by 12105 on 11/23/2024.
 //
 
+#include "cstrl/cstrl_platform.h"
 #if defined(CSTRL_RENDER_API_OPENGL)
 #include "cstrl/cstrl_defines.h"
 #include "cstrl/cstrl_util.h"
@@ -190,6 +191,33 @@ CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float 
     glBindVertexArray(0);
 }
 
+CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
+                                               size_t count)
+{
+    if (count == 0)
+    {
+        log_warn("Modifying positions with 0 count, skipping to avoid possible undefined behavior");
+        return;
+    }
+    internal_data *data = render_data->internal_data;
+    if (count + start_index > data->count * data->dimensions)
+    {
+        log_warn("Modifying positions with index out of bounds (data count is %d), skipping to avoid bugs",
+                 data->count);
+        return;
+    }
+
+    if (positions != NULL)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
+        glBindVertexArray(data->vao);
+        memcpy(data->positions, positions + start_index, count * sizeof(float));
+        glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), data->positions);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
 CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions,
                                                        const float *uvs, const float *colors, size_t count)
 {
@@ -264,7 +292,7 @@ CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data)
     glDrawArrays(GL_TRIANGLES, 0, internal_data->count);
 }
 
-CSTRL_API void cstrl_renderer_destroy(cstrl_platform_state *platform_state)
+CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state)
 {
     cstrl_opengl_platform_destroy(platform_state);
 }

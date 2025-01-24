@@ -120,6 +120,10 @@ add_executable(cstrl-sandbox
         sandbox/ui/basic_ui.h
         sandbox/vulkan-tutorial/vulkan_triangle.c
         sandbox/vulkan-tutorial/vulkan_triangle.h
+        sandbox/the_ray_tracer_challenge/challenge.c
+        sandbox/the_ray_tracer_challenge/challenge.h
+        sandbox/pong/pong.c
+        sandbox/pong/pong.h
 )
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)

@@ -36,7 +36,7 @@ int vulkan_triangle()
         cstrl_renderer_draw(NULL);
     }
 
-    cstrl_renderer_destroy(&platform_state);
+    cstrl_renderer_shutdown(&platform_state);
     cstrl_platform_shutdown(&platform_state);
 
     return 0;

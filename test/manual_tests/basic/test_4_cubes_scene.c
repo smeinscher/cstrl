@@ -286,7 +286,7 @@ int test_4_cubes_scene()
 
     cstrl_camera_free(g_main_camera);
     cstrl_renderer_free_render_data(render_data);
-    cstrl_renderer_destroy(&state);
+    cstrl_renderer_shutdown(&state);
     cstrl_platform_shutdown(&state);
 
     return cstrl_test_success;

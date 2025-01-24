@@ -5,7 +5,6 @@
 #ifndef CSTRL_UI_H
 #define CSTRL_UI_H
 
-#include "cstrl/cstrl_renderer.h"
 #include "cstrl_platform.h"
 
 #define GEN_ID(group) (((group) * 10000) + (__LINE__))
