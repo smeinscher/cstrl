@@ -158,7 +158,7 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     }
     else
     {
-        cstrl_camera_rotate(g_main_camera, offset_x, offset_y);
+        cstrl_camera_first_person_rotate(g_main_camera, offset_x, offset_y);
         last_x = 400;
         last_y = 300;
     }

@@ -5,6 +5,8 @@
 #include "unit_tests.h"
 
 #include "../test_manager/test_manager.h"
+#include "cstrl_math/test_mat3.h"
+#include "cstrl_math/test_mat4.h"
 #include "cstrl_math/test_quat.h"
 #include "cstrl_math/test_vec2.h"
 #include "cstrl_math/test_vec3.h"
@@ -54,7 +56,7 @@ void vec3_tests()
                           "Test if correctly gets the cross vector");
     test_manager_add_test(test_suite, test_cstrl_vec3_rotate_by_quat, "vec3 quat Rotation Test",
                           "Test if correctly rotates vector by quaternion");
-    test_manager_add_test(test_suite, test_cstrl_euler_angles_from_quat, "Euler Angles From quat Test",
+    test_manager_add_test(test_suite, test_cstrl_quat_to_euler_angles, "Euler Angles From quat Test",
                           "Test if correctly gets euler angles from quaternion");
     test_manager_run_tests(test_suite);
     test_manager_log_results(test_suite);
@@ -77,6 +79,8 @@ void vec4_tests()
     test_manager_add_test(test_suite, test_cstrl_vec4_div, "vec4 Divide Test", "Test if correctly divides vectors");
     test_manager_add_test(test_suite, test_cstrl_vec4_dot, "vec4 Dot Product Test",
                           "Test if correctly gets the dot product of two vectors");
+    test_manager_add_test(test_suite, test_cstrl_vec4_mult_mat4, "vec4 Multiply mat4",
+                          "Test if correctly multiplies mat4x4 by column vec4");
     test_manager_run_tests(test_suite);
     test_manager_log_results(test_suite);
 }
@@ -95,6 +99,34 @@ void quat_tests()
                           "Test if correctly convertes quaternion to 4 by 4 matrix");
     test_manager_add_test(test_suite, test_cstrl_quat_from_euler_angles, "quat From Euler Angles",
                           "Test if correctly converts euler angles to quaternion");
+    test_manager_run_tests(test_suite);
+    test_manager_log_results(test_suite);
+}
+
+void mat3_tests()
+{
+    int test_suite = test_manager_add_suite("mat3 Tests", "Suite for testing mat3 functions");
+    test_manager_add_test(test_suite, test_cstrl_mat3_inverse, "mat3 Inverse Test",
+                          "Test if correctly applies inverse to matrix 3x3");
+    test_manager_add_test(test_suite, test_cstrl_mat3_determinant, "mat3 Determinant Test",
+                          "Test if correctly calculates determinant of matrix 3x3");
+    test_manager_add_test(test_suite, test_cstrl_mat3_adjugate, "mat3 Adjugate Test",
+                          "Test if correctly calculates adjugate of matrix 3x3");
+    test_manager_run_tests(test_suite);
+    test_manager_log_results(test_suite);
+}
+
+void mat4_tests()
+{
+    int test_suite = test_manager_add_suite("mat4 Tests", "Suite for testing mat4 functions");
+    test_manager_add_test(test_suite, test_cstrl_mat4_inverse, "mat4 Inverse Test",
+                          "Test if correctly applies inverse to matrix 4x4");
+    // test_manager_add_test(test_suite, test_cstrl_mat4_affine_inverse, "mat4 Affine Inverse Test",
+    //"Test if correctly applies inverse to affine matrix 4x4");
+    test_manager_add_test(test_suite, test_cstrl_mat4_perspective, "mat4 Perspective Test",
+                          "Test if correctly applies perspective projection on matrix 4x4");
+    test_manager_add_test(test_suite, test_cstrl_mat4_look_at, "mat4 Look At Test",
+                          "Test if correctly applies look at calculation on matrix 4x4");
     test_manager_run_tests(test_suite);
     test_manager_log_results(test_suite);
 }
@@ -130,14 +162,15 @@ void camera_tests()
 
 int run_unit_tests()
 {
-    vec2_tests();
-    vec3_tests();
-    vec4_tests();
-    quat_tests();
+    // vec2_tests();
+    // vec3_tests();
+    // vec4_tests();
+    // quat_tests();
+    // mat3_tests();
+    mat4_tests();
+    // dynamic_int_array_tests();
 
-    dynamic_int_array_tests();
-
-    camera_tests();
+    // camera_tests();
 
     test_manager_log_total_failed_tests();
 

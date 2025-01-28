@@ -3,6 +3,7 @@
 //
 
 #include "learnopengl/learnopengl.h"
+#include "planet/planet.h"
 #include "pong/pong.h"
 #include "the_ray_tracer_challenge/challenge.h"
 #include "ui/basic_ui.h"
@@ -10,6 +11,6 @@
 
 int main()
 {
-    int result = pong();
+    int result = planet();
     return result;
 }

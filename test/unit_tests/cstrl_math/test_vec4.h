@@ -23,4 +23,6 @@ int test_cstrl_vec4_div();
 
 int test_cstrl_vec4_dot();
 
+int test_cstrl_vec4_mult_mat4();
+
 #endif // TEST_VEC4_H

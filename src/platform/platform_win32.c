@@ -146,6 +146,9 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
             action = CSTRL_ACTION_RELEASE;
         }
 
+        // TODO: implement mods
+        int mods = 0;
+
         cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
         if (state == NULL)
         {
@@ -155,6 +158,11 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         internal_state *internal_state = state->internal_state;
 
         internal_state->state_common.input.mouse_buttons[button] = action;
+
+        if (internal_state->state_common.callbacks.mouse_button != NULL)
+        {
+            internal_state->state_common.callbacks.mouse_button(state, button, action, mods);
+        }
         return 0;
     }
     case WM_MOUSEMOVE: {
@@ -282,6 +290,7 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
     state->state_common.callbacks.key = NULL;
     state->state_common.callbacks.mouse_position = NULL;
     state->state_common.callbacks.framebuffer_size = NULL;
+    state->state_common.callbacks.mouse_button = NULL;
 
     win32_key_to_cstrl_key_init();
 

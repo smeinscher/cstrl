@@ -191,6 +191,26 @@ CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float 
     glBindVertexArray(0);
 }
 
+CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t indices_count)
+{
+    internal_data *data = render_data->internal_data;
+    data->indices = malloc(indices_count * sizeof(int));
+    if (!data->indices)
+    {
+        log_error("Failed to allocate memory for indices");
+        return;
+    }
+    memcpy(data->indices, indices, indices_count * sizeof(int));
+    data->indices_count = indices_count;
+    glGenBuffers(1, &data->ebo);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data->ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_count * sizeof(int), indices, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
                                                size_t count)
 {
@@ -290,6 +310,14 @@ CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data)
     internal_data *internal_data = data->internal_data;
     glBindVertexArray(internal_data->vao);
     glDrawArrays(GL_TRIANGLES, 0, internal_data->count);
+}
+
+CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data)
+{
+    internal_data *internal_data = data->internal_data;
+    glBindVertexArray(internal_data->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, internal_data->ebo);
+    glDrawElements(GL_TRIANGLES, internal_data->indices_count, GL_UNSIGNED_INT, 0);
 }
 
 CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state)

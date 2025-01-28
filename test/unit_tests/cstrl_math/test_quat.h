@@ -17,4 +17,6 @@ int test_cstrl_quat_to_mat4();
 
 int test_cstrl_quat_from_euler_angles();
 
+int test_cstrl_quat_to_euler_angles();
+
 #endif // TEST_QUAT_H
