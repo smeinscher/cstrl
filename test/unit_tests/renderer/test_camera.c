@@ -6,49 +6,45 @@
 
 #include "../../test_manager/test_types.h"
 #include "cstrl/cstrl_camera.h"
+#include "cstrl/cstrl_math.h"
 
 int test_camera_process_mouse_movement()
 {
     cstrl_camera *camera = cstrl_camera_create(800, 600, false);
-    cstrl_camera_rotate(camera, 0, 0);
+    cstrl_camera_first_person_rotate(camera, 0, 0);
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     quat rotation_expected = {1.0f, 0.0f, 0.0f, 0.0f};
-    quat rotation_result = camera->transform.rotation;
+    quat rotation_result = cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(camera->view));
 
     expect_float_to_be(rotation_expected.w, rotation_result.w);
     expect_float_to_be(rotation_expected.x, rotation_result.x);
     expect_float_to_be(rotation_expected.y, rotation_result.y);
     expect_float_to_be(rotation_expected.z, rotation_result.z);
 
-    cstrl_camera_rotate(camera, 0, 2000);
+    cstrl_camera_first_person_rotate(camera, 0, 0.5f);
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     rotation_expected = cstrl_quat_from_euler_angles((vec3){-69.0f * (cstrl_pi / 180.0f), 0.0f, 0.0f});
-    rotation_result = camera->transform.rotation;
+    rotation_result = cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(camera->view));
 
     expect_float_to_be(rotation_expected.w, rotation_result.w);
     expect_float_to_be(rotation_expected.x, rotation_result.x);
     expect_float_to_be(rotation_expected.y, rotation_result.y);
     expect_float_to_be(rotation_expected.z, rotation_result.z);
 
-    // log_trace("%f, %f, %f, %f", rotation_result.w, rotation_result.x, rotation_result.y, rotation_result.z);
-    camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
-
-    cstrl_camera_rotate(camera, 0, -2000);
+    cstrl_camera_first_person_rotate(camera, 0, -0.5f);
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     rotation_expected = cstrl_quat_from_euler_angles((vec3){69.0f * (cstrl_pi / 180.0f), 0.0f, 0.0f});
-    rotation_result = camera->transform.rotation;
+    rotation_result = cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(camera->view));
 
     expect_float_to_be(rotation_expected.w, rotation_result.w);
     expect_float_to_be(rotation_expected.x, rotation_result.x);
     expect_float_to_be(rotation_expected.y, rotation_result.y);
     expect_float_to_be(rotation_expected.z, rotation_result.z);
 
-    camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
-
-    cstrl_camera_rotate(camera, 0.2f, 0.0f);
+    cstrl_camera_first_person_rotate(camera, 0.2f, 0.0f);
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     rotation_expected = cstrl_quat_from_euler_angles((vec3){0.0f, -0.2f, 0.0f});
-    rotation_result = camera->transform.rotation;
+    rotation_result = cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(camera->view));
 
     expect_float_to_be(rotation_expected.w, rotation_result.w);
     expect_float_to_be(rotation_expected.x, rotation_result.x);

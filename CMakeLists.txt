@@ -106,6 +106,10 @@ add_executable(cstrl-test
         test/integration_tests/integration_tests.h
         test/manual_tests/manual_tests.c
         test/manual_tests/manual_tests.h
+        test/unit_tests/cstrl_math/test_mat4.c
+        test/unit_tests/cstrl_math/test_mat4.h
+        test/unit_tests/cstrl_math/test_mat3.c
+        test/unit_tests/cstrl_math/test_mat3.h
 )
 
 add_executable(cstrl-sandbox
@@ -124,6 +128,8 @@ add_executable(cstrl-sandbox
         sandbox/the_ray_tracer_challenge/challenge.h
         sandbox/pong/pong.c
         sandbox/pong/pong.h
+        sandbox/planet/planet.c
+        sandbox/planet/planet.h
 )
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)

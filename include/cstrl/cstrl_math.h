@@ -9,6 +9,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #define cstrl_pi 3.14159265359f
 #define cstrl_pi_2 1.57079632679f
@@ -316,7 +317,55 @@ CSTRL_INLINE vec3 cstrl_vec3_cross(const vec3 a, const vec3 b)
 CSTRL_INLINE quat cstrl_quat_conjugate(quat q);
 CSTRL_INLINE quat cstrl_quat_mult(quat a, quat b);
 
-CSTRL_INLINE vec3 cstrl_vec3_rotate_by_quat(vec3 v, quat q)
+// TODO: add to unit tests
+CSTRL_INLINE vec3 cstrl_vec3_rotate_along_axis(const vec3 v, const float angle, const vec3 axis)
+{
+    vec3 axis_normalized = cstrl_vec3_normalize(axis);
+    float cos_theta = cos(angle);
+    float sin_theta = sin(angle);
+
+    vec3 t1 = cstrl_vec3_mult_scalar(axis_normalized, (1 - cos_theta));
+    vec3 t2 = cstrl_vec3_cross(axis_normalized, v);
+    vec3 t3 = cstrl_vec3_cross(t1, t2);
+    vec3 t4 = cstrl_vec3_add(v, t3);
+    return cstrl_vec3_add(t4, cstrl_vec3_mult_scalar(cstrl_vec3_cross(axis_normalized, v), sin_theta));
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE vec3 cstrl_vec3_rotate_by_euler(const vec3 v, float heading, float pitch, float bank)
+{
+    float c1 = cosf(heading / 2.0f);
+    float s1 = sinf(heading / 2.0f);
+    float c2 = cosf(pitch / 2.0f);
+    float s2 = sinf(pitch / 2.0f);
+    float c3 = cosf(bank / 2.0f);
+    float s3 = cosf(bank / 2.0f);
+
+    float w = c1 * c2 * c3 - s1 * s2 * s3;
+    float x = c1 * c2 * s3 + s1 * s2 * c3;
+    float y = s1 * c2 * c3 + c1 * s2 * s3;
+    float z = c1 * s2 * c3 - s1 * c2 * s3;
+
+    float angle = 2 * acos(w);
+
+    float norm = x * x + y * y + z * z;
+    if (norm < cstrl_epsilon)
+    {
+        x = 1;
+        y = z = 0;
+    }
+    else
+    {
+        norm = sqrtf(norm);
+        x /= norm;
+        y /= norm;
+        z /= norm;
+    }
+
+    return cstrl_vec3_rotate_along_axis(v, angle, (vec3){x, y, z});
+}
+
+CSTRL_INLINE vec3 cstrl_vec3_rotate_by_quat(const vec3 v, const quat q)
 {
     quat p = (quat){0.0f, v.x, v.y, v.z};
     quat q_conjugate = cstrl_quat_conjugate(q);
@@ -325,31 +374,17 @@ CSTRL_INLINE vec3 cstrl_vec3_rotate_by_quat(vec3 v, quat q)
     return (vec3){p_new.x, p_new.y, p_new.z};
 }
 
-CSTRL_INLINE vec3 cstrl_euler_angles_from_quat(quat q)
-{
-    vec3 v = (vec3){0.0f, 0.0f, 0.0f};
-    v.x = atan2f(2.0f * (q.w * q.x + q.y * q.z), q.w * q.w - q.x * q.x - q.y * q.y - q.z * q.z);
-    v.y = asinf(2.0f * (q.w * q.y - q.x * q.z));
-    v.z = atan2(2.0f * q.w * q.z + q.x * q.y, q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z);
-
-    if (fabsf(v.y - cstrl_pi_2) < cstrl_epsilon)
-    {
-        v.x = 0.0f;
-        v.z = -2.0f * atan2f(q.x, q.w);
-    }
-    else if (fabsf(v.y - (-cstrl_pi_2)) < cstrl_epsilon)
-    {
-        v.x = 0.0f;
-        v.z = 2.0f * atan2f(q.x, q.w);
-    }
-
-    return v;
-}
-
 // TODO: add to unit tests
 CSTRL_INLINE vec3 cstrl_vec3_negate(const vec3 v)
 {
     return (vec3){-v.x, -v.y, -v.z};
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE vec3 cstrl_vec3_mult_mat3(const vec3 v, const mat3 m)
+{
+    return (vec3){m.xx * v.x + m.yx * v.y + m.zx * v.z, m.xy * v.x + m.yy * v.y + m.zy * v.z,
+                  m.xz * v.x + m.yz * v.y + m.zz * v.z};
 }
 
 /*
@@ -427,6 +462,86 @@ CSTRL_INLINE vec3 cstrl_vec4_to_vec3(const vec4 v)
     return (vec3){v.x, v.y, v.z};
 }
 
+CSTRL_INLINE vec4 cstrl_vec4_mult_mat4(const vec4 v, const mat4 m)
+{
+    // Assumes column vector
+    float x = v.x * m.xx + v.y * m.yx + v.z * m.zx + v.w * m.wx;
+    float y = v.x * m.xy + v.y * m.yy + v.z * m.zy + v.w * m.wy;
+    float z = v.x * m.xz + v.y * m.yz + v.z * m.zz + v.w * m.wz;
+    float w = v.x * m.xw + v.y * m.yw + v.z * m.zw + v.w * m.ww;
+
+    return (vec4){x, y, z, w};
+}
+/*
+ *
+ *      mat3x3 math functions
+ *
+ */
+
+// TODO: add to unit tests
+CSTRL_INLINE float cstrl_mat3_determinant(mat3 m)
+{
+    return m.xx * (m.yy * m.zz - m.zy * m.yz) - m.xy * (m.yx * m.zz - m.zx * m.yz) + m.xz * (m.yx * m.zy - m.yy * m.zx);
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat3 cstrl_mat3_adjugate(mat3 m)
+{
+    mat3 result;
+
+    result.xx = m.yy * m.zz - m.yz * m.zy;
+    result.yx = m.xy * m.zz - m.xz * m.zy;
+    result.zx = m.xz * m.yy - m.xy * m.yz;
+
+    result.xy = m.yx * m.zz - m.yz * m.zx;
+    result.yy = m.xx * m.zz - m.xz * m.zx;
+    result.zy = m.xx * m.yz - m.xz * m.yx;
+
+    result.xz = m.zx * m.yy - m.yx * m.zy;
+    result.yz = m.xx * m.zy - m.xy * m.zx;
+    result.zz = m.xx * m.yy - m.xy * m.yx;
+
+    return result;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat3 cstrl_mat3_negate(mat3 m)
+{
+    for (int i = 0; i < 9; i++)
+    {
+        m.m[i] *= -1;
+    }
+
+    return m;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat3 cstrl_mat3_inverse(mat3 m)
+{
+    float det = cstrl_mat3_determinant(m);
+    mat3 adj = cstrl_mat3_adjugate(m);
+
+    for (int i = 0; i < 9; i++)
+    {
+        adj.m[i] /= det;
+    }
+
+    return adj;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE quat cstrl_mat3_orthogonal_to_quat(mat3 m)
+{
+    float t = m.xx + m.yy + m.zz;
+    float r = sqrtf(1.0f + t);
+    float s = 1.0f / (2.0f * r);
+    float w = r * 0.5f;
+    float x = (m.zy - m.yz) * s;
+    float y = (m.xz - m.zx) * s;
+    float z = (m.yx - m.xy) * s;
+    return (quat){w, x, y, z};
+}
+
 /*
  *
  *      mat4x4 math functions
@@ -461,7 +576,7 @@ CSTRL_INLINE mat4 cstrl_mat4_add(const mat4 a, const mat4 b)
 CSTRL_INLINE mat4 cstrl_mat4_add_scalar(const mat4 m, const float s)
 {
     mat4 result;
-    
+
     for (int i = 0; i < 16; i++)
     {
         result.m[i] = m.m[i] + s;
@@ -478,6 +593,7 @@ CSTRL_INLINE mat4 cstrl_mat4_look_at(const vec3 eye, const vec3 center, const ve
     vec3 x = cstrl_vec3_cross(up, z);
     x = cstrl_vec3_normalize(x);
     vec3 y = cstrl_vec3_cross(z, x);
+    y = cstrl_vec3_normalize(y);
 
     mat4 mat = cstrl_mat4_identity();
 
@@ -597,6 +713,264 @@ CSTRL_INLINE mat4 cstrl_mat4_rotate(mat4 m, float angle, vec3 axis)
     return result;
 }
 
+// TODO: add to unit tests
+CSTRL_INLINE float cstrl_mat4_determinant(mat4 m)
+{
+    return m.xw * m.yz * m.zy * m.wx - m.xz * m.yw * m.zy * m.wx - m.xw * m.yy * m.zz * m.wx +
+           m.xy * m.yw * m.zz * m.wx + m.xz * m.yy * m.zw * m.wx - m.xy * m.yz * m.zw * m.wx -
+           m.xw * m.yz * m.zx * m.wy + m.xz * m.yw * m.zx * m.wy + m.xw * m.yx * m.zz * m.wy -
+           m.xx * m.yw * m.zz * m.wy - m.xz * m.yx * m.zw * m.wy + m.xx * m.yz * m.zw * m.wy +
+           m.xw * m.yy * m.zx * m.wz - m.xy * m.yw * m.zx * m.wz - m.xw * m.yx * m.zy * m.wz +
+           m.xx * m.yw * m.zy * m.wz + m.xy * m.yx * m.zw * m.wz - m.xx * m.yy * m.zw * m.wz -
+           m.xz * m.yy * m.zx * m.ww + m.xy * m.yz * m.zx * m.ww + m.xz * m.yx * m.zy * m.ww -
+           m.xx * m.yz * m.zy * m.ww - m.xy * m.yx * m.zz * m.ww + m.xx * m.yy * m.zz * m.ww;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE float cstrl_mat4_cofactor(mat4 m, int i, int j)
+{
+    return powf(-1, i + j);
+}
+
+CSTRL_INLINE mat4 cstrl_mat4_affine_inverse(mat4 m)
+{
+    mat3 m3;
+
+    m3.xx = m.xx;
+    m3.xy = m.xy;
+    m3.xz = m.xz;
+    m3.yx = m.yx;
+    m3.yy = m.yy;
+    m3.yz = m.yz;
+    m3.zx = m.zx;
+    m3.zy = m.zy;
+    m3.zz = m.zz;
+
+    mat3 upper_left = cstrl_mat3_inverse(m3);
+
+    vec3 translate = cstrl_vec3_mult_mat3((vec3){m.xw, m.yw, m.zw}, cstrl_mat3_negate(upper_left));
+
+    return (mat4){upper_left.xx, upper_left.yx, upper_left.zx, 0.0f, upper_left.xy, upper_left.yy, upper_left.zy, 0.0f,
+                  upper_left.xz, upper_left.yz, upper_left.zz, 0.0f, -translate.x,  -translate.y,  translate.z,   1.0f};
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat3 cstrl_mat4_upper_left(mat4 m)
+{
+    return (mat3){m.xx, m.yx, m.zx, m.xy, m.yy, m.zy, m.xz, m.yz, m.zz};
+}
+
+// TODO: add to unit tests
+// From glm compute_inverse function
+CSTRL_INLINE mat4 cstrl_mat4_inverse_glm(mat4 m)
+{
+    float coef00 = m.zz * m.ww - m.wz * m.zw;
+    float coef02 = m.yz * m.ww - m.wz * m.yw;
+    float coef03 = m.yz * m.zw - m.zz * m.yw;
+
+    float coef04 = m.zy * m.ww - m.wy * m.zw;
+    float coef06 = m.yy * m.ww - m.wy * m.yw;
+    float coef07 = m.yy * m.zw - m.zy * m.yw;
+
+    float coef08 = m.zy * m.wz - m.wy * m.zz;
+    float coef10 = m.yy * m.wz - m.wy * m.yz;
+    float coef11 = m.yy * m.zz - m.zy * m.yz;
+
+    float coef12 = m.zx * m.ww - m.wx * m.zw;
+    float coef14 = m.yx * m.ww - m.wx * m.yw;
+    float coef15 = m.yx * m.zw - m.zx * m.yw;
+
+    float coef16 = m.zx * m.wz - m.wx * m.zz;
+    float coef18 = m.yx * m.wz - m.wx * m.yz;
+    float coef19 = m.yx * m.zz - m.zx * m.yz;
+
+    float coef20 = m.zx * m.wy - m.wx * m.zy;
+    float coef22 = m.yx * m.wy - m.wx * m.yy;
+    float coef23 = m.yx * m.zy - m.zx * m.yy;
+
+    vec4 fac0 = {coef00, coef00, coef02, coef03};
+    vec4 fac1 = {coef04, coef04, coef06, coef07};
+    vec4 fac2 = {coef08, coef08, coef10, coef11};
+    vec4 fac3 = {coef12, coef12, coef14, coef15};
+    vec4 fac4 = {coef16, coef16, coef18, coef19};
+    vec4 fac5 = {coef20, coef20, coef22, coef23};
+
+    vec4 vec_0 = {m.yx, m.xx, m.xx, m.xx};
+    vec4 vec_1 = {m.yy, m.xy, m.xy, m.xy};
+    vec4 vec_2 = {m.yz, m.xz, m.xz, m.xz};
+    vec4 vec_3 = {m.yw, m.xw, m.xw, m.xw};
+
+    vec4 inv0_a = cstrl_vec4_mult(vec_1, fac0);
+    vec4 inv0_b = cstrl_vec4_mult(vec_2, fac1);
+    vec4 inv0_c = cstrl_vec4_mult(vec_3, fac2);
+    vec4 inv0_d = cstrl_vec4_sub(inv0_a, inv0_b);
+    vec4 inv0 = cstrl_vec4_add(inv0_d, inv0_c);
+
+    vec4 inv1_a = cstrl_vec4_mult(vec_0, fac0);
+    vec4 inv1_b = cstrl_vec4_mult(vec_2, fac3);
+    vec4 inv1_c = cstrl_vec4_mult(vec_3, fac4);
+    vec4 inv1_d = cstrl_vec4_sub(inv1_a, inv1_b);
+    vec4 inv1 = cstrl_vec4_add(inv1_d, inv1_c);
+
+    vec4 inv2_a = cstrl_vec4_mult(vec_0, fac1);
+    vec4 inv2_b = cstrl_vec4_mult(vec_1, fac3);
+    vec4 inv2_c = cstrl_vec4_mult(vec_3, fac5);
+    vec4 inv2_d = cstrl_vec4_sub(inv0_a, inv0_b);
+    vec4 inv2 = cstrl_vec4_add(inv0_d, inv0_c);
+
+    vec4 inv3_a = cstrl_vec4_mult(vec_0, fac2);
+    vec4 inv3_b = cstrl_vec4_mult(vec_1, fac4);
+    vec4 inv3_c = cstrl_vec4_mult(vec_2, fac5);
+    vec4 inv3_d = cstrl_vec4_sub(inv1_a, inv1_b);
+    vec4 inv3 = cstrl_vec4_add(inv1_d, inv1_c);
+
+    vec4 sign_a = {1.0f, -1.0f, 1.0f, -1.0f};
+    vec4 sign_b = {-1.0f, 1.0f, -1.0f, 1.0f};
+
+    vec4 inverse_x = cstrl_vec4_mult(inv0, sign_a);
+    vec4 inverse_y = cstrl_vec4_mult(inv1, sign_b);
+    vec4 inverse_z = cstrl_vec4_mult(inv2, sign_a);
+    vec4 inverse_w = cstrl_vec4_mult(inv3, sign_b);
+
+    mat4 inverse = (mat4){inverse_x.x, inverse_x.y, inverse_x.z, inverse_x.w,
+                          inverse_y.x, inverse_y.y, inverse_y.z, inverse_y.w,
+                          inverse_z.x, inverse_z.y, inverse_z.z, inverse_z.w,
+                          inverse_w.x, inverse_w.y, inverse_w.z, inverse_w.w};
+
+    vec4 row0 = {inverse.xx, inverse.xy, inverse.xz, inverse.xw};
+
+    vec4 dot0 = cstrl_vec4_mult(m.x, row0);
+
+    float dot1 = (dot0.x + dot0.y) + (dot0.z + dot0.w);
+
+    float one_over_determinant = 1 / dot1;
+
+    return cstrl_mat4_mult_scalar(inverse, one_over_determinant);
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_inverse(mat4 m)
+{
+    mat4 result;
+    result.xx = m.yz * m.zw * m.wy - m.yw * m.zz * m.wy + m.yw * m.zy * m.wz - m.yy * m.zw * m.wz - m.yz * m.zy * m.ww +
+                m.yy * m.zz * m.ww;
+    result.xy = m.xw * m.zz * m.wy - m.xz * m.zw * m.wy - m.xw * m.zy * m.wz + m.xy * m.zw * m.wz + m.xz * m.zy * m.ww -
+                m.xy * m.zz * m.ww;
+    result.xz = m.xz * m.yw * m.wy - m.xw * m.yz * m.wy + m.xw * m.yy * m.wz - m.xy * m.yw * m.wz - m.xz * m.yy * m.ww +
+                m.xy * m.yz * m.ww;
+    result.xw = m.xw * m.yz * m.zy - m.xz * m.yw * m.zy - m.xw * m.yy * m.zz + m.xy * m.yw * m.zz + m.xz * m.yy * m.zw -
+                m.xy * m.yz * m.zw;
+    result.yx = m.yw * m.zz * m.wx - m.yz * m.zw * m.wx - m.yw * m.zx * m.wz + m.yx * m.zw * m.wz + m.yz * m.zx * m.ww -
+                m.yx * m.zz * m.ww;
+    result.yy = m.xz * m.zw * m.wx - m.xw * m.zz * m.wx + m.xw * m.zx * m.wz - m.xx * m.zw * m.wz - m.xz * m.zx * m.ww +
+                m.xx * m.zz * m.ww;
+    result.yz = m.xw * m.yz * m.wx - m.xz * m.yw * m.wx - m.xw * m.yx * m.wz + m.xx * m.yw * m.wz + m.xz * m.yx * m.ww -
+                m.xx * m.yz * m.ww;
+    result.yw = m.xz * m.yw * m.zx - m.xw * m.yz * m.zx + m.xw * m.yx * m.zz - m.xx * m.yw * m.zz - m.xz * m.yx * m.zw +
+                m.xx * m.yz * m.zw;
+    result.zx = m.yy * m.zw * m.wx - m.yw * m.zy * m.wx + m.yw * m.zx * m.wy - m.yx * m.zw * m.wy - m.yy * m.zx * m.ww +
+                m.yx * m.zy * m.ww;
+    result.zy = m.xw * m.zy * m.wx - m.xy * m.zw * m.wx - m.xw * m.zx * m.wy + m.xx * m.zw * m.wy + m.xy * m.zx * m.ww -
+                m.xx * m.zy * m.ww;
+    result.zz = m.xy * m.yw * m.wx - m.xw * m.yy * m.wx + m.xw * m.yx * m.wy - m.xx * m.yw * m.wy - m.xy * m.yx * m.ww +
+                m.xx * m.yy * m.ww;
+    result.zw = m.xw * m.yy * m.zx - m.xy * m.yw * m.zx - m.xw * m.yx * m.zy + m.xx * m.yw * m.zy + m.xy * m.yx * m.zw -
+                m.xx * m.yy * m.zw;
+    result.wx = m.yz * m.zy * m.wx - m.yy * m.zz * m.wx - m.yz * m.zx * m.wy + m.yx * m.zz * m.wy + m.yy * m.zx * m.wz -
+                m.yx * m.zy * m.wz;
+    result.wy = m.xy * m.zz * m.wx - m.xz * m.zy * m.wx + m.xz * m.zx * m.wy - m.xx * m.zz * m.wy - m.xy * m.zx * m.wz +
+                m.xx * m.zy * m.wz;
+    result.wz = m.xz * m.yy * m.wx - m.xy * m.yz * m.wx - m.xz * m.yx * m.wy + m.xx * m.yz * m.wy + m.xy * m.yx * m.wz -
+                m.xx * m.yy * m.wz;
+    result.ww = m.xy * m.yz * m.zx - m.xz * m.yy * m.zx + m.xz * m.yx * m.zy - m.xx * m.yz * m.zy - m.xy * m.yx * m.zz +
+                m.xx * m.yy * m.zz;
+
+    float one_over_determinant = 1.0f / cstrl_mat4_determinant(m);
+    for (int i = 0; i < 16; i++)
+    {
+        result.m[i] *= one_over_determinant;
+    }
+    return result;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_transpose(mat4 m)
+{
+    mat4 result;
+
+    result.xx = m.xx;
+    result.xy = m.yx;
+    result.xz = m.zx;
+    result.xw = m.wx;
+    result.yx = m.xy;
+    result.yy = m.yy;
+    result.yz = m.zy;
+    result.yw = m.wy;
+    result.zx = m.xz;
+    result.zy = m.yz;
+    result.zz = m.zz;
+    result.zw = m.wz;
+    result.wx = m.xw;
+    result.wy = m.yw;
+    result.wz = m.zw;
+    result.ww = m.ww;
+
+    return result;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_broken_inverse(mat4 m)
+{
+    int pivot_row = 0;
+    int pivot_column = 0;
+    while (pivot_row < 4 && pivot_column < 4)
+    {
+        int i_max = pivot_row;
+        float max = m.m[pivot_row * 4 + pivot_column];
+        for (int i = pivot_row + 1; i < 4; i++)
+        {
+            if (fabs(m.m[i * 4 + pivot_column]) > max)
+            {
+                max = fabs(m.m[i * 4 + pivot_column]);
+                i_max = i;
+            }
+        }
+        if (fabs(m.m[i_max * 4 + pivot_column]) < cstrl_epsilon)
+        {
+            pivot_column++;
+        }
+        else
+        {
+            vec4 tmp_h = (vec4){m.m[pivot_row], m.m[pivot_row + 1], m.m[pivot_row + 2], m.m[pivot_row + 3]};
+            vec4 tmp_i_max = (vec4){m.m[i_max], m.m[i_max + 1], m.m[i_max + 2], m.m[i_max + 3]};
+            m.m[pivot_row] = tmp_i_max.x;
+            m.m[pivot_row + 1] = tmp_i_max.y;
+            m.m[pivot_row + 2] = tmp_i_max.z;
+            m.m[pivot_row + 3] = tmp_i_max.w;
+
+            m.m[i_max] = tmp_h.x;
+            m.m[i_max + 1] = tmp_h.y;
+            m.m[i_max + 2] = tmp_h.z;
+            m.m[i_max + 3] = tmp_h.w;
+
+            for (int i = pivot_row + 1; i < 4; i++)
+            {
+                float f = m.m[i * 4 + pivot_column] / m.m[pivot_row * 4 + pivot_column];
+                m.m[i * 4 + pivot_column] = 0.0f;
+                for (int j = pivot_column + 1; j < 4; j++)
+                {
+                    m.m[i * 4 + j] -= m.m[pivot_row * 4 + j] * f;
+                }
+            }
+
+            pivot_row++;
+            pivot_column++;
+        }
+    }
+
+    return m;
+}
+
 /*
  *
  *      quat math functions
@@ -706,6 +1080,27 @@ CSTRL_INLINE mat4 cstrl_quat_to_mat4(quat q)
     return (mat4){q.w, -q.x, -q.y, -q.z, q.x, q.w, -q.z, q.y, q.y, q.z, q.w, -q.x, q.z, -q.y, q.x, q.w};
 }
 
+CSTRL_INLINE vec3 cstrl_quat_to_euler_angles(quat q)
+{
+    vec3 v = (vec3){0.0f, 0.0f, 0.0f};
+    v.x = atan2f(2.0f * (q.w * q.x + q.y * q.z), q.w * q.w - q.x * q.x - q.y * q.y - q.z * q.z);
+    v.y = asinf(2.0f * (q.w * q.y - q.x * q.z));
+    v.z = atan2(2.0f * q.w * q.z + q.x * q.y, q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z);
+
+    if (fabsf(v.y - cstrl_pi_2) < cstrl_epsilon)
+    {
+        v.x = 0.0f;
+        v.z = -2.0f * atan2f(q.x, q.w);
+    }
+    else if (fabsf(v.y - (-cstrl_pi_2)) < cstrl_epsilon)
+    {
+        v.x = 0.0f;
+        v.z = 2.0f * atan2f(q.x, q.w);
+    }
+
+    return v;
+}
+
 CSTRL_INLINE quat cstrl_quat_from_euler_angles(vec3 euler_angles)
 {
     float cx = cosf(euler_angles.x / 2.0f);
@@ -722,4 +1117,11 @@ CSTRL_INLINE quat cstrl_quat_from_euler_angles(vec3 euler_angles)
 
     return cstrl_quat_normalize((quat){w, x, y, z});
 }
+
+// TODO: add to unit tests
+CSTRL_INLINE vec3 cstrl_quat_xyz(quat q)
+{
+    return (vec3){q.x, q.y, q.z};
+}
+
 #endif // CSTRL_MATH_H

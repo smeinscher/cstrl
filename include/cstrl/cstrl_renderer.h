@@ -77,12 +77,16 @@ CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *
 
 CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals);
 
+CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t vertex_count);
+
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index, size_t count);
 
 CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions, const float *uvs,
                                              const float *colors, size_t count);
 
 CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data);
+
+CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state);
 

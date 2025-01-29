@@ -8,9 +8,9 @@
 #include "test_manager/test_types.h"
 #include "unit_tests/unit_tests.h"
 
-#define CSTRL_TEST_RUN_UNIT_TESTS 0
+#define CSTRL_TEST_RUN_UNIT_TESTS 1
 #define CSTRL_TEST_RUN_INTEGRATION_TESTS 0
-#define CSTRL_TEST_RUN_MANUAL_TESTS 1
+#define CSTRL_TEST_RUN_MANUAL_TESTS 0
 
 int main()
 {

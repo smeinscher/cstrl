@@ -10,6 +10,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define GROWTH_FACTOR 2
+
 CSTRL_API void cstrl_da_int_init(da_int *da, size_t initial_size)
 {
     da->size = 0;
@@ -160,7 +162,7 @@ CSTRL_API bool cstrl_da_string_reserve(da_string *da, size_t new_capacity)
 
 CSTRL_API void cstrl_da_int_push_back(da_int *da, int element)
 {
-    if (da->size >= da->capacity && !cstrl_da_int_reserve(da, da->capacity * 2))
+    if (da->size >= da->capacity && !cstrl_da_int_reserve(da, da->capacity * GROWTH_FACTOR))
     {
         return;
     }
@@ -169,7 +171,7 @@ CSTRL_API void cstrl_da_int_push_back(da_int *da, int element)
 
 CSTRL_API void cstrl_da_float_push_back(da_float *da, float element)
 {
-    if (da->size >= da->capacity && !cstrl_da_float_reserve(da, da->capacity * 2))
+    if (da->size >= da->capacity && !cstrl_da_float_reserve(da, da->capacity * GROWTH_FACTOR))
     {
         return;
     }
@@ -181,7 +183,7 @@ CSTRL_API void cstrl_string_push_back(string *str, const char *characters, size_
     for (int i = 0; i < length; i++)
     {
         // TODO: find a way to make less calls to string_reserve if length of new string is large
-        if (str->size >= str->capacity && !cstrl_string_reserve(str, str->capacity * 2))
+        if (str->size >= str->capacity && !cstrl_string_reserve(str, str->capacity * GROWTH_FACTOR))
         {
             return;
         }
@@ -191,7 +193,7 @@ CSTRL_API void cstrl_string_push_back(string *str, const char *characters, size_
 
 CSTRL_API void cstrl_da_string_push_back(da_string *da, string element)
 {
-    if (da->size >= da->capacity && !cstrl_da_string_reserve(da, da->capacity * 2))
+    if (da->size >= da->capacity && !cstrl_da_string_reserve(da, da->capacity * GROWTH_FACTOR))
     {
         return;
     }
@@ -203,7 +205,7 @@ CSTRL_API void cstrl_da_string_push_back(da_string *da, string element)
 // TODO: unit test
 CSTRL_API void cstrl_da_int_insert(da_int *da, int element, size_t index)
 {
-    if ((index >= da->capacity || da->size >= da->capacity) && !cstrl_da_int_reserve(da, da->capacity * 2))
+    if ((index >= da->capacity || da->size >= da->capacity) && !cstrl_da_int_reserve(da, da->capacity * GROWTH_FACTOR))
     {
         log_error("Failed to insert into dynamic int array");
         return;

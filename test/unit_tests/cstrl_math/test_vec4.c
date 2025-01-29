@@ -132,3 +132,31 @@ int test_cstrl_vec4_dot()
 
     return 1;
 }
+
+int test_cstrl_vec4_mult_mat4()
+{
+    vec4 v = {1.0f, 2.0f, 3.0f, 4.0f};
+    mat4 m = cstrl_mat4_identity();
+    vec4 expected = {1.0f, 2.0f, 3.0f, 4.0f};
+    vec4 result = cstrl_vec4_mult_mat4(v, m);
+
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+    expect_float_to_be(expected.w, result.w);
+
+    m.xx = 1.0f;
+    m.xy = 1.0f;
+    m.yy = 2.0f;
+    m.zz = 3.0f;
+    m.ww = 4.0f;
+    expected = (vec4){1.0f, 5.0f, 9.0f, 16.0f};
+    result = cstrl_vec4_mult_mat4(v, m);
+
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+    expect_float_to_be(expected.w, result.w);
+
+    return 1;
+}

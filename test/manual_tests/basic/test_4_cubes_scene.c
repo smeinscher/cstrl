@@ -110,8 +110,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
         if (action == CSTRL_ACTION_PRESS)
         {
             g_main_camera->forward = (vec3){0.0f, 0.0f, -1.0f};
-            g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
-            g_main_camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
+            g_main_camera->position = (vec3){0.0f, 0.0f, 5.0f};
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
@@ -158,7 +157,7 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     }
     else
     {
-        cstrl_camera_rotate(g_main_camera, offset_x, offset_y);
+        cstrl_camera_first_person_rotate(g_main_camera, offset_x, offset_y);
         last_x = 400;
         last_y = 300;
     }
@@ -258,7 +257,7 @@ int test_4_cubes_scene()
     cstrl_renderer_add_uvs(render_data, uvs_final);
 
     g_main_camera = cstrl_camera_create(800, 600, false);
-    g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
+    g_main_camera->position = (vec3){0.0f, 0.0f, 5.0f};
     cstrl_shader shader = cstrl_load_shaders_from_source(basic_3d_vertex_shader, basic_3d_fragment_shader);
     cstrl_texture texture = cstrl_texture_generate_from_path("resources/textures/wall.jpg");
 

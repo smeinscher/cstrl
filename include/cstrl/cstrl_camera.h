@@ -13,10 +13,12 @@ typedef struct cstrl_camera
     bool is_orthographic;
     float fov;
     vec2i viewport;
+    vec3 position;
     vec3 forward;
+    vec3 up;
+    vec3 right;
     mat4 view;
     mat4 projection;
-    transform transform;
 } cstrl_camera;
 
 typedef enum cstrl_camera_direction_mask
@@ -35,7 +37,9 @@ CSTRL_API void cstrl_camera_free(cstrl_camera *camera);
 CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movement,
                          cstrl_camera_direction_mask rotation);
 
-CSTRL_API void cstrl_camera_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis);
+CSTRL_API void cstrl_camera_euler_rotate(vec3 amount);
+
+CSTRL_API void cstrl_camera_first_person_rotate(cstrl_camera *camera, float change_y_axis, float change_x_axis);
 
 CSTRL_API void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation);
 
