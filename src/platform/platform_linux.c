@@ -211,6 +211,15 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
             cstrl_action action = event->type == ButtonPress ? CSTRL_ACTION_PRESS : CSTRL_ACTION_RELEASE;
 
             state->state_common.input.mouse_buttons[button] = action;
+
+            // TODO: implement mods
+            int mods = 0;
+
+            if (state->state_common.callbacks.mouse_button != NULL)
+            {
+
+                state->state_common.callbacks.mouse_button(platform_state, button, action, mods);
+            }
             break;
         }
         case MotionNotify: {
