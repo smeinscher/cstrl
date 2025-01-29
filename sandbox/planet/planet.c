@@ -4,6 +4,7 @@
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
+#include "cstrl/cstrl_ui.h"
 #include "cstrl/cstrl_util.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,8 +14,8 @@ static cstrl_camera_direction_mask g_movement;
 static cstrl_camera_direction_mask g_rotation;
 static cstrl_platform_state g_platform_state;
 
-static vec3 g_position = {0.0f, 0.0f, 1.05f};
-static const vec2 UNIT_SIZE = {0.1f, 0.1f};
+static vec3 g_unit_position = {0.0f, 0.0f, 1.05f};
+static const vec3 UNIT_SIZE = {0.2f, 0.2f, 0.0f};
 static quat g_unit_rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
 
 static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
@@ -110,8 +111,8 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_1:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_main_camera->transform.position = (vec3){-3.0f, 0.0f, 0.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->transform.position));
+            g_main_camera->position = (vec3){-3.0f, 0.0f, 0.0f};
+            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
         }
         else if (action == CSTRL_ACTION_RELEASE)
@@ -121,8 +122,8 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_2:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_main_camera->transform.position = (vec3){0.0f, 0.0f, -3.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->transform.position));
+            g_main_camera->position = (vec3){0.0f, 0.0f, -3.0f};
+            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
         }
         else if (action == CSTRL_ACTION_RELEASE)
@@ -132,19 +133,20 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_3:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_main_camera->transform.position = (vec3){3.0f, 0.0f, 0.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->transform.position));
+            g_main_camera->position = (vec3){3.0f, 0.0f, 0.0f};
+            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
         }
         break;
+    case CSTRL_KEY_4:
     case CSTRL_KEY_R:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_main_camera->transform.position = (vec3){0.0f, 0.0f, 3.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->transform.position));
+            g_main_camera->position = (vec3){0.0f, 0.0f, 3.0f};
+            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
         }
         else if (action == CSTRL_ACTION_RELEASE)
@@ -224,31 +226,26 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     up_yaw_matrix = cstrl_mat4_rotate(up_yaw_matrix, -y_angle_change, g_main_camera->up);
     mat4 right_pitch_matrix = cstrl_mat4_identity();
     right_pitch_matrix = cstrl_mat4_rotate(right_pitch_matrix, -z_angle_change, g_main_camera->right);
-    vec4 position_vec4 = (vec4){g_main_camera->transform.position.x, g_main_camera->transform.position.y,
-                                g_main_camera->transform.position.z, 1.0f};
+    vec4 position_vec4 = (vec4){g_main_camera->position.x, g_main_camera->position.y, g_main_camera->position.z, 1.0f};
     vec4 camera_focus_vector = cstrl_vec4_mult_mat4(position_vec4, cstrl_mat4_mult(up_yaw_matrix, right_pitch_matrix));
-    g_main_camera->transform.position = (vec3){camera_focus_vector.x, camera_focus_vector.y, camera_focus_vector.z};
-    g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->transform.position));
+    g_main_camera->position = (vec3){camera_focus_vector.x, camera_focus_vector.y, camera_focus_vector.z};
+    g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
     g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
     cstrl_camera_update(g_main_camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
-    printf("forward: %f, %f, %f\n", g_main_camera->forward.x, g_main_camera->forward.y, g_main_camera->forward.z);
-    printf("right: %f, %f, %f\n", g_main_camera->right.x, g_main_camera->right.y, g_main_camera->right.z);
 }
 
 static vec3 mouse_click_ray_cast()
 {
     int width, height;
     cstrl_platform_get_window_size(&g_platform_state, &width, &height);
-    printf("%d, %d, %d, %d\n", mouse_position_x, mouse_position_y, width, height);
     float x = (2.0f * mouse_position_x) / (float)width - 1.0f;
     float y = 1.0f - (2.0f * mouse_position_y) / (float)height;
 
     vec4 ray_clip = {x, y, -1.0f, 1.0f};
     vec4 ray_eye = cstrl_vec4_mult_mat4(ray_clip, cstrl_mat4_inverse(g_main_camera->projection));
     ray_eye = (vec4){ray_eye.x, ray_eye.y, -1.0f, 0.0f};
-    printf("ray_eye: %f, %f\n", ray_eye.x, ray_eye.y);
 
-    vec4 ray_world = cstrl_vec4_mult_mat4(ray_eye, cstrl_mat4_inverse(g_main_camera->view));
+    vec4 ray_world = cstrl_vec4_mult_mat4(ray_eye, cstrl_mat4_transpose(cstrl_mat4_inverse(g_main_camera->view)));
 
     return cstrl_vec3_normalize((vec3){ray_world.x, ray_world.y, ray_world.z});
 }
@@ -273,98 +270,116 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
         if (action == CSTRL_ACTION_PRESS)
         {
             vec3 d = mouse_click_ray_cast();
-            printf("d: %f, %f, %f\n", d.x, d.y, d.z);
 
-            vec3 l = g_main_camera->transform.position;
+            vec3 l = g_main_camera->position;
             float b = cstrl_vec3_dot(d, l);
             float c = cstrl_vec3_dot(l, l) - 1.0f;
 
-            // printf("b: %f c: %f\n", b, c);
             if (powf(b, 2.0) - c >= 0.0f)
             {
                 float t = -b - sqrtf(powf(b, 2.0f) - c);
-                g_position = cstrl_vec3_add(g_main_camera->transform.position, cstrl_vec3_mult_scalar(d, t));
-                /*g_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(g_position), 1.0f);*/
-                g_unit_rotation = cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view));
+                g_unit_position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
+                g_unit_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(g_unit_position), 1.025f);
+                g_unit_rotation =
+                    cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
                 vec3 euler = cstrl_quat_to_euler_angles(g_unit_rotation);
-                printf("unit rotation: %f, %f, %f\n", euler.x * cstrl_180_pi, euler.y * cstrl_180_pi,
-                       euler.z * cstrl_180_pi);
-                printf("unit position: %f, %f, %f\n", g_position.x, g_position.y, g_position.z);
             }
         }
     }
 }
 
-static void update_billboard_position(da_float *positions, size_t index, vec3 new_position, vec2 size)
+static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 size)
 {
-    float x0 = new_position.x - size.x / 2.0f;
-    float x1 = new_position.x + size.x / 2.0f;
-    float y0 = new_position.y - size.y / 2.0f;
-    float y1 = new_position.y + size.y / 2.0f;
-    float z = new_position.z;
+    float x0 = -size.x;
+    float x1 = size.x;
+    float y0 = -size.y;
+    float y1 = size.y;
+    float z = size.z;
 
-    positions->array[index * 18] = x0;
-    positions->array[index * 18 + 1] = y1;
-    positions->array[index * 18 + 2] = z;
-    positions->array[index * 18 + 3] = x1;
-    positions->array[index * 18 + 4] = y0;
-    positions->array[index * 18 + 5] = z;
-    positions->array[index * 18 + 6] = x0;
-    positions->array[index * 18 + 7] = y0;
-    positions->array[index * 18 + 8] = z;
-    positions->array[index * 18 + 9] = x0;
-    positions->array[index * 18 + 10] = y1;
-    positions->array[index * 18 + 11] = z;
-    positions->array[index * 18 + 12] = x1;
-    positions->array[index * 18 + 13] = y0;
-    positions->array[index * 18 + 14] = z;
-    positions->array[index * 18 + 15] = x1;
-    positions->array[index * 18 + 16] = y1;
-    positions->array[index * 18 + 17] = z;
+    vec3 point0 = cstrl_vec3_mult((vec3){x0, y0, z}, size);
+    vec3 point1 = cstrl_vec3_mult((vec3){x1, y0, z}, size);
+    vec3 point2 = cstrl_vec3_mult((vec3){x1, y1, z}, size);
+    vec3 point3 = cstrl_vec3_mult((vec3){x0, y1, z}, size);
+
+    quat unit_rotation_conjugate = cstrl_quat_inverse(g_unit_rotation);
+    quat point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point0.x, point0.y, point0.z}),
+                                      unit_rotation_conjugate);
+    point0 = cstrl_quat_xyz(point_quat);
+    point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point1.x, point1.y, point1.z}),
+                                 unit_rotation_conjugate);
+    point1 = cstrl_quat_xyz(point_quat);
+    point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point2.x, point2.y, point2.z}),
+                                 unit_rotation_conjugate);
+    point2 = cstrl_quat_xyz(point_quat);
+    point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point3.x, point3.y, point3.z}),
+                                 unit_rotation_conjugate);
+    point3 = cstrl_quat_xyz(point_quat);
+
+    point0 = cstrl_vec3_add(point0, g_unit_position);
+    point1 = cstrl_vec3_add(point1, g_unit_position);
+    point2 = cstrl_vec3_add(point2, g_unit_position);
+    point3 = cstrl_vec3_add(point3, g_unit_position);
+
+    *p0 = point0;
+    *p1 = point1;
+    *p2 = point2;
+    *p3 = point3;
 }
 
-static void add_billboard_object(da_float *positions, da_float *uvs, da_float *colors, vec3 object_position, vec2 size,
-                                 vec4 color)
+static void update_billboard_position(da_float *positions, size_t index, vec3 new_position, vec3 size)
 {
-    float x0 = object_position.x - size.x / 2.0f;
-    float x1 = object_position.x + size.x / 2.0f;
-    float y0 = object_position.y - size.y / 2.0f;
-    float y1 = object_position.y + size.y / 2.0f;
-    float z = object_position.z;
+    vec3 point0, point1, point2, point3;
+    get_points(&point0, &point1, &point2, &point3, size);
+    positions->array[index * 18] = point0.x;
+    positions->array[index * 18 + 1] = point0.y;
+    positions->array[index * 18 + 2] = point0.z;
+    positions->array[index * 18 + 3] = point1.x;
+    positions->array[index * 18 + 4] = point1.y;
+    positions->array[index * 18 + 5] = point1.z;
+    positions->array[index * 18 + 6] = point2.x;
+    positions->array[index * 18 + 7] = point2.y;
+    positions->array[index * 18 + 8] = point2.z;
+    positions->array[index * 18 + 9] = point3.x;
+    positions->array[index * 18 + 10] = point3.y;
+    positions->array[index * 18 + 11] = point3.z;
+}
 
-    cstrl_da_float_push_back(positions, x0);
-    cstrl_da_float_push_back(positions, y1);
-    cstrl_da_float_push_back(positions, z);
-    cstrl_da_float_push_back(positions, x1);
-    cstrl_da_float_push_back(positions, y0);
-    cstrl_da_float_push_back(positions, z);
-    cstrl_da_float_push_back(positions, x0);
-    cstrl_da_float_push_back(positions, y0);
-    cstrl_da_float_push_back(positions, z);
-    cstrl_da_float_push_back(positions, x0);
-    cstrl_da_float_push_back(positions, y1);
-    cstrl_da_float_push_back(positions, z);
-    cstrl_da_float_push_back(positions, x1);
-    cstrl_da_float_push_back(positions, y0);
-    cstrl_da_float_push_back(positions, z);
-    cstrl_da_float_push_back(positions, x1);
-    cstrl_da_float_push_back(positions, y1);
-    cstrl_da_float_push_back(positions, z);
+static void add_billboard_object(da_float *positions, da_int *indices, da_float *uvs, da_float *colors,
+                                 vec3 object_position, vec3 size, vec4 color)
+{
+    vec3 point0, point1, point2, point3;
+    get_points(&point0, &point1, &point2, &point3, size);
+
+    cstrl_da_float_push_back(positions, point0.x);
+    cstrl_da_float_push_back(positions, point0.y);
+    cstrl_da_float_push_back(positions, point0.z);
+    cstrl_da_float_push_back(positions, point1.x);
+    cstrl_da_float_push_back(positions, point1.y);
+    cstrl_da_float_push_back(positions, point1.z);
+    cstrl_da_float_push_back(positions, point2.x);
+    cstrl_da_float_push_back(positions, point2.y);
+    cstrl_da_float_push_back(positions, point2.z);
+    cstrl_da_float_push_back(positions, point3.x);
+    cstrl_da_float_push_back(positions, point3.y);
+    cstrl_da_float_push_back(positions, point3.z);
+
+    cstrl_da_int_push_back(indices, 0);
+    cstrl_da_int_push_back(indices, 1);
+    cstrl_da_int_push_back(indices, 2);
+    cstrl_da_int_push_back(indices, 0);
+    cstrl_da_int_push_back(indices, 2);
+    cstrl_da_int_push_back(indices, 3);
 
     cstrl_da_float_push_back(uvs, 0.0f);
+    cstrl_da_float_push_back(uvs, 0.0f);
     cstrl_da_float_push_back(uvs, 1.0f);
-    cstrl_da_float_push_back(uvs, 1.0f);
-    cstrl_da_float_push_back(uvs, 0.0f);
-    cstrl_da_float_push_back(uvs, 0.0f);
-    cstrl_da_float_push_back(uvs, 0.0f);
     cstrl_da_float_push_back(uvs, 0.0f);
     cstrl_da_float_push_back(uvs, 1.0f);
     cstrl_da_float_push_back(uvs, 1.0f);
     cstrl_da_float_push_back(uvs, 0.0f);
-    cstrl_da_float_push_back(uvs, 1.0f);
     cstrl_da_float_push_back(uvs, 1.0f);
 
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 4; i++)
     {
         cstrl_da_float_push_back(colors, color.x);
         cstrl_da_float_push_back(colors, color.y);
@@ -462,14 +477,17 @@ int planet()
 
     cstrl_render_data *unit_render_data = cstrl_renderer_create_render_data();
     da_float unit_positions;
-    cstrl_da_float_init(&unit_positions, 18);
+    cstrl_da_float_init(&unit_positions, 12);
+    da_int unit_indices;
+    cstrl_da_int_init(&unit_indices, 6);
     da_float unit_uvs;
-    cstrl_da_float_init(&unit_uvs, 12);
+    cstrl_da_float_init(&unit_uvs, 8);
     da_float unit_colors;
-    cstrl_da_float_init(&unit_colors, 24);
-    add_billboard_object(&unit_positions, &unit_uvs, &unit_colors, g_position, UNIT_SIZE,
+    cstrl_da_float_init(&unit_colors, 16);
+    add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, g_unit_position, UNIT_SIZE,
                          (vec4){0.0f, 1.0f, 0.0f, 1.0f});
-    cstrl_renderer_add_positions(unit_render_data, unit_positions.array, 3, 6);
+    cstrl_renderer_add_positions(unit_render_data, unit_positions.array, 3, 4);
+    cstrl_renderer_add_indices(unit_render_data, unit_indices.array, 6);
     cstrl_renderer_add_uvs(unit_render_data, unit_uvs.array);
     cstrl_renderer_add_colors(unit_render_data, unit_colors.array);
 
@@ -478,7 +496,7 @@ int planet()
     cstrl_texture unit_texture = cstrl_texture_generate_from_path("resources/textures/tank.png");
 
     g_main_camera = cstrl_camera_create(800, 600, false);
-    g_main_camera->transform.position.z = 3.0f;
+    g_main_camera->position.z = 3.0f;
 
     cstrl_set_uniform_3f(planet_shader.program, "material.ambient", 0.4f, 0.2f, 0.8f);
     cstrl_set_uniform_3f(planet_shader.program, "material.diffuse", 1.0f, 0.5f, 0.31f);
@@ -490,6 +508,7 @@ int planet()
     double lag = 0.0;
     float light_start_x = 0.0f;
     float light_start_z = 0.0f;
+    cstrl_ui_context *context = cstrl_ui_init(&g_platform_state);
     while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&g_platform_state);
@@ -500,8 +519,10 @@ int planet()
         while (lag >= 1.0 / 60.0)
         {
             cstrl_camera_update(g_main_camera, g_movement, g_rotation);
-            update_billboard_position(&unit_positions, 0, g_position, UNIT_SIZE);
-            cstrl_renderer_modify_positions(unit_render_data, unit_positions.array, 0, 18);
+            g_unit_rotation =
+                cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
+            update_billboard_position(&unit_positions, 0, g_unit_position, UNIT_SIZE);
+            cstrl_renderer_modify_positions(unit_render_data, unit_positions.array, 0, 12);
             lag -= 1.0 / 60.0;
             light_start_x += 0.001f;
             light_start_z += 0.001f;
@@ -511,34 +532,44 @@ int planet()
         cstrl_set_uniform_mat4(planet_shader.program, "model", cstrl_mat4_identity());
         cstrl_set_uniform_mat4(planet_shader.program, "view", g_main_camera->view);
         cstrl_set_uniform_mat4(planet_shader.program, "projection", g_main_camera->projection);
-        cstrl_set_uniform_3f(planet_shader.program, "view_position", g_main_camera->transform.position.x,
-                             g_main_camera->transform.position.y, g_main_camera->transform.position.z);
+        cstrl_set_uniform_3f(planet_shader.program, "view_position", g_main_camera->position.x,
+                             g_main_camera->position.y, g_main_camera->position.z);
         cstrl_set_uniform_3f(planet_shader.program, "light.position", light_position.x, light_position.y,
                              light_position.z);
         cstrl_set_uniform_3f(planet_shader.program, "light.ambient", 0.2f, 0.2f, 0.2f);
         cstrl_set_uniform_3f(planet_shader.program, "light.diffuse", 0.8f, 0.8f, 0.8f);
         cstrl_use_shader(planet_shader);
+        cstrl_set_active_texture(0);
         cstrl_texture_bind(planet_texture);
         cstrl_renderer_draw_indices(planet_render_data);
 
-        mat4 billboard_view = g_main_camera->view;
-        billboard_view.xx = 1.0f;
-        billboard_view.yx = 0.0f;
-        billboard_view.zx = 0.0f;
-        billboard_view.xy = 0.0f;
-        billboard_view.yy = 1.0f;
-        billboard_view.zy = 0.0f;
-        cstrl_set_uniform_mat4(unit_shader.program, "view", billboard_view);
+        cstrl_set_uniform_mat4(unit_shader.program, "view", g_main_camera->view);
         cstrl_set_uniform_mat4(unit_shader.program, "projection", g_main_camera->projection);
         cstrl_use_shader(unit_shader);
+        cstrl_set_active_texture(0);
         cstrl_texture_bind(unit_texture);
-        cstrl_renderer_draw(unit_render_data);
+        cstrl_renderer_draw_indices(unit_render_data);
 
+        cstrl_ui_begin(context);
+        if (cstrl_ui_container_begin(context, "Debug", 5, 10, 10, 200, 300, GEN_ID(0), false, 2))
+        {
+            char buffer[64];
+            char title[64];
+            vec3 euler = cstrl_quat_to_euler_angles(g_unit_rotation);
+            sprintf(title, "%5.4f, %5.4f, %5.4f", euler.x * cstrl_180_pi, euler.y * cstrl_180_pi,
+                    euler.z * cstrl_180_pi);
+            if (cstrl_ui_text(context, title, 36, 0, 50, 300, 50, GEN_ID(0), CSTRL_UI_TEXT_ALIGN_LEFT))
+            {
+            }
+            cstrl_ui_container_end(context);
+        }
+        cstrl_ui_end(context);
         cstrl_renderer_swap_buffers(&g_platform_state);
     }
 
     cstrl_camera_free(g_main_camera);
     cstrl_renderer_free_render_data(planet_render_data);
+    cstrl_ui_shutdown(context);
     cstrl_renderer_shutdown(&g_platform_state);
     cstrl_platform_shutdown(&g_platform_state);
 

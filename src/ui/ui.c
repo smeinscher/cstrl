@@ -372,10 +372,10 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
             cstrl_da_float_push_back(&ui_state->colors, b);
             cstrl_da_float_push_back(&ui_state->colors, a);
         }
+        cstrl_use_shader(ui_state->shader);
         cstrl_renderer_modify_render_attributes(ui_state->render_data, ui_state->positions.array, ui_state->uvs.array,
                                                 ui_state->colors.array, ui_state->positions.size / 2);
         cstrl_texture_bind(ui_state->texture);
-        cstrl_use_shader(ui_state->shader);
         cstrl_renderer_draw(ui_state->render_data);
 
         cstrl_da_float_clear(&ui_state->positions);
@@ -474,11 +474,12 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
 
             position[0] += packedchar.xadvance * scale;
         }
+        cstrl_use_shader(ui_state->font_shader);
         cstrl_renderer_modify_render_attributes(ui_state->font_render_data, ui_state->font_positions.array,
                                                 ui_state->font_uvs.array, ui_state->font_colors.array,
                                                 ui_state->font_positions.size / 2);
+        cstrl_set_active_texture(0);
         cstrl_texture_bind(ui_state->font_texture);
-        cstrl_use_shader(ui_state->font_shader);
         cstrl_renderer_draw(ui_state->font_render_data);
 
         cstrl_da_float_clear(&ui_state->font_positions);
@@ -555,14 +556,6 @@ CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text,
         width += c.xadvance;
     }
     return (float)width * scale;
-}
-
-CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
-                             cstrl_ui_text_alignment alignment)
-{
-    // TODO: implement this
-    log_warn("cstrl_ui_text has not been implemented");
-    return true;
 }
 
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
@@ -665,9 +658,9 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     cstrl_da_int_push_back(&ui_state->elements.screen_coords, y + h);
 
     // TODO: get from config somewhere
+    cstrl_da_float_push_back(&ui_state->elements.colors, 0.1f);
     cstrl_da_float_push_back(&ui_state->elements.colors, 0.2f);
     cstrl_da_float_push_back(&ui_state->elements.colors, 0.4f);
-    cstrl_da_float_push_back(&ui_state->elements.colors, 0.7f);
     cstrl_da_float_push_back(&ui_state->elements.colors, 0.9f);
 
     string s;
@@ -769,6 +762,57 @@ CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int
     cstrl_da_float_push_back(&ui_state->elements.colors, 1.0f);
 
     return false;
+}
+
+CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int text_length, int x, int y, int w, int h,
+                             int id, cstrl_ui_text_alignment alignment)
+{
+    cstrl_ui_internal_state *ui_state = context->internal_ui_state;
+
+    cstrl_da_int_push_back(&ui_state->elements.ids, id);
+
+    int parent_index = ui_state->parent_stack.array[ui_state->parent_stack.size - 1];
+    x += ui_state->elements.screen_coords.array[parent_index * 4];
+    y += ui_state->elements.screen_coords.array[parent_index * 4 + 1];
+    int parent_w = ui_state->elements.screen_coords.array[parent_index * 4 + 2] -
+                   ui_state->elements.screen_coords.array[parent_index * 4];
+    int parent_h = ui_state->elements.screen_coords.array[parent_index * 4 + 3] -
+                   ui_state->elements.screen_coords.array[parent_index * 4 + 1];
+
+    if (w > parent_w)
+    {
+        w = parent_w;
+    }
+    if (h > parent_h)
+    {
+        h = parent_h;
+    }
+
+    cstrl_da_int_push_back(&ui_state->elements.screen_coords, x);
+    cstrl_da_int_push_back(&ui_state->elements.screen_coords, y);
+    cstrl_da_int_push_back(&ui_state->elements.screen_coords, x + w);
+    cstrl_da_int_push_back(&ui_state->elements.screen_coords, y + h);
+
+    string s;
+    cstrl_string_init(&s, text_length);
+    cstrl_string_push_back(&s, text, text_length);
+    cstrl_da_string_push_back(&ui_state->elements.titles, s);
+    cstrl_string_free(&s);
+
+    cstrl_da_int_push_back(&ui_state->elements.parent_index, parent_index);
+
+    int parent_priority = ui_state->elements.order_priority.array[parent_index];
+    cstrl_da_int_push_back(&ui_state->elements.order_priority, parent_priority);
+    for (int i = 0; i < ui_state->elements.element_count; i++)
+    {
+        if (ui_state->element_render_order.array[i] == parent_index)
+        {
+            cstrl_da_int_insert(&ui_state->element_render_order, ui_state->elements.element_count, i + 1);
+            break;
+        }
+    }
+    ui_state->elements.element_count++;
+    return true;
 }
 
 CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x,

@@ -19,9 +19,7 @@ CSTRL_API cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_hei
     new_camera->right = (vec3){1.0f, 0.0f, 0.0f};
     new_camera->view = cstrl_mat4_identity();
     new_camera->projection = cstrl_mat4_identity();
-    new_camera->transform.position = (vec3){0.0f, 0.0f, 0.0f};
-    new_camera->transform.rotation = cstrl_quat_identity();
-    new_camera->transform.scale = (vec3){1.0f, 1.0f, 1.0f};
+    new_camera->position = (vec3){0.0f, 0.0f, 0.0f};
 
     return new_camera;
 }
@@ -55,7 +53,7 @@ CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_
     }
     velocity = cstrl_vec3_normalize(velocity);
     velocity = cstrl_vec3_mult_scalar(velocity, 0.1f);
-    camera->transform.position = cstrl_vec3_add(camera->transform.position, velocity);
+    camera->position = cstrl_vec3_add(camera->position, velocity);
 
     vec3 rotation_velocity = {0.0f, 0.0f, 0.0f};
     if (rotation & CSTRL_CAMERA_DIRECTION_UP)
@@ -76,8 +74,7 @@ CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_
     }
     cstrl_camera_first_person_rotate(camera, rotation_velocity.x * 0.01f, rotation_velocity.y * 0.01f);
 
-    camera->view = cstrl_mat4_look_at(camera->transform.position,
-                                      cstrl_vec3_add(camera->transform.position, camera->forward), camera->up);
+    camera->view = cstrl_mat4_look_at(camera->position, cstrl_vec3_add(camera->position, camera->forward), camera->up);
 
     if (!camera->is_orthographic)
     {

@@ -532,8 +532,14 @@ CSTRL_INLINE mat3 cstrl_mat3_inverse(mat3 m)
 // TODO: add to unit tests
 CSTRL_INLINE quat cstrl_mat3_orthogonal_to_quat(mat3 m)
 {
-    return (quat){sqrtf(m.xx + m.yy + m.zz + 1) / 2.0f, sqrtf(m.xx - m.yy - m.zz + 1) / 2.0f,
-                  sqrtf(-m.xx + m.yy - m.zz + 1) / 2.0f, sqrtf(-m.xx - m.yy + m.zz + 1) / 2.0f};
+    float t = m.xx + m.yy + m.zz;
+    float r = sqrtf(1.0f + t);
+    float s = 1.0f / (2.0f * r);
+    float w = r * 0.5f;
+    float x = (m.zy - m.yz) * s;
+    float y = (m.xz - m.zx) * s;
+    float z = (m.yx - m.xy) * s;
+    return (quat){w, x, y, z};
 }
 
 /*
@@ -879,11 +885,36 @@ CSTRL_INLINE mat4 cstrl_mat4_inverse(mat4 m)
     result.ww = m.xy * m.yz * m.zx - m.xz * m.yy * m.zx + m.xz * m.yx * m.zy - m.xx * m.yz * m.zy - m.xy * m.yx * m.zz +
                 m.xx * m.yy * m.zz;
 
-    float det = cstrl_mat4_determinant(m);
+    float one_over_determinant = 1.0f / cstrl_mat4_determinant(m);
     for (int i = 0; i < 16; i++)
     {
-        result.m[i] /= det;
+        result.m[i] *= one_over_determinant;
     }
+    return result;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_transpose(mat4 m)
+{
+    mat4 result;
+
+    result.xx = m.xx;
+    result.xy = m.yx;
+    result.xz = m.zx;
+    result.xw = m.wx;
+    result.yx = m.xy;
+    result.yy = m.yy;
+    result.yz = m.zy;
+    result.yw = m.wy;
+    result.zx = m.xz;
+    result.zy = m.yz;
+    result.zz = m.zz;
+    result.zw = m.wz;
+    result.wx = m.xw;
+    result.wy = m.yw;
+    result.wz = m.zw;
+    result.ww = m.ww;
+
     return result;
 }
 
@@ -1085,6 +1116,12 @@ CSTRL_INLINE quat cstrl_quat_from_euler_angles(vec3 euler_angles)
     float z = cx * cy * sz + sx * sy * cz;
 
     return cstrl_quat_normalize((quat){w, x, y, z});
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE vec3 cstrl_quat_xyz(quat q)
+{
+    return (vec3){q.x, q.y, q.z};
 }
 
 #endif // CSTRL_MATH_H

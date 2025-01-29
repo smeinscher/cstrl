@@ -58,8 +58,8 @@ int test_cstrl_mat4_inverse()
 
     m = (mat4){1.810660f, 0.0f, 0.0f,       0.0f,  0.0f, 2.414213f, 0.0f,     0.0f,
                0.0f,      0.0f, -1.002002f, -1.0f, 0.0f, 0.0f,      -0.2002f, 0.0f};
-    expected = (mat4){0.552285f, 0.0f, 0.0f, 0.0f,      0.0f, 0.414214f, 0.0f,  0.0f,
-                      0.0f,      0.0f, 0.0f, -4.995005, 0.0f, 0.0f,      -1.0f, 5.005005f};
+    expected = (mat4){0.552285f, 0.0f, 0.0f, 0.0f,       0.0f, 0.414214f, 0.0f,  0.0f,
+                      0.0f,      0.0f, 0.0f, -4.995005f, 0.0f, 0.0f,      -1.0f, 5.005005f};
     result = cstrl_mat4_inverse(m);
 
     expect_float_to_be(expected.xx, result.xx);
@@ -88,12 +88,6 @@ int test_cstrl_mat4_inverse()
     expected.zw = 1.0f;
     result = cstrl_mat4_inverse(m);
 
-    for (int i = 0; i < 4; i++)
-    {
-        printf("regular result: %f, %f, %f, %f\n", result.m[i * 4], result.m[i * 4 + 1], result.m[i * 4 + 2],
-               result.m[i * 4 + 3]);
-    }
-
     expect_float_to_be(expected.xx, result.xx);
     expect_float_to_be(expected.xy, result.xy);
     expect_float_to_be(expected.xz, result.xz);
@@ -117,7 +111,7 @@ int test_cstrl_mat4_inverse()
     cstrl_camera *camera = cstrl_camera_create(800, 600, false);
     camera->forward = (vec3){1.0f, 0.0f, 0.0f};
     camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(camera->forward, camera->up));
-    camera->transform.position = (vec3){-3.0f, 0.0f, 0.0f};
+    camera->position = (vec3){-3.0f, 0.0f, 0.0f};
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     expected = cstrl_mat4_identity();
     expected = (mat4){0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, -3.0f, 0.0f, 0.0f, 1.0f};
@@ -173,20 +167,14 @@ int test_cstrl_mat4_affine_inverse()
     expect_float_to_be(expected.ww, result.ww);
 
     cstrl_camera *camera = cstrl_camera_create(800, 600, true);
-    camera->transform.position = (vec3){0.0f, 5.0f, 5.0f};
-    camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(camera->transform.position));
+    camera->position = (vec3){0.0f, 5.0f, 5.0f};
+    camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(camera->position));
     camera->right = cstrl_vec3_cross(camera->forward, camera->up);
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     expected = (mat4){1.0f, 0.0f,     0.0f,     0.0f, 0.0f, 0.707107, -0.707107, 0.0f,
                       0.0f, 0.707107, 0.707107, 0.0f, 0.0f, 5.0f,     5.0f,      1.0f};
     result = cstrl_mat4_affine_inverse(camera->view);
     cstrl_camera_free(camera);
-
-    for (int i = 0; i < 4; i++)
-    {
-        printf("view: %f, %f, %f, %f\n", camera->view.m[i * 4], camera->view.m[i * 4 + 1], camera->view.m[i * 4 + 2],
-               camera->view.m[i * 4 + 3]);
-    }
 
     expect_float_to_be(expected.xx, result.xx);
     expect_float_to_be(expected.xy, result.xy);
@@ -239,8 +227,8 @@ int test_cstrl_mat4_affine_inverse()
 
 int test_cstrl_mat4_perspective()
 {
-    mat4 expected = {1.810660, 0.0f, 0.0f,          0.0f,     0.0f, 2.414213f, 0.0f,  0.0f,
-                     0.0f,     0.0f, -1.002002002f, -0.2002f, 0.0f, 0.0f,      -1.0f, 0.0f};
+    mat4 expected = {1.810660, 0.0f, 0.0f,          0.0f,  0.0f, 2.414213f, 0.0f,     0.0f,
+                     0.0f,     0.0f, -1.002002002f, -1.0f, 0.0f, 0.0f,      -0.2002f, 0.0f};
     mat4 result = cstrl_mat4_perspective(cstrl_pi_4, 800.0f / 600.0f, 0.1f, 100.0f);
 
     expect_float_to_be(expected.xx, result.xx);
@@ -272,12 +260,6 @@ int test_cstrl_mat4_look_at()
     vec3 forward = {1.0f, 0.0f, 0.0f};
     vec3 up = {0.0f, 1.0f, 0.0f};
     mat4 result = cstrl_mat4_look_at(eye, cstrl_vec3_add(eye, forward), up);
-
-    for (int i = 0; i < 4; i++)
-    {
-        printf("result: %f, %f, %f, %f\n", result.m[i * 4], result.m[i * 4 + 1], result.m[i * 4 + 2],
-               result.m[i * 4 + 3]);
-    }
 
     return 1;
 }

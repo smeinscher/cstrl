@@ -162,15 +162,15 @@ void camera_tests()
 
 int run_unit_tests()
 {
-    // vec2_tests();
-    // vec3_tests();
-    // vec4_tests();
-    // quat_tests();
-    // mat3_tests();
+    vec2_tests();
+    vec3_tests();
+    vec4_tests();
+    quat_tests();
+    mat3_tests();
     mat4_tests();
-    // dynamic_int_array_tests();
+    dynamic_int_array_tests();
 
-    // camera_tests();
+    camera_tests();
 
     test_manager_log_total_failed_tests();
 

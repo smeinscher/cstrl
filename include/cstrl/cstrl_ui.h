@@ -33,9 +33,6 @@ CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int obj
 
 CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale);
 
-CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
-                   cstrl_ui_text_alignment alignment);
-
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
                               int h, int id, bool is_static, int order_priority);
 
@@ -43,6 +40,9 @@ CSTRL_API void cstrl_ui_container_end(cstrl_ui_context *context);
 
 CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h,
                      int id);
+
+CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
+                   int id, cstrl_ui_text_alignment alignment);
 
 CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x, int y,
                          int w, int h, int id, char *buffer, size_t buffer_size);

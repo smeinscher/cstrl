@@ -107,8 +107,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
         if (action == CSTRL_ACTION_PRESS)
         {
             g_main_camera->forward = (vec3){0.0f, 0.0f, -1.0f};
-            g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
-            g_main_camera->transform.rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
+            g_main_camera->position = (vec3){0.0f, 0.0f, 5.0f};
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
@@ -205,7 +204,7 @@ int learnopengl()
     cstrl_renderer_add_positions(light_render_data, vertices, 3, 36);
 
     g_main_camera = cstrl_camera_create(800, 600, false);
-    g_main_camera->transform.position = (vec3){0.0f, 0.0f, 5.0f};
+    g_main_camera->position = (vec3){0.0f, 0.0f, 5.0f};
     cstrl_shader color_shader = cstrl_load_shaders_from_files("resources/shaders/learnopengl/colors.vert",
                                                               "resources/shaders/learnopengl/colors.frag");
     cstrl_shader light_shader = cstrl_load_shaders_from_files("resources/shaders/learnopengl/light_cube.vert",
@@ -246,8 +245,8 @@ int learnopengl()
         cstrl_set_uniform_mat4(color_shader.program, "model", cstrl_mat4_identity());
         cstrl_set_uniform_mat4(color_shader.program, "view", g_main_camera->view);
         cstrl_set_uniform_mat4(color_shader.program, "projection", g_main_camera->projection);
-        cstrl_set_uniform_3f(color_shader.program, "view_position", g_main_camera->transform.position.x,
-                             g_main_camera->transform.position.y, g_main_camera->transform.position.z);
+        cstrl_set_uniform_3f(color_shader.program, "view_position", g_main_camera->position.x,
+                             g_main_camera->position.y, g_main_camera->position.z);
         cstrl_set_uniform_3f(color_shader.program, "light.position", light_position.x, light_position.y,
                              light_position.z);
         cstrl_set_uniform_3f(color_shader.program, "light.ambient", 0.2f, 0.2f, 0.2f);

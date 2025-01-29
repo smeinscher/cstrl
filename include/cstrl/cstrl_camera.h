@@ -13,12 +13,12 @@ typedef struct cstrl_camera
     bool is_orthographic;
     float fov;
     vec2i viewport;
+    vec3 position;
     vec3 forward;
     vec3 up;
     vec3 right;
     mat4 view;
     mat4 projection;
-    transform transform;
 } cstrl_camera;
 
 typedef enum cstrl_camera_direction_mask
