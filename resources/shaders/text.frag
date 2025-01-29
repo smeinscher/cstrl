@@ -1,6 +1,6 @@
 #version 460 core
 
-out vec4 FragColor;
+out vec4 frag_color;
 
 in vec2 uv;
 
@@ -10,5 +10,6 @@ uniform vec4 text_color;
 void main()
 {
     vec4 sampled = vec4(1.0, 1.0, 1.0, texture(text, uv).r);
-    FragColor = text_color * sampled;
+    frag_color = text_color * sampled;
 }
+
