@@ -14,9 +14,36 @@ static cstrl_camera_direction_mask g_movement;
 static cstrl_camera_direction_mask g_rotation;
 static cstrl_platform_state g_platform_state;
 
-static vec3 g_unit_position = {0.0f, 0.0f, 1.05f};
-static const vec3 UNIT_SIZE = {0.2f, 0.2f, 0.0f};
+static int g_mouse_position_x = -1;
+static int g_mouse_position_y = -1;
+static int g_last_x = -1;
+static int g_last_y = -1;
+static float g_rotation_speed = 0.0004f;
+static bool g_moving_planet = false;
+
+static vec3 g_unit_position = {0.0f, 0.0f, 1.025f};
+static const vec3 UNIT_SIZE = {0.075f, 0.075f, 0.0f};
 static quat g_unit_rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
+static vec3 g_planet_position = (vec3){0.0f, 0.0f, 0.0f};
+static const vec3 PLANET_SIZE = (vec3){2.0f, 2.0f, 2.0f};
+static bool g_is_unit_moving = false;
+static float g_unit_progress = 0.0f;
+static vec3 g_unit_start_position;
+static vec3 g_unit_end_position;
+
+static vec3 get_point_on_path(vec3 start_position, vec3 end_position, float t)
+{
+    vec3 current = cstrl_vec3_normalize(cstrl_vec3_sub(start_position, g_planet_position));
+    vec3 desired = cstrl_vec3_normalize(cstrl_vec3_sub(end_position, g_planet_position));
+    float rotation_angle = acosf(cstrl_vec3_dot(current, desired));
+    vec3 rotation_axis = cstrl_vec3_normalize(cstrl_vec3_cross(current, desired));
+    quat rotation = cstrl_quat_angle_axis(rotation_angle * t, rotation_axis);
+    float length = cstrl_vec3_length(cstrl_vec3_sub(end_position, g_planet_position));
+    vec3 position = cstrl_vec3_mult_scalar(cstrl_vec3_rotate_by_quat(current, rotation), length);
+    position = cstrl_vec3_add(position, g_planet_position);
+
+    return position;
+}
 
 static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -114,6 +141,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_main_camera->position = (vec3){-3.0f, 0.0f, 0.0f};
             g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            cstrl_camera_update(g_main_camera, g_movement, g_rotation);
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
@@ -125,6 +153,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_main_camera->position = (vec3){0.0f, 0.0f, -3.0f};
             g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            cstrl_camera_update(g_main_camera, g_movement, g_rotation);
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
@@ -136,6 +165,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_main_camera->position = (vec3){3.0f, 0.0f, 0.0f};
             g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            cstrl_camera_update(g_main_camera, g_movement, g_rotation);
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
@@ -148,6 +178,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_main_camera->position = (vec3){0.0f, 0.0f, 3.0f};
             g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            cstrl_camera_update(g_main_camera, g_movement, g_rotation);
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
@@ -173,73 +204,46 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     }
 }
 
-static int mouse_position_x = -1;
-static int mouse_position_y = -1;
-static int last_x = -1;
-static int last_y = -1;
-static float rotation_speed = 0.0004f;
-static float y_angle = 0.0f;
-static float z_angle = 0.0f;
-static bool moving_planet = false;
-
 static void mouse_position_callback(cstrl_platform_state *state, int xpos, int ypos)
 {
-    mouse_position_x = xpos;
-    mouse_position_y = ypos;
+    g_mouse_position_x = xpos;
+    g_mouse_position_y = ypos;
 
-    if (!moving_planet)
+    if (!g_moving_planet)
     {
         return;
     }
-    if (last_x == -1 || last_y == -1)
+    if (g_last_x == -1 || g_last_y == -1)
     {
-        last_x = xpos;
-        last_y = ypos;
+        g_last_x = xpos;
+        g_last_y = ypos;
         return;
     }
 
-    float y_angle_change = ((float)xpos - (float)last_x) * 0.004f;
-    float z_angle_change = ((float)ypos - (float)last_y) * 0.004f;
-    if (y_angle >= 2.0f * cstrl_pi)
-    {
-        y_angle = 0.0f;
-    }
-    if (y_angle <= -2.0f * cstrl_pi)
-    {
-        y_angle = 2.0f * cstrl_pi;
-    }
-    if (z_angle >= cstrl_pi / 4.0f)
+    float y_angle_change = ((float)xpos - (float)g_last_x) * 0.004f;
+    float z_angle_change = ((float)ypos - (float)g_last_y) * 0.004f;
+    float dot_forward_up = cstrl_vec3_dot(g_main_camera->forward, g_main_camera->up);
+    if (dot_forward_up <= -0.8f)
     {
         z_angle_change = cstrl_min(z_angle_change, 0.0f);
     }
-    if (z_angle <= -cstrl_pi / 4.0f)
+    if (dot_forward_up >= 0.8f)
     {
         z_angle_change = cstrl_max(z_angle_change, 0.0f);
     }
-    y_angle += y_angle_change;
-    z_angle += z_angle_change;
 
-    last_x = xpos;
-    last_y = ypos;
+    g_last_x = xpos;
+    g_last_y = ypos;
 
-    mat4 up_yaw_matrix = cstrl_mat4_identity();
-    up_yaw_matrix = cstrl_mat4_rotate(up_yaw_matrix, -y_angle_change, g_main_camera->up);
-    mat4 right_pitch_matrix = cstrl_mat4_identity();
-    right_pitch_matrix = cstrl_mat4_rotate(right_pitch_matrix, -z_angle_change, g_main_camera->right);
-    vec4 position_vec4 = (vec4){g_main_camera->position.x, g_main_camera->position.y, g_main_camera->position.z, 1.0f};
-    vec4 camera_focus_vector = cstrl_vec4_mult_mat4(position_vec4, cstrl_mat4_mult(up_yaw_matrix, right_pitch_matrix));
-    g_main_camera->position = (vec3){camera_focus_vector.x, camera_focus_vector.y, camera_focus_vector.z};
-    g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
-    g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
-    cstrl_camera_update(g_main_camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
+    cstrl_camera_rotate_around_point(g_main_camera, g_planet_position, y_angle_change, z_angle_change);
 }
 
 static vec3 mouse_click_ray_cast()
 {
     int width, height;
     cstrl_platform_get_window_size(&g_platform_state, &width, &height);
-    float x = (2.0f * mouse_position_x) / (float)width - 1.0f;
-    float y = 1.0f - (2.0f * mouse_position_y) / (float)height;
+    float x = (2.0f * g_mouse_position_x) / (float)width - 1.0f;
+    float y = 1.0f - (2.0f * g_mouse_position_y) / (float)height;
 
     vec4 ray_clip = {x, y, -1.0f, 1.0f};
     vec4 ray_eye = cstrl_vec4_mult_mat4(ray_clip, cstrl_mat4_inverse(g_main_camera->projection));
@@ -256,13 +260,13 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
     {
         if (action == CSTRL_ACTION_PRESS)
         {
-            moving_planet = true;
+            g_moving_planet = true;
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            moving_planet = false;
-            last_x = -1;
-            last_y = -1;
+            g_moving_planet = false;
+            g_last_x = -1;
+            g_last_y = -1;
         }
     }
     if (button == CSTRL_MOUSE_BUTTON_RIGHT)
@@ -270,6 +274,7 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
         if (action == CSTRL_ACTION_PRESS)
         {
             vec3 d = mouse_click_ray_cast();
+            printf("d: %f, %f, %f\n", d.x, d.y, d.z);
 
             vec3 l = g_main_camera->position;
             float b = cstrl_vec3_dot(d, l);
@@ -278,11 +283,14 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
             if (powf(b, 2.0) - c >= 0.0f)
             {
                 float t = -b - sqrtf(powf(b, 2.0f) - c);
-                g_unit_position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
-                g_unit_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(g_unit_position), 1.025f);
-                g_unit_rotation =
-                    cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
-                vec3 euler = cstrl_quat_to_euler_angles(g_unit_rotation);
+                g_unit_end_position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
+                g_unit_end_position =
+                    cstrl_vec3_mult_scalar(cstrl_vec3_normalize(g_unit_end_position), 1.0f + UNIT_SIZE.x * 0.5f);
+                g_unit_progress = 0.0f;
+                g_unit_start_position = g_unit_position;
+                g_is_unit_moving = true;
+                /*g_unit_rotation =*/
+                /*    cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));*/
             }
         }
     }
@@ -290,18 +298,18 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
 
 static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 size)
 {
-    float x0 = -size.x;
-    float x1 = size.x;
-    float y0 = -size.y;
-    float y1 = size.y;
-    float z = size.z;
+    float x0 = -0.5f;
+    float x1 = 0.5f;
+    float y0 = -0.5f;
+    float y1 = 0.5f;
+    float z = 0.0f;
 
     vec3 point0 = cstrl_vec3_mult((vec3){x0, y0, z}, size);
     vec3 point1 = cstrl_vec3_mult((vec3){x1, y0, z}, size);
     vec3 point2 = cstrl_vec3_mult((vec3){x1, y1, z}, size);
     vec3 point3 = cstrl_vec3_mult((vec3){x0, y1, z}, size);
 
-    quat unit_rotation_conjugate = cstrl_quat_inverse(g_unit_rotation);
+    quat unit_rotation_conjugate = cstrl_quat_conjugate(g_unit_rotation);
     quat point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point0.x, point0.y, point0.z}),
                                       unit_rotation_conjugate);
     point0 = cstrl_quat_xyz(point_quat);
@@ -519,6 +527,19 @@ int planet()
         while (lag >= 1.0 / 60.0)
         {
             cstrl_camera_update(g_main_camera, g_movement, g_rotation);
+            if (g_is_unit_moving)
+            {
+                g_unit_progress +=
+                    0.0025f / cstrl_vec3_length(cstrl_vec3_sub(g_unit_end_position, g_unit_start_position));
+                if (g_unit_progress < 1.0f)
+                {
+                    g_unit_position = get_point_on_path(g_unit_start_position, g_unit_end_position, g_unit_progress);
+                }
+                else
+                {
+                    g_is_unit_moving = false;
+                }
+            }
             g_unit_rotation =
                 cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
             update_billboard_position(&unit_positions, 0, g_unit_position, UNIT_SIZE);
@@ -556,9 +577,8 @@ int planet()
             char buffer[64];
             char title[64];
             vec3 euler = cstrl_quat_to_euler_angles(g_unit_rotation);
-            sprintf(title, "%5.4f, %5.4f, %5.4f", euler.x * cstrl_180_pi, euler.y * cstrl_180_pi,
-                    euler.z * cstrl_180_pi);
-            if (cstrl_ui_text(context, title, 36, 0, 50, 300, 50, GEN_ID(0), CSTRL_UI_TEXT_ALIGN_LEFT))
+            sprintf(title, "%2.5f", g_unit_progress);
+            if (cstrl_ui_text(context, title, 10, 0, 50, 300, 50, GEN_ID(0), CSTRL_UI_TEXT_ALIGN_LEFT))
             {
             }
             cstrl_ui_container_end(context);

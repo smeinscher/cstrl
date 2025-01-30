@@ -532,14 +532,48 @@ CSTRL_INLINE mat3 cstrl_mat3_inverse(mat3 m)
 // TODO: add to unit tests
 CSTRL_INLINE quat cstrl_mat3_orthogonal_to_quat(mat3 m)
 {
+    quat q;
     float t = m.xx + m.yy + m.zz;
-    float r = sqrtf(1.0f + t);
-    float s = 1.0f / (2.0f * r);
-    float w = r * 0.5f;
-    float x = (m.zy - m.yz) * s;
-    float y = (m.xz - m.zx) * s;
-    float z = (m.yx - m.xy) * s;
-    return (quat){w, x, y, z};
+    if (fabsf(1.0f + t) > cstrl_epsilon)
+    {
+        float r = sqrtf(1.0f + t);
+        float s = 1.0f / (2.0f * r);
+        q.w = r * 0.5f;
+        q.x = (m.zy - m.yz) * s;
+        q.y = (m.xz - m.zx) * s;
+        q.z = (m.yx - m.xy) * s;
+    }
+    else
+    {
+        if (m.xx > m.yy && m.xx > m.zz)
+        {
+            float r = sqrtf(1 + m.xx - m.yy - m.zz);
+            float s = 1.0f / (2.0f * r);
+            q.w = (m.zy - m.yz) * s;
+            q.x = r * 0.5f;
+            q.y = (m.yx + m.xy) * s;
+            q.z = (m.xz + m.zx) * s;
+        }
+        else if (m.yy > m.xx && m.yy > m.zz)
+        {
+            float r = sqrtf(1 + m.yy - m.xx - m.zz);
+            float s = 1.0f / (2.0f * r);
+            q.w = (m.xz - m.zx) * s;
+            q.x = (m.xy - m.yx);
+            q.y = r * 0.5f;
+            q.z = (m.zy - m.yz) * s;
+        }
+        else
+        {
+            float r = sqrtf(1 + m.zz - m.xx - m.yy);
+            float s = 1.0f / (2.0f * r);
+            q.w = (m.yx - m.xy) * s;
+            q.x = (m.xz + m.zx) * s;
+            q.y = (m.zy + m.yz) * s;
+            q.z = r * 0.5f;
+        }
+    }
+    return q;
 }
 
 /*
@@ -832,10 +866,9 @@ CSTRL_INLINE mat4 cstrl_mat4_inverse_glm(mat4 m)
     vec4 inverse_z = cstrl_vec4_mult(inv2, sign_a);
     vec4 inverse_w = cstrl_vec4_mult(inv3, sign_b);
 
-    mat4 inverse = (mat4){inverse_x.x, inverse_x.y, inverse_x.z, inverse_x.w,
-                          inverse_y.x, inverse_y.y, inverse_y.z, inverse_y.w,
-                          inverse_z.x, inverse_z.y, inverse_z.z, inverse_z.w,
-                          inverse_w.x, inverse_w.y, inverse_w.z, inverse_w.w};
+    mat4 inverse =
+        (mat4){inverse_x.x, inverse_x.y, inverse_x.z, inverse_x.w, inverse_y.x, inverse_y.y, inverse_y.z, inverse_y.w,
+               inverse_z.x, inverse_z.y, inverse_z.z, inverse_z.w, inverse_w.x, inverse_w.y, inverse_w.z, inverse_w.w};
 
     vec4 row0 = {inverse.xx, inverse.xy, inverse.xz, inverse.xw};
 

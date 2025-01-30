@@ -1,5 +1,6 @@
 #include "test_mat3.h"
 #include "../../test_manager/test_types.h"
+#include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_math.h"
 
 int test_cstrl_mat3_inverse()
@@ -67,6 +68,19 @@ int test_cstrl_mat3_adjugate()
     expect_float_to_be(expected.zx, result.zx);
     expect_float_to_be(expected.zy, result.zy);
     expect_float_to_be(expected.zz, result.zz);
+
+    return 1;
+}
+
+int test_cstrl_mat3_orthogonal_to_quat()
+{
+    cstrl_camera *camera = cstrl_camera_create(800, 600, false);
+
+    camera->forward = (vec3){0.0f, 0.0f, -3.0f};
+    camera->right = cstrl_vec3_cross(camera->forward, camera->up);
+    cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
+    quat result = cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(camera->view));
+    printf("result: %f, %f, %f, %f\n", result.w, result.x, result.y, result.z);
 
     return 1;
 }

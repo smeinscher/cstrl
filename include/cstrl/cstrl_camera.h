@@ -43,4 +43,8 @@ CSTRL_API void cstrl_camera_first_person_rotate(cstrl_camera *camera, float chan
 
 CSTRL_API void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation);
 
+CSTRL_API void cstrl_camera_rotate_around_point(cstrl_camera *camera, vec3 point, float vertical_angle_change, float horizontal_angle_change);
+
+CSTRL_API quat cstrl_camera_get_rotation(cstrl_camera *camera);
+
 #endif // CSTRL_CAMERA_H

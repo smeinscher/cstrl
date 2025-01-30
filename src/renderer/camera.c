@@ -3,6 +3,7 @@
 //
 
 #include "cstrl/cstrl_camera.h"
+#include "cstrl/cstrl_math.h"
 
 #include <stdlib.h>
 
@@ -112,4 +113,26 @@ CSTRL_API void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation)
 {
     camera->forward = cstrl_vec3_rotate_by_quat(camera->forward, rotation);
     camera->forward = cstrl_vec3_normalize(camera->forward);
+}
+
+CSTRL_API void cstrl_camera_rotate_around_point(cstrl_camera *camera, vec3 point, float vertical_angle_change,
+                                                float horizontal_angle_change)
+{
+    vec3 camera_focus = cstrl_vec3_sub(camera->position, point);
+    mat4 up_yaw_matrix = cstrl_mat4_identity();
+    up_yaw_matrix = cstrl_mat4_rotate(up_yaw_matrix, -vertical_angle_change, camera->up);
+    mat4 right_pitch_matrix = cstrl_mat4_identity();
+    right_pitch_matrix = cstrl_mat4_rotate(right_pitch_matrix, -horizontal_angle_change, camera->right);
+    vec4 position_vec4 = (vec4){camera->position.x, camera->position.y, camera->position.z, 1.0f};
+    camera_focus =
+        cstrl_vec4_to_vec3(cstrl_vec4_mult_mat4(position_vec4, cstrl_mat4_mult(up_yaw_matrix, right_pitch_matrix)));
+    camera->position = cstrl_vec3_add(point, camera_focus);
+    camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(camera->position));
+    camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(camera->forward, camera->up));
+    cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
+}
+
+CSTRL_API quat cstrl_camera_get_rotation(cstrl_camera *camera)
+{
+    return cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(camera->view));
 }

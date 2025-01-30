@@ -99,6 +99,8 @@ void quat_tests()
                           "Test if correctly convertes quaternion to 4 by 4 matrix");
     test_manager_add_test(test_suite, test_cstrl_quat_from_euler_angles, "quat From Euler Angles",
                           "Test if correctly converts euler angles to quaternion");
+    test_manager_add_test(test_suite, test_cstrl_mat3_orthogonal_to_quat, "quat from mat3",
+                          "Test if correctly converts matrix 3x3 to quaternion");
     test_manager_run_tests(test_suite);
     test_manager_log_results(test_suite);
 }
