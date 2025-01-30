@@ -42,7 +42,7 @@ bool formations_init(formations_t *formations)
     return true;
 }
 
-bool formations_add(formations_t *formations, int *unit_ids)
+int formations_add(formations_t *formations, int *unit_ids)
 {
     int new_id = 0;
     if (formations->free_ids.size == 0)
@@ -54,22 +54,22 @@ bool formations_add(formations_t *formations, int *unit_ids)
             if (!cstrl_realloc_bool(&formations->moving, formations->capacity))
             {
                 printf("Error allocating formation moving\n");
-                return false;
+                return -1;
             }
             if (!cstrl_realloc_bool(&formations->active, formations->capacity))
             {
                 printf("Error allocating formation active\n");
-                return false;
+                return -1;
             }
             if (!cstrl_realloc_da_int(&formations->path_ids, formations->capacity))
             {
                 printf("Error allocating formation path_ids\n");
-                return false;
+                return -1;
             }
             if (!cstrl_realloc_da_int(&formations->unit_ids, formations->capacity))
             {
                 printf("Error allocating formation unit_ids\n");
-                return false;
+                return -1;
             }
         }
     }
@@ -81,7 +81,9 @@ bool formations_add(formations_t *formations, int *unit_ids)
     formations->active[new_id] = true;
     cstrl_da_int_init(&formations->path_ids[new_id], 1);
     cstrl_da_int_init(&formations->unit_ids[new_id], 1);
-    return true;
+    // TODO: go through list
+    cstrl_da_int_push_back(&formations->unit_ids[new_id], unit_ids[0]);
+    return new_id;
 }
 
 void formations_remove(formations_t *formations, int formation_id)

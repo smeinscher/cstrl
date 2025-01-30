@@ -94,6 +94,7 @@ CSTRL_API void cstrl_renderer_free_render_data(cstrl_render_data *render_data)
     free(internal_data->uvs);
     free(internal_data->colors);
     free(internal_data->normals);
+    free(internal_data->indices);
     free(render_data->internal_data);
     free(render_data);
 }

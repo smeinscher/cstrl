@@ -20,15 +20,16 @@ typedef struct units_t
 {
     size_t count;
     size_t capacity;
-    transform *transforms;
-    team_t *teams;
+    vec3 *positions;
+    int *teams;
     bool *active;
+    int *formation_ids;
     da_int free_ids;
 } units_t;
 
 bool units_init(units_t *units);
 
-bool units_add(units_t *units, transform transform, team_t team);
+bool units_add(units_t *units, vec3 positions, team_t team);
 
 void units_remove(units_t *units, int unit_id);
 

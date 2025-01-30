@@ -33,7 +33,7 @@ typedef struct players_t
 
 static units_t g_units;
 static formations_t g_formations;
-static int g_human_selected_formation;
+static int g_human_selected_formation = 0;
 static paths_t g_paths;
 static players_t g_players;
 
@@ -293,12 +293,36 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
                 float t = -b - sqrtf(powf(b, 2.0f) - c);
                 vec3 end_position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
                 end_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(end_position), 1.0f + UNIT_SIZE.x * 0.5f);
-                vec3 start_position =
-                    g_units.transforms[g_formations.unit_ids[g_human_selected_formation].array[0]].position;
+                vec3 start_position;
+                bool path_active = true;
+                if (g_formations.count < 1)
+                {
+                    // TODO: get a selection of unit ids
+                    int unit_id = 0;
+                    int formation_id = formations_add(&g_formations, &unit_id);
+                    g_human_selected_formation = formation_id;
+                    start_position = g_units.positions[unit_id];
+                    g_units.formation_ids[unit_id] = formation_id;
+                }
+                else
+                {
+                    if (g_formations.path_ids[g_human_selected_formation].size > 0)
+                    {
+                        int last_path_index = g_formations.path_ids[g_human_selected_formation].size - 1;
+                        int last_path_id = g_formations.path_ids[g_human_selected_formation].array[last_path_index];
+                        start_position = g_paths.end_positions[last_path_id];
+                        path_active = false;
+                    }
+                    else
+                    {
+                        start_position = g_units.positions[g_formations.unit_ids[g_human_selected_formation].array[0]];
+                    }
+                }
                 int new_id = paths_add(&g_paths, start_position, end_position);
                 if (new_id != -1)
                 {
                     formations_add_path(&g_formations, g_human_selected_formation, new_id);
+                    g_paths.active[new_id] = path_active;
                 }
             }
         }
@@ -312,7 +336,7 @@ static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 position, ve
     float x1 = 0.5f;
     float y0 = -0.5f;
     float y1 = 0.5f;
-    float z = 1.0f + UNIT_SIZE.x / 2.0f;
+    float z = 1.0f + UNIT_SIZE.x * 0.5f;
 
     vec3 point0 = cstrl_vec3_mult((vec3){x0, y0, z}, size);
     vec3 point1 = cstrl_vec3_mult((vec3){x1, y0, z}, size);
@@ -409,10 +433,6 @@ int planet()
     cstrl_platform_set_mouse_button_callback(&g_platform_state, mouse_button_callback);
     cstrl_renderer_init(&g_platform_state);
 
-    units_init(&g_units);
-    formations_init(&g_formations);
-    paths_init(&g_paths);
-
     cstrl_render_data *planet_render_data = cstrl_renderer_create_render_data();
     float planet_positions[19 * 37 * 3];
     float planet_normals[19 * 37 * 3];
@@ -423,7 +443,7 @@ int planet()
     float longitude_step = 2.0f * cstrl_pi / 36.0f;
     for (int i = 0; i <= 18; i++)
     {
-        float latitude_angle = cstrl_pi / 2.0f - (float)i * latitude_step;
+        float latitude_angle = cstrl_pi * 0.5f - (float)i * latitude_step;
         float xy = cosf(latitude_angle);
         float z = sinf(latitude_angle);
         for (int j = 0; j <= 36; j++)
@@ -488,6 +508,12 @@ int planet()
 
     cstrl_texture planet_texture = cstrl_texture_generate_from_path("resources/textures/moon1024.bmp");
 
+    units_init(&g_units);
+    formations_init(&g_formations);
+    paths_init(&g_paths);
+
+    units_add(&g_units, (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, GREEN);
+
     cstrl_render_data *unit_render_data = cstrl_renderer_create_render_data();
     da_float unit_positions;
     cstrl_da_float_init(&unit_positions, 12);
@@ -497,8 +523,8 @@ int planet()
     cstrl_da_float_init(&unit_uvs, 8);
     da_float unit_colors;
     cstrl_da_float_init(&unit_colors, 16);
-    add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, (vec3){0.0f, 0.0f, 1.0375f},
-                         UNIT_SIZE, (quat){1.0f, 0.0f, 0.0f, 0.0f}, (vec4){0.0f, 1.0f, 0.0f, 1.0f});
+    add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, g_units.positions[0], UNIT_SIZE,
+                         (quat){1.0f, 0.0f, 0.0f, 0.0f}, (vec4){0.0f, 1.0f, 0.0f, 1.0f});
     cstrl_renderer_add_positions(unit_render_data, unit_positions.array, 3, 4);
     cstrl_renderer_add_indices(unit_render_data, unit_indices.array, 6);
     cstrl_renderer_add_uvs(unit_render_data, unit_uvs.array);
@@ -535,18 +561,33 @@ int planet()
             paths_update(&g_paths);
             quat unit_rotation =
                 cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
-            for (int i = 0; i < g_formations.unit_ids[g_human_selected_formation].size; i++)
+            for (int i = 0; i < g_units.count; i++)
             {
-                int id = g_formations.unit_ids[g_human_selected_formation].array[i];
-                int path_id = g_formations.path_ids[g_human_selected_formation].array[0];
-                vec3 start_position = g_paths.start_positions[path_id];
-                vec3 end_position = g_paths.end_positions[path_id];
-                float t = g_paths.progress[path_id];
-                g_units.transforms[id].position = get_point_on_path(start_position, end_position, t);
-                update_billboard_position(&unit_positions, 0, g_units.transforms[id].position, UNIT_SIZE,
-                                          unit_rotation);
+                if (g_units.formation_ids[i] != -1)
+                {
+                    if (g_formations.path_ids[g_units.formation_ids[i]].size > 0)
+                    {
+                        int path_id = g_formations.path_ids[g_units.formation_ids[i]].array[0];
+                        if (g_paths.completed[path_id])
+                        {
+                            formations_remove_path(&g_formations, g_units.formation_ids[i], path_id);
+                            paths_remove(&g_paths, path_id);
+                            if (g_formations.path_ids[g_units.formation_ids[i]].size > 0)
+                            {
+                                g_paths.active[g_formations.path_ids[g_units.formation_ids[i]].array[0]] = true;
+                            }
+                        }
+                        else
+                        {
+                            vec3 start_position = g_paths.start_positions[path_id];
+                            vec3 end_position = g_paths.end_positions[path_id];
+                            g_units.positions[i] =
+                                get_point_on_path(start_position, end_position, g_paths.progress[path_id]);
+                        }
+                    }
+                }
+                update_billboard_position(&unit_positions, 0, g_units.positions[i], UNIT_SIZE, unit_rotation);
             }
-
             cstrl_renderer_modify_positions(unit_render_data, unit_positions.array, 0, 12);
             lag -= 1.0 / 60.0;
             light_start_x += 0.001f;
@@ -580,10 +621,11 @@ int planet()
         {
             char buffer[64];
             char title[64];
-            vec3 euler = cstrl_quat_to_euler_angles(g_unit_rotation);
-            sprintf(title, "%2.5f", g_unit_progress);
-            if (cstrl_ui_text(context, title, 10, 0, 50, 300, 50, GEN_ID(0), CSTRL_UI_TEXT_ALIGN_LEFT))
+            if (g_units.count > 0)
             {
+                if (cstrl_ui_text(context, "Placeholder", 11, 0, 50, 300, 50, GEN_ID(0), CSTRL_UI_TEXT_ALIGN_LEFT))
+                {
+                }
             }
             cstrl_ui_container_end(context);
         }
@@ -591,8 +633,18 @@ int planet()
         cstrl_renderer_swap_buffers(&g_platform_state);
     }
 
+    units_free(&g_units);
+    formations_free(&g_formations);
+    paths_free(&g_paths);
+
+    cstrl_da_float_free(&unit_positions);
+    cstrl_da_float_free(&unit_uvs);
+    cstrl_da_float_free(&unit_colors);
+    cstrl_da_int_free(&unit_indices);
+
     cstrl_camera_free(g_main_camera);
     cstrl_renderer_free_render_data(planet_render_data);
+    cstrl_renderer_free_render_data(unit_render_data);
     cstrl_ui_shutdown(context);
     cstrl_renderer_shutdown(&g_platform_state);
     cstrl_platform_shutdown(&g_platform_state);

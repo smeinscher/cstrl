@@ -96,7 +96,7 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position)
     paths->end_positions[new_id] = end_position;
     paths->progress[new_id] = 0.0f;
     paths->completed[new_id] = false;
-    paths->active[new_id] = true;
+    paths->active[new_id] = false;
 
     return new_id;
 }
@@ -127,16 +127,17 @@ void paths_update(paths_t *paths)
 {
     for (int i = 0; i < paths->count; i++)
     {
-        // TODO: replace 0.0025f with speed variable
-        if (!paths->active[i])
+        if (!paths->active[i] || paths->completed[i])
         {
             continue;
         }
+        // TODO: replace 0.0025f with speed variable
         paths->progress[i] +=
             0.0025f / cstrl_vec3_length(cstrl_vec3_sub(paths->end_positions[i], paths->start_positions[i]));
         if (paths->progress[i] >= 1.0f)
         {
             paths->completed[i] = true;
+            paths->progress[i] = 0.0f;
         }
     }
 }

@@ -130,6 +130,14 @@ add_executable(cstrl-sandbox
         sandbox/pong/pong.h
         sandbox/planet/planet.c
         sandbox/planet/planet.h
+        sandbox/planet/game/formation.c
+        sandbox/planet/game/formation.h
+        sandbox/planet/game/paths.c
+        sandbox/planet/game/paths.h
+        sandbox/planet/game/players.c
+        sandbox/planet/game/players.h
+        sandbox/planet/game/units.c
+        sandbox/planet/game/units.h
 )
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
