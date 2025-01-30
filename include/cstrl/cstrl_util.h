@@ -5,6 +5,7 @@
 #ifndef CSTRL_UTIL_H
 #define CSTRL_UTIL_H
 
+#include "cstrl/cstrl_math.h"
 #include "cstrl_defines.h"
 #include "cstrl_types.h"
 
@@ -52,6 +53,8 @@ CSTRL_API void cstrl_string_remove(string *str, int index);
 
 CSTRL_API void cstrl_da_string_remove(da_string *da, int index);
 
+CSTRL_API int cstrl_da_int_find_first(da_int *da, int value);
+
 CSTRL_API int cstrl_da_int_pop_back(da_int *da);
 
 CSTRL_API float cstrl_da_float_pop_back(da_float *da);
@@ -96,10 +99,18 @@ CSTRL_API int cstrl_copy_file(const char *file_path, const char *output_file_pat
 
 CSTRL_API time_t cstrl_get_file_timestamp(const char *path);
 
-CSTRL_API void cstrl_realloc_int(int **int_ptr, size_t size);
+CSTRL_API bool cstrl_realloc_int(int **int_ptr, size_t size);
 
-CSTRL_API void cstrl_realloc_float(float **float_ptr, size_t size);
+CSTRL_API bool cstrl_realloc_float(float **float_ptr, size_t size);
 
-CSTRL_API void cstrl_realloc_string(string **str_ptr, size_t size);
+CSTRL_API bool cstrl_realloc_string(string **str_ptr, size_t size);
+
+CSTRL_API bool cstrl_realloc_transform(transform **trans_ptr, size_t size);
+
+CSTRL_API bool cstrl_realloc_vec3(vec3 **vec3_ptr, size_t size);
+
+CSTRL_API bool cstrl_realloc_bool(bool **bool_ptr, size_t size);
+
+CSTRL_API bool cstrl_realloc_da_int(da_int **da_int_ptr, size_t size);
 
 #endif // CSTRL_UTIL_H

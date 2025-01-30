@@ -7,21 +7,21 @@
 
 #include <stddef.h>
 
-typedef struct da_int
+typedef struct dynamic_array_int
 {
     int *array;
     size_t size;
     size_t capacity;
 } da_int;
 
-typedef struct da_float
+typedef struct dynamic_array_float
 {
     float *array;
     size_t size;
     size_t capacity;
 } da_float;
 
-typedef struct da_char
+typedef struct dynamic_array_char
 {
     char *array;
     size_t size;
@@ -30,7 +30,7 @@ typedef struct da_char
 
 typedef da_char string;
 
-typedef struct da_string
+typedef struct dynamic_array_string
 {
     string *array;
     size_t size;

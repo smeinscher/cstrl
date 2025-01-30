@@ -6,6 +6,9 @@
 #include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_ui.h"
 #include "cstrl/cstrl_util.h"
+#include "game/formation.h"
+#include "game/paths.h"
+#include "game/units.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -21,15 +24,38 @@ static int g_last_y = -1;
 static float g_rotation_speed = 0.0004f;
 static bool g_moving_planet = false;
 
-static vec3 g_unit_position = {0.0f, 0.0f, 1.025f};
+typedef struct players_t
+{
+    size_t count;
+    size_t capacity;
+    float *score;
+} players_t;
+
+static units_t g_units;
+static formations_t g_formations;
+static int g_human_selected_formation;
+static paths_t g_paths;
+static players_t g_players;
+
 static const vec3 UNIT_SIZE = {0.075f, 0.075f, 0.0f};
-static quat g_unit_rotation = (quat){1.0f, 0.0f, 0.0f, 0.0f};
 static vec3 g_planet_position = (vec3){0.0f, 0.0f, 0.0f};
 static const vec3 PLANET_SIZE = (vec3){2.0f, 2.0f, 2.0f};
-static bool g_is_unit_moving = false;
-static float g_unit_progress = 0.0f;
-static vec3 g_unit_start_position;
-static vec3 g_unit_end_position;
+
+static vec3 mouse_click_ray_cast()
+{
+    int width, height;
+    cstrl_platform_get_window_size(&g_platform_state, &width, &height);
+    float x = (2.0f * g_mouse_position_x) / (float)width - 1.0f;
+    float y = 1.0f - (2.0f * g_mouse_position_y) / (float)height;
+
+    vec4 ray_clip = {x, y, -1.0f, 1.0f};
+    vec4 ray_eye = cstrl_vec4_mult_mat4(ray_clip, cstrl_mat4_inverse(g_main_camera->projection));
+    ray_eye = (vec4){ray_eye.x, ray_eye.y, -1.0f, 0.0f};
+
+    vec4 ray_world = cstrl_vec4_mult_mat4(ray_eye, cstrl_mat4_transpose(cstrl_mat4_inverse(g_main_camera->view)));
+
+    return cstrl_vec3_normalize((vec3){ray_world.x, ray_world.y, ray_world.z});
+}
 
 static vec3 get_point_on_path(vec3 start_position, vec3 end_position, float t)
 {
@@ -223,11 +249,11 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     float y_angle_change = ((float)xpos - (float)g_last_x) * 0.004f;
     float z_angle_change = ((float)ypos - (float)g_last_y) * 0.004f;
     float dot_forward_up = cstrl_vec3_dot(g_main_camera->forward, g_main_camera->up);
-    if (dot_forward_up <= -0.8f)
+    if (dot_forward_up < -0.8f)
     {
         z_angle_change = cstrl_min(z_angle_change, 0.0f);
     }
-    if (dot_forward_up >= 0.8f)
+    if (dot_forward_up > 0.8f)
     {
         z_angle_change = cstrl_max(z_angle_change, 0.0f);
     }
@@ -236,22 +262,6 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     g_last_y = ypos;
 
     cstrl_camera_rotate_around_point(g_main_camera, g_planet_position, y_angle_change, z_angle_change);
-}
-
-static vec3 mouse_click_ray_cast()
-{
-    int width, height;
-    cstrl_platform_get_window_size(&g_platform_state, &width, &height);
-    float x = (2.0f * g_mouse_position_x) / (float)width - 1.0f;
-    float y = 1.0f - (2.0f * g_mouse_position_y) / (float)height;
-
-    vec4 ray_clip = {x, y, -1.0f, 1.0f};
-    vec4 ray_eye = cstrl_vec4_mult_mat4(ray_clip, cstrl_mat4_inverse(g_main_camera->projection));
-    ray_eye = (vec4){ray_eye.x, ray_eye.y, -1.0f, 0.0f};
-
-    vec4 ray_world = cstrl_vec4_mult_mat4(ray_eye, cstrl_mat4_transpose(cstrl_mat4_inverse(g_main_camera->view)));
-
-    return cstrl_vec3_normalize((vec3){ray_world.x, ray_world.y, ray_world.z});
 }
 
 static void mouse_button_callback(cstrl_platform_state *state, int button, int action, int mods)
@@ -274,59 +284,50 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
         if (action == CSTRL_ACTION_PRESS)
         {
             vec3 d = mouse_click_ray_cast();
-            printf("d: %f, %f, %f\n", d.x, d.y, d.z);
-
-            vec3 l = g_main_camera->position;
+            vec3 l = cstrl_vec3_sub(g_main_camera->position, g_planet_position);
             float b = cstrl_vec3_dot(d, l);
-            float c = cstrl_vec3_dot(l, l) - 1.0f;
+            float c = cstrl_vec3_dot(l, l) - powf((PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f, 2.0f);
 
             if (powf(b, 2.0) - c >= 0.0f)
             {
                 float t = -b - sqrtf(powf(b, 2.0f) - c);
-                g_unit_end_position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
-                g_unit_end_position =
-                    cstrl_vec3_mult_scalar(cstrl_vec3_normalize(g_unit_end_position), 1.0f + UNIT_SIZE.x * 0.5f);
-                g_unit_progress = 0.0f;
-                g_unit_start_position = g_unit_position;
-                g_is_unit_moving = true;
-                /*g_unit_rotation =*/
-                /*    cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));*/
+                vec3 end_position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
+                end_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(end_position), 1.0f + UNIT_SIZE.x * 0.5f);
+                vec3 start_position =
+                    g_units.transforms[g_formations.unit_ids[g_human_selected_formation].array[0]].position;
+                int new_id = paths_add(&g_paths, start_position, end_position);
+                if (new_id != -1)
+                {
+                    formations_add_path(&g_formations, g_human_selected_formation, new_id);
+                }
             }
         }
     }
 }
 
-static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 size)
+// TODO: replace all instances of positions, size, and rotation with transform
+static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 position, vec3 size, quat rotation)
 {
     float x0 = -0.5f;
     float x1 = 0.5f;
     float y0 = -0.5f;
     float y1 = 0.5f;
-    float z = 0.0f;
+    float z = 1.0f + UNIT_SIZE.x / 2.0f;
 
     vec3 point0 = cstrl_vec3_mult((vec3){x0, y0, z}, size);
     vec3 point1 = cstrl_vec3_mult((vec3){x1, y0, z}, size);
     vec3 point2 = cstrl_vec3_mult((vec3){x1, y1, z}, size);
     vec3 point3 = cstrl_vec3_mult((vec3){x0, y1, z}, size);
 
-    quat unit_rotation_conjugate = cstrl_quat_conjugate(g_unit_rotation);
-    quat point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point0.x, point0.y, point0.z}),
-                                      unit_rotation_conjugate);
-    point0 = cstrl_quat_xyz(point_quat);
-    point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point1.x, point1.y, point1.z}),
-                                 unit_rotation_conjugate);
-    point1 = cstrl_quat_xyz(point_quat);
-    point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point2.x, point2.y, point2.z}),
-                                 unit_rotation_conjugate);
-    point2 = cstrl_quat_xyz(point_quat);
-    point_quat = cstrl_quat_mult(cstrl_quat_mult(g_unit_rotation, (quat){0.0f, point3.x, point3.y, point3.z}),
-                                 unit_rotation_conjugate);
-    point3 = cstrl_quat_xyz(point_quat);
+    point0 = cstrl_vec3_rotate_by_quat(point0, rotation);
+    point1 = cstrl_vec3_rotate_by_quat(point1, rotation);
+    point2 = cstrl_vec3_rotate_by_quat(point2, rotation);
+    point3 = cstrl_vec3_rotate_by_quat(point3, rotation);
 
-    point0 = cstrl_vec3_add(point0, g_unit_position);
-    point1 = cstrl_vec3_add(point1, g_unit_position);
-    point2 = cstrl_vec3_add(point2, g_unit_position);
-    point3 = cstrl_vec3_add(point3, g_unit_position);
+    point0 = cstrl_vec3_add(point0, position);
+    point1 = cstrl_vec3_add(point1, position);
+    point2 = cstrl_vec3_add(point2, position);
+    point3 = cstrl_vec3_add(point3, position);
 
     *p0 = point0;
     *p1 = point1;
@@ -334,29 +335,29 @@ static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 size)
     *p3 = point3;
 }
 
-static void update_billboard_position(da_float *positions, size_t index, vec3 new_position, vec3 size)
+static void update_billboard_position(da_float *positions, size_t index, vec3 new_position, vec3 size, quat rotation)
 {
     vec3 point0, point1, point2, point3;
-    get_points(&point0, &point1, &point2, &point3, size);
-    positions->array[index * 18] = point0.x;
-    positions->array[index * 18 + 1] = point0.y;
-    positions->array[index * 18 + 2] = point0.z;
-    positions->array[index * 18 + 3] = point1.x;
-    positions->array[index * 18 + 4] = point1.y;
-    positions->array[index * 18 + 5] = point1.z;
-    positions->array[index * 18 + 6] = point2.x;
-    positions->array[index * 18 + 7] = point2.y;
-    positions->array[index * 18 + 8] = point2.z;
-    positions->array[index * 18 + 9] = point3.x;
-    positions->array[index * 18 + 10] = point3.y;
-    positions->array[index * 18 + 11] = point3.z;
+    get_points(&point0, &point1, &point2, &point3, new_position, size, rotation);
+    positions->array[index * 12] = point0.x;
+    positions->array[index * 12 + 1] = point0.y;
+    positions->array[index * 12 + 2] = point0.z;
+    positions->array[index * 12 + 3] = point1.x;
+    positions->array[index * 12 + 4] = point1.y;
+    positions->array[index * 12 + 5] = point1.z;
+    positions->array[index * 12 + 6] = point2.x;
+    positions->array[index * 12 + 7] = point2.y;
+    positions->array[index * 12 + 8] = point2.z;
+    positions->array[index * 12 + 9] = point3.x;
+    positions->array[index * 12 + 10] = point3.y;
+    positions->array[index * 12 + 11] = point3.z;
 }
 
-static void add_billboard_object(da_float *positions, da_int *indices, da_float *uvs, da_float *colors,
-                                 vec3 object_position, vec3 size, vec4 color)
+static void add_billboard_object(da_float *positions, da_int *indices, da_float *uvs, da_float *colors, vec3 position,
+                                 vec3 size, quat rotation, vec4 color)
 {
     vec3 point0, point1, point2, point3;
-    get_points(&point0, &point1, &point2, &point3, size);
+    get_points(&point0, &point1, &point2, &point3, position, size, rotation);
 
     cstrl_da_float_push_back(positions, point0.x);
     cstrl_da_float_push_back(positions, point0.y);
@@ -407,6 +408,10 @@ int planet()
     cstrl_platform_set_mouse_position_callback(&g_platform_state, mouse_position_callback);
     cstrl_platform_set_mouse_button_callback(&g_platform_state, mouse_button_callback);
     cstrl_renderer_init(&g_platform_state);
+
+    units_init(&g_units);
+    formations_init(&g_formations);
+    paths_init(&g_paths);
 
     cstrl_render_data *planet_render_data = cstrl_renderer_create_render_data();
     float planet_positions[19 * 37 * 3];
@@ -492,8 +497,8 @@ int planet()
     cstrl_da_float_init(&unit_uvs, 8);
     da_float unit_colors;
     cstrl_da_float_init(&unit_colors, 16);
-    add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, g_unit_position, UNIT_SIZE,
-                         (vec4){0.0f, 1.0f, 0.0f, 1.0f});
+    add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, (vec3){0.0f, 0.0f, 1.0375f},
+                         UNIT_SIZE, (quat){1.0f, 0.0f, 0.0f, 0.0f}, (vec4){0.0f, 1.0f, 0.0f, 1.0f});
     cstrl_renderer_add_positions(unit_render_data, unit_positions.array, 3, 4);
     cstrl_renderer_add_indices(unit_render_data, unit_indices.array, 6);
     cstrl_renderer_add_uvs(unit_render_data, unit_uvs.array);
@@ -527,22 +532,21 @@ int planet()
         while (lag >= 1.0 / 60.0)
         {
             cstrl_camera_update(g_main_camera, g_movement, g_rotation);
-            if (g_is_unit_moving)
-            {
-                g_unit_progress +=
-                    0.0025f / cstrl_vec3_length(cstrl_vec3_sub(g_unit_end_position, g_unit_start_position));
-                if (g_unit_progress < 1.0f)
-                {
-                    g_unit_position = get_point_on_path(g_unit_start_position, g_unit_end_position, g_unit_progress);
-                }
-                else
-                {
-                    g_is_unit_moving = false;
-                }
-            }
-            g_unit_rotation =
+            paths_update(&g_paths);
+            quat unit_rotation =
                 cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
-            update_billboard_position(&unit_positions, 0, g_unit_position, UNIT_SIZE);
+            for (int i = 0; i < g_formations.unit_ids[g_human_selected_formation].size; i++)
+            {
+                int id = g_formations.unit_ids[g_human_selected_formation].array[i];
+                int path_id = g_formations.path_ids[g_human_selected_formation].array[0];
+                vec3 start_position = g_paths.start_positions[path_id];
+                vec3 end_position = g_paths.end_positions[path_id];
+                float t = g_paths.progress[path_id];
+                g_units.transforms[id].position = get_point_on_path(start_position, end_position, t);
+                update_billboard_position(&unit_positions, 0, g_units.transforms[id].position, UNIT_SIZE,
+                                          unit_rotation);
+            }
+
             cstrl_renderer_modify_positions(unit_render_data, unit_positions.array, 0, 12);
             lag -= 1.0 / 60.0;
             light_start_x += 0.001f;
