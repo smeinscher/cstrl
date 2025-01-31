@@ -37,9 +37,11 @@ static int g_human_selected_formation = 0;
 static paths_t g_paths;
 static players_t g_players;
 
-static const vec3 UNIT_SIZE = {0.075f, 0.075f, 0.0f};
 static vec3 g_planet_position = (vec3){0.0f, 0.0f, 0.0f};
-static const vec3 PLANET_SIZE = (vec3){2.0f, 2.0f, 2.0f};
+
+static const vec3 UNIT_SIZE = {0.075f, 0.075f, 0.0f};
+static const vec3 PLANET_SIZE = {2.0f, 2.0f, 2.0f};
+static const vec3 PATH_MARKER_SIZE = {0.05f, 0.05f, 0.0f};
 
 static vec3 mouse_click_ray_cast()
 {
@@ -394,12 +396,12 @@ static void update_billboard_position(da_float *positions, da_int *indices, size
         cstrl_da_float_push_back(positions, point3.y);
         cstrl_da_float_push_back(positions, point3.z);
 
-        cstrl_da_int_push_back(indices, 0);
-        cstrl_da_int_push_back(indices, 1);
-        cstrl_da_int_push_back(indices, 2);
-        cstrl_da_int_push_back(indices, 0);
-        cstrl_da_int_push_back(indices, 2);
-        cstrl_da_int_push_back(indices, 3);
+        cstrl_da_int_push_back(indices, index * 4);
+        cstrl_da_int_push_back(indices, index * 4 + 1);
+        cstrl_da_int_push_back(indices, index * 4 + 2);
+        cstrl_da_int_push_back(indices, index * 4 + 0);
+        cstrl_da_int_push_back(indices, index * 4 + 2);
+        cstrl_da_int_push_back(indices, index * 4 + 3);
     }
 }
 
@@ -571,11 +573,11 @@ int planet()
     da_float path_marker_colors;
     cstrl_da_float_init(&path_marker_colors, 16);
     add_billboard_object(&path_marker_positions, &path_marker_indices, NULL, &path_marker_colors,
-                         (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.1f, 0.1f, 0.0f}, (quat){1.0f, 0.0f, 0.0f, 0.0f},
+                         (vec3){0.0f, 0.0f, 0.0f}, PATH_MARKER_SIZE, (quat){1.0f, 0.0f, 0.0f, 0.0f},
                          (vec4){1.0f, 1.0f, 1.0f, 1.0f});
     cstrl_renderer_add_positions(path_marker_render_data, path_marker_positions.array, 3, 4);
     cstrl_renderer_add_indices(path_marker_render_data, path_marker_indices.array, 6);
-    cstrl_renderer_add_colors(path_marker_render_data, path_marker_colors.array);
+    //cstrl_renderer_add_colors(path_marker_render_data, path_marker_colors.array);
 
     cstrl_shader path_marker_shader = cstrl_load_shaders_from_files("resources/shaders/default3D_no_texture.vert",
                                                                     "resources/shaders/default3D_no_texture.frag");
@@ -609,60 +611,47 @@ int planet()
                 cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
             for (int i = 0; i < g_units.count; i++)
             {
-                if (g_units.formation_ids[i] != -1)
+                int formation_id = g_units.formation_ids[i];
+                if (formation_id == -1 || g_formations.path_ids[formation_id].size < 1)
                 {
-                    if (g_formations.path_ids[g_units.formation_ids[i]].size > 0)
+                    update_billboard_position(&unit_positions, &unit_indices, 0, g_units.positions[i], UNIT_SIZE,
+                                          billboard_rotation);
+                    continue;
+                }
+
+                int path_id = g_formations.path_ids[formation_id].array[0];
+                if (g_paths.completed[path_id] || !g_paths.active[path_id])
+                {
+                    formations_remove_path(&g_formations, formation_id, path_id);
+                    paths_remove(&g_paths, path_id);
+                    if (g_formations.path_ids[formation_id].size > 0)
                     {
-                        int path_id = g_formations.path_ids[g_units.formation_ids[i]].array[0];
-                        if (g_paths.completed[path_id])
-                        {
-                            formations_remove_path(&g_formations, g_units.formation_ids[i], path_id);
-                            paths_remove(&g_paths, path_id);
-                            if (g_formations.path_ids[g_units.formation_ids[i]].size > 0)
-                            {
-                                g_paths.active[g_formations.path_ids[g_units.formation_ids[i]].array[0]] = true;
-                            }
-                            if (g_units.formation_ids[i] == g_human_selected_formation)
-                            {
-                                for (int j = 0; j < 12; j++)
-                                {
-                                    cstrl_da_float_pop_front(&path_marker_positions);
-                                }
-                                for (int j = 0; j < 6; j++)
-                                {
-                                    cstrl_da_int_pop_front(&path_marker_indices);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            vec3 start_position = g_paths.start_positions[path_id];
-                            vec3 end_position = g_paths.end_positions[path_id];
-                            g_units.positions[i] =
-                                get_point_on_path(start_position, end_position, g_paths.progress[path_id]);
-                        }
+                        g_paths.active[g_formations.path_ids[formation_id].array[0]] = true;
                     }
+                }
+                else
+                {
+                    vec3 start_position = g_paths.start_positions[path_id];
+                    vec3 end_position = g_paths.end_positions[path_id];
+                    g_units.positions[i] =
+                        get_point_on_path(start_position, end_position, g_paths.progress[path_id]);
                 }
                 update_billboard_position(&unit_positions, &unit_indices, 0, g_units.positions[i], UNIT_SIZE,
                                           billboard_rotation);
             }
-            if (g_formations.count > 0 && g_formations.path_ids[g_human_selected_formation].size > 0)
+            for (int i = 0; i < g_paths.count; i++)
             {
-                for (int i = 0; i < g_formations.path_ids[g_units.formation_ids[g_human_selected_formation]].size; i++)
+                if (!g_paths.active[i] || g_paths.completed[i])
                 {
-                    int path_id = g_formations.path_ids[g_units.formation_ids[g_human_selected_formation]].array[i];
-                    update_billboard_position(&path_marker_positions, &path_marker_indices, i,
-                                              g_paths.end_positions[path_id], (vec3){0.1f, 0.1f, 0.0f},
-                                              billboard_rotation);
-                    cstrl_renderer_modify_positions(path_marker_render_data, path_marker_positions.array, i * 12, 12);
-                    cstrl_renderer_modify_indices(path_marker_render_data, path_marker_indices.array, i * 6, 6);
-                    printf("%d: ", i);
-                    for (int j = i * 12; j < (i + 1) * 12; j++)
-                    {
-                        printf("%f ", path_marker_positions.array[j]);
-                    }
-                    printf("\n");
+                    update_billboard_position(&path_marker_positions, &path_marker_indices, i, (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.0f, 0.0f, 0.0f}, billboard_rotation);
+                    continue;
                 }
+                update_billboard_position(&path_marker_positions, &path_marker_indices, i, g_paths.end_positions[i], PATH_MARKER_SIZE, billboard_rotation);
+            }
+            if (g_paths.count > 0)
+            {
+                cstrl_renderer_modify_render_attributes(path_marker_render_data, path_marker_positions.array, NULL, NULL, g_paths.count * 4);
+                cstrl_renderer_modify_indices(path_marker_render_data, path_marker_indices.array, 0, g_paths.count * 6);
             }
             cstrl_renderer_modify_positions(unit_render_data, unit_positions.array, 0, 12);
             lag -= 1.0 / 60.0;

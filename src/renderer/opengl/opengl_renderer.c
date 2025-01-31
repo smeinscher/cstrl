@@ -342,7 +342,7 @@ CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render
         {
             cstrl_realloc_float(&data->positions, count * data->dimensions);
             memcpy(data->positions, positions, count * data->dimensions * sizeof(float));
-            glBufferData(GL_ARRAY_BUFFER, count * 2 * sizeof(float), data->positions, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, count * data->dimensions * sizeof(float), data->positions, GL_DYNAMIC_DRAW);
             data->count = count;
         }
     }
