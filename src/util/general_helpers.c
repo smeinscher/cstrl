@@ -18,6 +18,18 @@ CSTRL_API bool cstrl_realloc_int(int **int_ptr, size_t size)
     return true;
 }
 
+CSTRL_API bool cstrl_realloc_unsigned_int(unsigned int **uint_ptr, size_t size)
+{
+    unsigned int *temp_uint_ptr = realloc(*uint_ptr, size * sizeof(unsigned int));
+    if (temp_uint_ptr == NULL)
+    {
+        printf("Error reallocating memory for int_ptr\n");
+        return false;
+    }
+    *uint_ptr = temp_uint_ptr;
+    return true;
+}
+
 CSTRL_API bool cstrl_realloc_float(float **float_ptr, size_t size)
 {
     float *temp_float_ptr = realloc(*float_ptr, size * sizeof(float));

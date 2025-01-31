@@ -101,6 +101,8 @@ CSTRL_API time_t cstrl_get_file_timestamp(const char *path);
 
 CSTRL_API bool cstrl_realloc_int(int **int_ptr, size_t size);
 
+CSTRL_API bool cstrl_realloc_unsigned_int(unsigned int **uint_ptr, size_t size);
+
 CSTRL_API bool cstrl_realloc_float(float **float_ptr, size_t size);
 
 CSTRL_API bool cstrl_realloc_string(string **str_ptr, size_t size);

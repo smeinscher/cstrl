@@ -336,7 +336,7 @@ static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 position, ve
     float x1 = 0.5f;
     float y0 = -0.5f;
     float y1 = 0.5f;
-    float z = 1.0f + UNIT_SIZE.x * 0.5f;
+    float z = 1.0f + size.x * 0.5f;
 
     vec3 point0 = cstrl_vec3_mult((vec3){x0, y0, z}, size);
     vec3 point1 = cstrl_vec3_mult((vec3){x1, y0, z}, size);
@@ -359,22 +359,48 @@ static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 position, ve
     *p3 = point3;
 }
 
-static void update_billboard_position(da_float *positions, size_t index, vec3 new_position, vec3 size, quat rotation)
+static void update_billboard_position(da_float *positions, da_int *indices, size_t index, vec3 new_position, vec3 size,
+                                      quat rotation)
 {
     vec3 point0, point1, point2, point3;
     get_points(&point0, &point1, &point2, &point3, new_position, size, rotation);
-    positions->array[index * 12] = point0.x;
-    positions->array[index * 12 + 1] = point0.y;
-    positions->array[index * 12 + 2] = point0.z;
-    positions->array[index * 12 + 3] = point1.x;
-    positions->array[index * 12 + 4] = point1.y;
-    positions->array[index * 12 + 5] = point1.z;
-    positions->array[index * 12 + 6] = point2.x;
-    positions->array[index * 12 + 7] = point2.y;
-    positions->array[index * 12 + 8] = point2.z;
-    positions->array[index * 12 + 9] = point3.x;
-    positions->array[index * 12 + 10] = point3.y;
-    positions->array[index * 12 + 11] = point3.z;
+    if ((index + 1) * 12 <= positions->size)
+    {
+        positions->array[index * 12] = point0.x;
+        positions->array[index * 12 + 1] = point0.y;
+        positions->array[index * 12 + 2] = point0.z;
+        positions->array[index * 12 + 3] = point1.x;
+        positions->array[index * 12 + 4] = point1.y;
+        positions->array[index * 12 + 5] = point1.z;
+        positions->array[index * 12 + 6] = point2.x;
+        positions->array[index * 12 + 7] = point2.y;
+        positions->array[index * 12 + 8] = point2.z;
+        positions->array[index * 12 + 9] = point3.x;
+        positions->array[index * 12 + 10] = point3.y;
+        positions->array[index * 12 + 11] = point3.z;
+    }
+    else
+    {
+        cstrl_da_float_push_back(positions, point0.x);
+        cstrl_da_float_push_back(positions, point0.y);
+        cstrl_da_float_push_back(positions, point0.z);
+        cstrl_da_float_push_back(positions, point1.x);
+        cstrl_da_float_push_back(positions, point1.y);
+        cstrl_da_float_push_back(positions, point1.z);
+        cstrl_da_float_push_back(positions, point2.x);
+        cstrl_da_float_push_back(positions, point2.y);
+        cstrl_da_float_push_back(positions, point2.z);
+        cstrl_da_float_push_back(positions, point3.x);
+        cstrl_da_float_push_back(positions, point3.y);
+        cstrl_da_float_push_back(positions, point3.z);
+
+        cstrl_da_int_push_back(indices, 0);
+        cstrl_da_int_push_back(indices, 1);
+        cstrl_da_int_push_back(indices, 2);
+        cstrl_da_int_push_back(indices, 0);
+        cstrl_da_int_push_back(indices, 2);
+        cstrl_da_int_push_back(indices, 3);
+    }
 }
 
 static void add_billboard_object(da_float *positions, da_int *indices, da_float *uvs, da_float *colors, vec3 position,
@@ -403,14 +429,17 @@ static void add_billboard_object(da_float *positions, da_int *indices, da_float 
     cstrl_da_int_push_back(indices, 2);
     cstrl_da_int_push_back(indices, 3);
 
-    cstrl_da_float_push_back(uvs, 0.0f);
-    cstrl_da_float_push_back(uvs, 0.0f);
-    cstrl_da_float_push_back(uvs, 1.0f);
-    cstrl_da_float_push_back(uvs, 0.0f);
-    cstrl_da_float_push_back(uvs, 1.0f);
-    cstrl_da_float_push_back(uvs, 1.0f);
-    cstrl_da_float_push_back(uvs, 0.0f);
-    cstrl_da_float_push_back(uvs, 1.0f);
+    if (uvs != NULL)
+    {
+        cstrl_da_float_push_back(uvs, 0.0f);
+        cstrl_da_float_push_back(uvs, 0.0f);
+        cstrl_da_float_push_back(uvs, 1.0f);
+        cstrl_da_float_push_back(uvs, 0.0f);
+        cstrl_da_float_push_back(uvs, 1.0f);
+        cstrl_da_float_push_back(uvs, 1.0f);
+        cstrl_da_float_push_back(uvs, 0.0f);
+        cstrl_da_float_push_back(uvs, 1.0f);
+    }
 
     for (int i = 0; i < 4; i++)
     {
@@ -503,8 +532,8 @@ int planet()
     cstrl_renderer_add_normals(planet_render_data, planet_normals);
     cstrl_renderer_add_indices(planet_render_data, planet_indices, count);
 
-    cstrl_shader planet_shader = cstrl_load_shaders_from_files("resources/shaders/default3D_no_texture.vert",
-                                                               "resources/shaders/default3D_no_texture.frag");
+    cstrl_shader planet_shader =
+        cstrl_load_shaders_from_files("resources/shaders/planet.vert", "resources/shaders/planet.frag");
 
     cstrl_texture planet_texture = cstrl_texture_generate_from_path("resources/textures/moon1024.bmp");
 
@@ -534,13 +563,30 @@ int planet()
         cstrl_load_shaders_from_files("resources/shaders/default3D.vert", "resources/shaders/default3D.frag");
     cstrl_texture unit_texture = cstrl_texture_generate_from_path("resources/textures/tank.png");
 
+    cstrl_render_data *path_marker_render_data = cstrl_renderer_create_render_data();
+    da_float path_marker_positions;
+    cstrl_da_float_init(&path_marker_positions, 12);
+    da_int path_marker_indices;
+    cstrl_da_int_init(&path_marker_indices, 6);
+    da_float path_marker_colors;
+    cstrl_da_float_init(&path_marker_colors, 16);
+    add_billboard_object(&path_marker_positions, &path_marker_indices, NULL, &path_marker_colors,
+                         (vec3){0.0f, 0.0f, 0.0f}, (vec3){0.1f, 0.1f, 0.0f}, (quat){1.0f, 0.0f, 0.0f, 0.0f},
+                         (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+    cstrl_renderer_add_positions(path_marker_render_data, path_marker_positions.array, 3, 4);
+    cstrl_renderer_add_indices(path_marker_render_data, path_marker_indices.array, 6);
+    cstrl_renderer_add_colors(path_marker_render_data, path_marker_colors.array);
+
+    cstrl_shader path_marker_shader = cstrl_load_shaders_from_files("resources/shaders/default3D_no_texture.vert",
+                                                                    "resources/shaders/default3D_no_texture.frag");
+
     g_main_camera = cstrl_camera_create(800, 600, false);
     g_main_camera->position.z = 3.0f;
 
     cstrl_set_uniform_3f(planet_shader.program, "material.ambient", 0.4f, 0.2f, 0.8f);
     cstrl_set_uniform_3f(planet_shader.program, "material.diffuse", 1.0f, 0.5f, 0.31f);
     cstrl_set_uniform_3f(planet_shader.program, "material.specular", 0.5f, 0.5f, 0.5f);
-    cstrl_set_uniform_float(planet_shader.program, "material.shininess", 8.0);
+    cstrl_set_uniform_float(planet_shader.program, "material.shininess", 4.0);
     cstrl_set_uniform_3f(planet_shader.program, "light.specular", 1.0f, 1.0f, 1.0f);
 
     double previous_time = cstrl_platform_get_absolute_time();
@@ -559,7 +605,7 @@ int planet()
         {
             cstrl_camera_update(g_main_camera, g_movement, g_rotation);
             paths_update(&g_paths);
-            quat unit_rotation =
+            quat billboard_rotation =
                 cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
             for (int i = 0; i < g_units.count; i++)
             {
@@ -576,6 +622,17 @@ int planet()
                             {
                                 g_paths.active[g_formations.path_ids[g_units.formation_ids[i]].array[0]] = true;
                             }
+                            if (g_units.formation_ids[i] == g_human_selected_formation)
+                            {
+                                for (int j = 0; j < 12; j++)
+                                {
+                                    cstrl_da_float_pop_front(&path_marker_positions);
+                                }
+                                for (int j = 0; j < 6; j++)
+                                {
+                                    cstrl_da_int_pop_front(&path_marker_indices);
+                                }
+                            }
                         }
                         else
                         {
@@ -586,7 +643,26 @@ int planet()
                         }
                     }
                 }
-                update_billboard_position(&unit_positions, 0, g_units.positions[i], UNIT_SIZE, unit_rotation);
+                update_billboard_position(&unit_positions, &unit_indices, 0, g_units.positions[i], UNIT_SIZE,
+                                          billboard_rotation);
+            }
+            if (g_formations.count > 0 && g_formations.path_ids[g_human_selected_formation].size > 0)
+            {
+                for (int i = 0; i < g_formations.path_ids[g_units.formation_ids[g_human_selected_formation]].size; i++)
+                {
+                    int path_id = g_formations.path_ids[g_units.formation_ids[g_human_selected_formation]].array[i];
+                    update_billboard_position(&path_marker_positions, &path_marker_indices, i,
+                                              g_paths.end_positions[path_id], (vec3){0.1f, 0.1f, 0.0f},
+                                              billboard_rotation);
+                    cstrl_renderer_modify_positions(path_marker_render_data, path_marker_positions.array, i * 12, 12);
+                    cstrl_renderer_modify_indices(path_marker_render_data, path_marker_indices.array, i * 6, 6);
+                    printf("%d: ", i);
+                    for (int j = i * 12; j < (i + 1) * 12; j++)
+                    {
+                        printf("%f ", path_marker_positions.array[j]);
+                    }
+                    printf("\n");
+                }
             }
             cstrl_renderer_modify_positions(unit_render_data, unit_positions.array, 0, 12);
             lag -= 1.0 / 60.0;
@@ -615,6 +691,11 @@ int planet()
         cstrl_set_active_texture(0);
         cstrl_texture_bind(unit_texture);
         cstrl_renderer_draw_indices(unit_render_data);
+
+        cstrl_set_uniform_mat4(path_marker_shader.program, "view", g_main_camera->view);
+        cstrl_set_uniform_mat4(path_marker_shader.program, "projection", g_main_camera->projection);
+        cstrl_use_shader(path_marker_shader);
+        cstrl_renderer_draw_indices(path_marker_render_data);
 
         cstrl_ui_begin(context);
         if (cstrl_ui_container_begin(context, "Debug", 5, 10, 10, 200, 300, GEN_ID(0), false, 2))

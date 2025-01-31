@@ -31,7 +31,7 @@ typedef struct internal_data
     float *uvs;
     float *colors;
     float *normals;
-    unsigned int *indices;
+    int *indices;
 } internal_data;
 
 CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
@@ -206,7 +206,7 @@ CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *i
     glGenBuffers(1, &data->ebo);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data->ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_count * sizeof(int), indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_count * sizeof(int), indices, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -221,21 +221,65 @@ CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, f
         return;
     }
     internal_data *data = render_data->internal_data;
-    if (count + start_index > data->count * data->dimensions)
-    {
-        log_warn("Modifying positions with index out of bounds (data count is %d), skipping to avoid bugs",
-                 data->count);
-        return;
-    }
 
     if (positions != NULL)
     {
         glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
         glBindVertexArray(data->vao);
-        memcpy(data->positions, positions + start_index, count * sizeof(float));
-        glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), data->positions);
+        if (count + start_index > data->count * data->dimensions)
+        {
+            if (!cstrl_realloc_float(&data->positions, count + start_index))
+            {
+                printf("Failed to realloc positions\n");
+                return;
+            }
+            data->count = (count + start_index) / data->dimensions;
+            memcpy(data->positions, positions + start_index, count * sizeof(float));
+            glBufferData(GL_ARRAY_BUFFER, data->count * data->dimensions * sizeof(float), data->positions,
+                         GL_DYNAMIC_DRAW);
+        }
+        else
+        {
+            memcpy(data->positions, positions + start_index, count * sizeof(float));
+            glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), data->positions);
+        }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int *indices, size_t start_index,
+                                             size_t count)
+{
+    if (count == 0)
+    {
+        log_warn("Modifying indices with 0 count, skipping to avoid possible undefined behavior");
+        return;
+    }
+    internal_data *data = render_data->internal_data;
+
+    if (indices != NULL)
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data->ebo);
+        glBindVertexArray(data->vao);
+        if (count + start_index > data->indices_count)
+        {
+            if (!cstrl_realloc_int(&data->indices, count + start_index))
+            {
+                printf("Failed to realloc indices\n");
+                return;
+            }
+            data->indices_count = count + start_index;
+            memcpy(data->indices, indices + start_index, count * sizeof(int));
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, data->indices_count * sizeof(int), data->indices, GL_DYNAMIC_DRAW);
+        }
+        else
+        {
+            memcpy(data->indices, indices + start_index, count * sizeof(int));
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, start_index * sizeof(int), count * sizeof(int), data->indices);
+        }
+    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 
