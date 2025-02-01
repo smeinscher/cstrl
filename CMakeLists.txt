@@ -9,6 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_STANDARD 11)
 
+set(CMAKE_C_FLAGS_RELEASE "-O3")
+
 find_package(OpenGL)
 
 find_package(Vulkan)
@@ -130,6 +132,14 @@ add_executable(cstrl-sandbox
         sandbox/pong/pong.h
         sandbox/planet/planet.c
         sandbox/planet/planet.h
+        sandbox/planet/game/formation.c
+        sandbox/planet/game/formation.h
+        sandbox/planet/game/paths.c
+        sandbox/planet/game/paths.h
+        sandbox/planet/game/players.c
+        sandbox/planet/game/players.h
+        sandbox/planet/game/units.c
+        sandbox/planet/game/units.h
 )
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)

@@ -237,7 +237,7 @@ CSTRL_API void cstrl_da_string_insert(da_string *da, string element, size_t inde
 
 CSTRL_API void cstrl_da_int_remove(da_int *da, int index)
 {
-    if (index >= da->size)
+    if (index >= da->size || index < 0)
     {
         log_error("Dynamic int array remove index out of bounds");
         return;
@@ -299,6 +299,19 @@ CSTRL_API void cstrl_da_string_remove(da_string *da, int index)
         temp_index++;
     }
     da->size--;
+}
+
+CSTRL_API int cstrl_da_int_find_first(da_int *da, int value)
+{
+    for (int i = 0; i < da->size; i++)
+    {
+        if (da->array[i] == value)
+        {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 CSTRL_API int cstrl_da_int_pop_back(da_int *da)

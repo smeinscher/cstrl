@@ -81,16 +81,25 @@ CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *i
 
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index, size_t count);
 
+CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int *indices, size_t start_index,
+                                             size_t count);
+
 CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions, const float *uvs,
                                              const float *colors, size_t count);
+
+CSTRL_API void cstrl_renderer_clear_render_attributes(cstrl_render_data *render_data);
 
 CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data);
 
+CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data);
+
 CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state);
 
 CSTRL_API void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state);
+
+CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled);
 
 /*
  *

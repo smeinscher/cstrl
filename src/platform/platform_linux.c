@@ -212,11 +212,25 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
 
             state->state_common.input.mouse_buttons[button] = action;
 
-            // TODO: implement mods
-            int mods = 0;
-
             if (state->state_common.callbacks.mouse_button != NULL)
             {
+                int mods = 0;
+                if (event->state & ShiftMask)
+                {
+                    mods |= CSTRL_KEY_MOD_SHIFT;
+                }
+                if (event->state & ControlMask)
+                {
+                    mods |= CSTRL_KEY_MOD_CONTROL;
+                }
+                if (event->state & Mod1Mask)
+                {
+                    mods |= CSTRL_KEY_MOD_ALT;
+                }
+                if (event->state & LockMask)
+                {
+                    mods |= CSTRL_KEY_MOD_CAPS_LOCK;
+                }
 
                 state->state_common.callbacks.mouse_button(platform_state, button, action, mods);
             }

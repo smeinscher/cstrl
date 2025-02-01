@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ -z "$1" ]]; then
-  set -$1 "Debug" -$2 "VULKAN"
+  set -$1 "Debug" -$2 "OPENGL"
 fi
 mkdir build-${1,};
 cd build-${1,};

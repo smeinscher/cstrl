@@ -2,6 +2,7 @@
 // Created by 12105 on 11/23/2024.
 //
 
+#include "log.c/log.h"
 #include <cstrl/cstrl_defines.h>
 
 #if defined(CSTRL_RENDER_API_OPENGL) && defined(CSTRL_PLATFORM_WINDOWS)
@@ -17,6 +18,8 @@
 #include <windows.h>
 
 typedef HGLRC WINAPI wglCreateContextAttribsARB_type(HDC hdc, HGLRC h_share_context, const int *attrib_list);
+typedef bool WINAPI wglSwapIntervalEXT_type(int interval);
+
 #define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
 #define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
 #define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
@@ -74,7 +77,11 @@ CSTRL_API bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
     wglMakeCurrent(dc, rc);
 
     gladLoadGL();
+    // TODO: make this dynamic
     glViewport(0, 0, 800, 600);
+
+    wglSwapIntervalEXT_type *wglSwapIntervalEXT = (wglSwapIntervalEXT_type *)wglGetProcAddress("wglSwapIntervalEXT");
+    wglSwapIntervalEXT(1);
 
     return true;
 }
