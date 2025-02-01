@@ -7,8 +7,9 @@ bool formations_init(formations_t *formations)
 {
     formations->count = 0;
     formations->capacity = 1;
+    formations->path_head = NULL;
     formations->moving = NULL;
-    formations->path_ids = NULL;
+    formations->active = NULL;
     formations->unit_ids = NULL;
 
     formations->moving = malloc(sizeof(bool));
@@ -25,10 +26,10 @@ bool formations_init(formations_t *formations)
         formations_free(formations);
         return false;
     }
-    formations->path_ids = malloc(sizeof(da_int));
-    if (!formations->path_ids)
+    formations->path_head = malloc(sizeof(int));
+    if (!formations->path_head)
     {
-        printf("Error allocating memory for formations path_ids\n");
+        printf("Error allocating memory for formations path_head\n");
         formations_free(formations);
         return false;
     }
@@ -61,9 +62,9 @@ int formations_add(formations_t *formations, int *unit_ids)
                 printf("Error allocating formation active\n");
                 return -1;
             }
-            if (!cstrl_realloc_da_int(&formations->path_ids, formations->capacity))
+            if (!cstrl_realloc_int(&formations->path_head, formations->capacity))
             {
-                printf("Error allocating formation path_ids\n");
+                printf("Error allocating formation path_heads\n");
                 return -1;
             }
             if (!cstrl_realloc_da_int(&formations->unit_ids, formations->capacity))
@@ -79,7 +80,7 @@ int formations_add(formations_t *formations, int *unit_ids)
     }
     formations->moving[new_id] = false;
     formations->active[new_id] = true;
-    cstrl_da_int_init(&formations->path_ids[new_id], 1);
+    formations->path_head[new_id] = -1;
     cstrl_da_int_init(&formations->unit_ids[new_id], 1);
     // TODO: go through list
     cstrl_da_int_push_back(&formations->unit_ids[new_id], unit_ids[0]);
@@ -88,9 +89,9 @@ int formations_add(formations_t *formations, int *unit_ids)
 
 void formations_remove(formations_t *formations, int formation_id)
 {
-    formations->moving = false;
+    formations->moving[formation_id] = false;
     formations->active[formation_id] = false;
-    cstrl_da_int_free(&formations->path_ids[formation_id]);
+    formations->path_head[formation_id] = -1;
     cstrl_da_int_free(&formations->unit_ids[formation_id]);
     cstrl_da_int_push_back(&formations->free_ids, formation_id);
 }
@@ -101,7 +102,6 @@ void formations_free(formations_t *formations)
     {
         if (formations->active[i])
         {
-            cstrl_da_int_free(&formations->path_ids[i]);
             cstrl_da_int_free(&formations->unit_ids[i]);
         }
     }
@@ -109,20 +109,8 @@ void formations_free(formations_t *formations)
     formations->capacity = 0;
     free(formations->moving);
     free(formations->active);
-    free(formations->path_ids);
     free(formations->unit_ids);
     cstrl_da_int_free(&formations->free_ids);
-}
-
-void formations_add_path(formations_t *formations, int formation_id, int path_id)
-{
-    cstrl_da_int_push_back(&formations->path_ids[formation_id], path_id);
-}
-
-void formations_remove_path(formations_t *formations, int formation_id, int path_id)
-{
-    cstrl_da_int_remove(&formations->path_ids[formation_id],
-                        cstrl_da_int_find_first(&formations->path_ids[formation_id], path_id));
 }
 
 void formations_add_unit(formations_t *formations, int formation_id, int unit_id)

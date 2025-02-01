@@ -9,9 +9,27 @@ bool paths_init(paths_t *paths)
     paths->start_positions = NULL;
     paths->end_positions = NULL;
     paths->progress = NULL;
+    paths->completed = NULL;
+    paths->render = NULL;
+    paths->in_queue = NULL;
+    paths->active = NULL;
 
     cstrl_da_int_init(&paths->free_ids, 1);
 
+    paths->prev = malloc(sizeof(int));
+    if (!paths->prev)
+    {
+        printf("Error allocating memory for path prev\n");
+        paths_free(paths);
+        return false;
+    }
+    paths->next = malloc(sizeof(int));
+    if (!paths->next)
+    {
+        printf("Error allocating memory for path next\n");
+        paths_free(paths);
+        return false;
+    }
     paths->start_positions = malloc(sizeof(vec3));
     if (!paths->start_positions)
     {
@@ -26,7 +44,7 @@ bool paths_init(paths_t *paths)
         paths_free(paths);
         return false;
     }
-    paths->progress = malloc(sizeof(int));
+    paths->progress = malloc(sizeof(float));
     if (!paths->progress)
     {
         printf("Error allocating memory for path progress\n");
@@ -65,7 +83,7 @@ bool paths_init(paths_t *paths)
     return true;
 }
 
-int paths_add(paths_t *paths, vec3 start_position, vec3 end_position)
+int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev)
 {
     int new_id = 0;
     if (paths->free_ids.size == 0)
@@ -82,6 +100,16 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position)
             if (!cstrl_realloc_vec3(&paths->end_positions, paths->capacity))
             {
                 printf("Error allocating paths end_positions\n");
+                return -1;
+            }
+            if (!cstrl_realloc_int(&paths->prev, paths->capacity))
+            {
+                printf("Error allocating paths previous path\n");
+                return -1;
+            }
+            if (!cstrl_realloc_int(&paths->next, paths->capacity))
+            {
+                printf("Error allocating paths next path\n");
                 return -1;
             }
             if (!cstrl_realloc_float(&paths->progress, paths->capacity))
@@ -116,6 +144,12 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position)
         new_id = cstrl_da_int_pop_back(&paths->free_ids);
     }
 
+    paths->prev[new_id] = prev;
+    if (prev != -1)
+    {
+        paths->next[prev] = new_id;
+    }
+    paths->next[new_id] = -1;
     paths->start_positions[new_id] = start_position;
     paths->end_positions[new_id] = end_position;
     paths->progress[new_id] = 0.0f;
@@ -129,6 +163,8 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position)
 
 void paths_remove(paths_t *paths, int path_id)
 {
+    paths->prev[path_id] = -1;
+    paths->next[path_id] = -1;
     paths->start_positions[path_id] = (vec3){0.0f, 0.0f, 0.0f};
     paths->end_positions[path_id] = (vec3){0.0f, 0.0f, 0.0f};
     paths->progress[path_id] = 0.0f;

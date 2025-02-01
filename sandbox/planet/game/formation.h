@@ -10,7 +10,7 @@ typedef struct formations_t
     size_t capacity;
     bool *moving;
     bool *active;
-    da_int *path_ids;
+    int *path_head;
     da_int *unit_ids;
     da_int free_ids;
 } formations_t;
@@ -22,10 +22,6 @@ int formations_add(formations_t *formations, int *unit_ids);
 void formations_remove(formations_t *formations, int formation_id);
 
 void formations_free(formations_t *formations);
-
-void formations_add_path(formations_t *formations, int formation_id, int path_id);
-
-void formations_remove_path(formations_t *formations, int formation_id, int path_id);
 
 void formations_add_unit(formations_t *formations, int formation_id, int unit_id);
 

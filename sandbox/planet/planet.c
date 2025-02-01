@@ -43,6 +43,9 @@ static const vec3 UNIT_SIZE = {0.075f, 0.075f, 0.0f};
 static const vec3 PLANET_SIZE = {2.0f, 2.0f, 2.0f};
 static const vec3 PATH_MARKER_SIZE = {0.02f, 0.02f, 0.0f};
 
+static bool g_render_path_markers = true;
+static bool g_render_path_lines = true;
+
 static bool planet_hit_check(vec3 origin, vec3 destination)
 {
     vec3 l = cstrl_vec3_sub(origin, destination);
@@ -50,41 +53,6 @@ static bool planet_hit_check(vec3 origin, vec3 destination)
     float c = cstrl_vec3_dot(l, l) - powf(PLANET_SIZE.x * 0.5f, 2.0f);
 
     return powf(b, 2.0) - c >= 0.0f;
-}
-
-static void move_unit(vec3 end_position)
-{
-    vec3 start_position;
-    bool path_in_queue = false;
-    if (g_formations.count < 1)
-    {
-        // TODO: get a selection of unit ids
-        int unit_id = 0;
-        int formation_id = formations_add(&g_formations, &unit_id);
-        g_human_selected_formation = formation_id;
-        start_position = g_units.positions[unit_id];
-        g_units.formation_ids[unit_id] = formation_id;
-    }
-    else
-    {
-        if (g_formations.path_ids[g_human_selected_formation].size > 0)
-        {
-            int last_path_index = g_formations.path_ids[g_human_selected_formation].size - 1;
-            int last_path_id = g_formations.path_ids[g_human_selected_formation].array[last_path_index];
-            start_position = g_paths.end_positions[last_path_id];
-            path_in_queue = true;
-        }
-        else
-        {
-            start_position = g_units.positions[g_formations.unit_ids[g_human_selected_formation].array[0]];
-        }
-    }
-    int new_id = paths_add(&g_paths, start_position, end_position);
-    if (new_id != -1)
-    {
-        formations_add_path(&g_formations, g_human_selected_formation, new_id);
-        g_paths.in_queue[new_id] = path_in_queue;
-    }
 }
 
 static void generate_line_segments(da_float *positions, vec3 origin, vec3 destination)
@@ -111,22 +79,6 @@ static void generate_line_segments(da_float *positions, vec3 origin, vec3 destin
     generate_line_segments(positions, mid_point, destination);
 }
 
-static void test_line_segments()
-{
-    da_float positions;
-    cstrl_da_float_init(&positions, 6);
-    generate_line_segments(&positions, cstrl_vec3_normalize((vec3){-1.0f, 1.0f, 0.0f}), (vec3){1.0f, 0.0f, 0.0f});
-
-    for (int i = 0; i < positions.size; i++)
-    {
-        printf("%f ", positions.array[i]);
-        if (i % 3 == 2)
-        {
-            printf("\n");
-        }
-    }
-}
-
 static vec3 mouse_click_ray_cast()
 {
     int width, height;
@@ -141,6 +93,115 @@ static vec3 mouse_click_ray_cast()
     vec4 ray_world = cstrl_vec4_mult_mat4(ray_eye, cstrl_mat4_transpose(cstrl_mat4_inverse(g_main_camera->view)));
 
     return cstrl_vec3_normalize((vec3){ray_world.x, ray_world.y, ray_world.z});
+}
+
+static void new_formation()
+{
+    // TODO: get a selection of unit ids
+    int unit_id = 0;
+    int formation_id = formations_add(&g_formations, &unit_id);
+    g_human_selected_formation = formation_id;
+    g_units.formation_ids[unit_id] = formation_id;
+}
+
+static void new_path(vec3 start_position, vec3 end_position, bool in_queue, int prev)
+{
+    int new_path_id = paths_add(&g_paths, start_position, end_position, prev);
+    if (new_path_id != -1)
+    {
+        if (g_formations.path_head[g_human_selected_formation] != -1)
+        {
+            g_paths.in_queue[new_path_id] = true;
+        }
+        else
+        {
+            g_formations.path_head[g_human_selected_formation] = new_path_id;
+            g_paths.in_queue[new_path_id] = false;
+        }
+    }
+}
+
+static void move_unit_normal_mode(vec3 end_position)
+{
+    if (g_formations.count < 1)
+    {
+        new_formation();
+    }
+    vec3 start_position = g_units.positions[g_formations.unit_ids[g_human_selected_formation].array[0]];
+    if (g_formations.path_head[g_human_selected_formation] == -1)
+    {
+        new_path(start_position, end_position, false, -1);
+    }
+    else
+    {
+        int head_path_id = g_formations.path_head[g_human_selected_formation];
+        int current_path_id = g_paths.next[head_path_id];
+        while (current_path_id != -1)
+        {
+            int next_path_id = g_paths.next[current_path_id];
+            paths_remove(&g_paths, current_path_id);
+            current_path_id = next_path_id;
+        }
+        g_paths.prev[head_path_id] = -1;
+        g_paths.next[head_path_id] = -1;
+        g_paths.start_positions[head_path_id] = start_position;
+        g_paths.progress[head_path_id] = 0.0f;
+        g_paths.end_positions[head_path_id] = end_position;
+        g_paths.in_queue[head_path_id] = false;
+        g_paths.completed[head_path_id]= false;
+        g_paths.active[head_path_id] = true;
+        g_paths.render[head_path_id] = true;
+    }
+}
+
+static void move_unit_path_mode(vec3 end_position)
+{
+    vec3 start_position;
+    bool path_in_queue = false;
+    int prev_path = -1;
+    if (g_formations.count < 1)
+    {
+        new_formation();
+    }
+    if (g_formations.path_head[g_human_selected_formation] == -1)
+    {
+        start_position = g_units.positions[g_formations.unit_ids[g_human_selected_formation].array[0]];
+    }
+    else
+    {
+        int path_id = g_formations.path_head[g_human_selected_formation];
+        while (g_paths.next[path_id] != -1)
+        {
+            path_id = g_paths.next[path_id];
+        }
+        prev_path = path_id;
+        start_position = g_paths.end_positions[path_id];
+        path_in_queue = true;
+    }
+    new_path(start_position, end_position, path_in_queue, prev_path);
+}
+
+static void move_unit_to_cursor_position(bool path_mode)
+{
+    vec3 d = mouse_click_ray_cast();
+    vec3 l = cstrl_vec3_sub(g_main_camera->position, g_planet_position);
+    float b = cstrl_vec3_dot(d, l);
+    float c = cstrl_vec3_dot(l, l) - powf((PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f, 2.0f);
+
+    if (powf(b, 2.0) - c >= 0.0f)
+    {
+        float t = -b - sqrtf(powf(b, 2.0f) - c);
+        vec3 end_position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
+        end_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(end_position), 1.0f + UNIT_SIZE.x * 0.5f);
+        if (path_mode)
+        {
+            move_unit_path_mode(end_position);
+        }
+        else
+        {
+            move_unit_normal_mode(end_position);
+        }
+    }
 }
 
 static vec3 get_point_on_path(vec3 start_position, vec3 end_position, float t)
@@ -303,7 +364,8 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_5:
         if (action == CSTRL_ACTION_PRESS)
         {
-            move_unit((vec3){0.0f, 0.0f, -(1.0f + UNIT_SIZE.x * 0.5f)});
+            g_render_path_markers = !g_render_path_markers;
+            g_render_path_lines = g_render_path_markers;
         }
         break;
     case CSTRL_KEY_M:
@@ -379,18 +441,7 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
     {
         if (action == CSTRL_ACTION_PRESS)
         {
-            vec3 d = mouse_click_ray_cast();
-            vec3 l = cstrl_vec3_sub(g_main_camera->position, g_planet_position);
-            float b = cstrl_vec3_dot(d, l);
-            float c = cstrl_vec3_dot(l, l) - powf((PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f, 2.0f);
-
-            if (powf(b, 2.0) - c >= 0.0f)
-            {
-                float t = -b - sqrtf(powf(b, 2.0f) - c);
-                vec3 end_position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
-                end_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(end_position), 1.0f + UNIT_SIZE.x * 0.5f);
-                move_unit(end_position);
-            }
+            move_unit_to_cursor_position(mods & CSTRL_KEY_MOD_CONTROL);
         }
     }
 }
@@ -687,33 +738,29 @@ int planet()
             for (int i = 0; i < g_units.count; i++)
             {
                 int formation_id = g_units.formation_ids[i];
-                if (formation_id == -1 || g_formations.path_ids[formation_id].size < 1)
+                if (formation_id != -1 && g_formations.path_head[formation_id] != -1)
                 {
-                    update_billboard_position(&unit_positions, &unit_indices, 0, g_units.positions[i], UNIT_SIZE,
-                                              billboard_rotation, 1.0f + UNIT_SIZE.x * 0.5f);
-                    continue;
-                }
-
-                int path_id = g_formations.path_ids[formation_id].array[0];
-                if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_paths.end_positions[path_id], g_units.positions[i]))) <
-                    UNIT_SIZE.x * 0.5f)
-                {
-                    g_paths.render[path_id] = false;
-                }
-                if (g_paths.completed[path_id] || !g_paths.active[path_id])
-                {
-                    formations_remove_path(&g_formations, formation_id, path_id);
-                    paths_remove(&g_paths, path_id);
-                    if (g_formations.path_ids[formation_id].size > 0)
+                    int path_id = g_formations.path_head[formation_id];
+                    if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_paths.end_positions[path_id], g_units.positions[i]))) <
+                        UNIT_SIZE.x * 0.5f)
                     {
-                        g_paths.in_queue[g_formations.path_ids[formation_id].array[0]] = false;
+                        g_paths.render[path_id] = false;
                     }
-                }
-                else
-                {
-                    vec3 start_position = g_paths.start_positions[path_id];
-                    vec3 end_position = g_paths.end_positions[path_id];
-                    g_units.positions[i] = get_point_on_path(start_position, end_position, g_paths.progress[path_id]);
+                    if (g_paths.completed[path_id] || !g_paths.active[path_id])
+                    {
+                        g_formations.path_head[formation_id] = g_paths.next[path_id];
+                        if (g_formations.path_head[formation_id] != -1)
+                        {
+                            g_paths.in_queue[g_formations.path_head[formation_id]] = false;
+                        }
+                        paths_remove(&g_paths, path_id);
+                    }
+                    else
+                    {
+                        vec3 start_position = g_paths.start_positions[path_id];
+                        vec3 end_position = g_paths.end_positions[path_id];
+                        g_units.positions[i] = get_point_on_path(start_position, end_position, g_paths.progress[path_id]);
+                    }
                 }
                 update_billboard_position(&unit_positions, &unit_indices, 0, g_units.positions[i], UNIT_SIZE,
                                           billboard_rotation, 1.0f + UNIT_SIZE.x * 0.5f);
@@ -733,6 +780,7 @@ int planet()
                 vec3 start = g_paths.start_positions[i];
                 if (!g_paths.in_queue[i])
                 {
+                    // TODO: make start the leading units position
                     start = g_units.positions[g_formations.unit_ids[g_human_selected_formation].array[0]];
                 }
                 generate_line_segments(&path_line_positions, start, g_paths.end_positions[i]);

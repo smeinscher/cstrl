@@ -8,6 +8,8 @@ typedef struct paths_t
 {
     size_t count;
     size_t capacity;
+    int *prev;
+    int *next;
     vec3 *start_positions;
     vec3 *end_positions;
     float *progress;
@@ -20,7 +22,7 @@ typedef struct paths_t
 
 bool paths_init(paths_t *paths);
 
-int paths_add(paths_t *paths, vec3 start_position, vec3 end_position);
+int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev);
 
 void paths_remove(paths_t *paths, int path_id);
 
