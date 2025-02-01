@@ -146,9 +146,6 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
             action = CSTRL_ACTION_RELEASE;
         }
 
-        // TODO: implement mods
-        int mods = 0;
-
         cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
         if (state == NULL)
         {
@@ -161,6 +158,20 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
 
         if (internal_state->state_common.callbacks.mouse_button != NULL)
         {
+            // TODO: support all modifiers windows supports
+            int mods = 0;
+            if (wparam & MK_SHIFT)
+            {
+                mods |= CSTRL_KEY_MOD_SHIFT;
+            }
+            if (wparam & MK_CONTROL)
+            {
+                mods |= CSTRL_KEY_MOD_CONTROL;
+            }
+            if (wparam & MK_ALT)
+            {
+                mods |= CSTRL_KEY_MOD_ALT;
+            }
             internal_state->state_common.callbacks.mouse_button(state, button, action, mods);
         }
         return 0;
