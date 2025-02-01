@@ -40,6 +40,20 @@ bool paths_init(paths_t *paths)
         paths_free(paths);
         return false;
     }
+    paths->render = malloc(sizeof(bool));
+    if (!paths->render)
+    {
+        printf("Error allocating memory for path render\n");
+        paths_free(paths);
+        return false;
+    }
+    paths->in_queue = malloc(sizeof(bool));
+    if (!paths->in_queue)
+    {
+        printf("Error allocating memory for path in_queue\n");
+        paths_free(paths);
+        return false;
+    }
     paths->active = malloc(sizeof(bool));
     if (!paths->active)
     {
@@ -80,6 +94,16 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position)
                 printf("Error allocating paths completed\n");
                 return -1;
             }
+            if (!cstrl_realloc_bool(&paths->render, paths->capacity))
+            {
+                printf("Error allocating paths render\n");
+                return -1;
+            }
+            if (!cstrl_realloc_bool(&paths->in_queue, paths->capacity))
+            {
+                printf("Error allocating paths in_queue\n");
+                return -1;
+            }
             if (!cstrl_realloc_bool(&paths->active, paths->capacity))
             {
                 printf("Error allocating paths active\n");
@@ -96,7 +120,9 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position)
     paths->end_positions[new_id] = end_position;
     paths->progress[new_id] = 0.0f;
     paths->completed[new_id] = false;
-    paths->active[new_id] = false;
+    paths->render[new_id] = true;
+    paths->in_queue[new_id] = false;
+    paths->active[new_id] = true;
 
     return new_id;
 }
@@ -127,7 +153,7 @@ void paths_update(paths_t *paths)
 {
     for (int i = 0; i < paths->count; i++)
     {
-        if (!paths->active[i] || paths->completed[i])
+        if (!paths->active[i] || paths->in_queue[i] || paths->completed[i])
         {
             continue;
         }

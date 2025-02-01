@@ -12,6 +12,8 @@ typedef struct paths_t
     vec3 *end_positions;
     float *progress;
     bool *completed;
+    bool *render;
+    bool *in_queue;
     bool *active;
     da_int free_ids;
 } paths_t;

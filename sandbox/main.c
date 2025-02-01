@@ -8,6 +8,7 @@
 #include "the_ray_tracer_challenge/challenge.h"
 #include "ui/basic_ui.h"
 #include "vulkan-tutorial/vulkan_triangle.h"
+#include <stdio.h>
 
 int main()
 {

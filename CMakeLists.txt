@@ -9,6 +9,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_STANDARD 11)
 
+set(CMAKE_C_FLAGS_RELEASE "-O3")
+
 find_package(OpenGL)
 
 find_package(Vulkan)

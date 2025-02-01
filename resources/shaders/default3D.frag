@@ -10,4 +10,8 @@ uniform sampler2D texture1;
 void main()
 {
     frag_color = color * texture(texture1, uv);
+    if (frag_color.a < 0.1)
+    {
+        discard;
+    }
 }

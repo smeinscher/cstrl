@@ -350,6 +350,61 @@ CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render
     glBindVertexArray(0);
 }
 
+CSTRL_API void cstrl_renderer_clear_render_attributes(cstrl_render_data *render_data)
+{
+    internal_data *data = render_data->internal_data;
+    data->count = 1;
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
+    int position_size = data->count * data->dimensions * sizeof(float);
+    if (!cstrl_realloc_float(&data->positions, position_size / sizeof(float)))
+    {
+        printf("Failed to realloc positions\n");
+        return;
+    }
+    memset(data->positions, 0, position_size);
+    glBufferData(GL_ARRAY_BUFFER, position_size, data->positions, GL_DYNAMIC_DRAW);
+    if (data->uvs != NULL)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS]);
+        int size = data->count * 2 * sizeof(float);
+        if (!cstrl_realloc_float(&data->uvs, size / sizeof(float)))
+        {
+            printf("Failed to realloc uvs\n");
+            return;
+        }
+        memset(data->uvs, 0, size);
+        glBufferData(GL_ARRAY_BUFFER, size, data->uvs, GL_DYNAMIC_DRAW);
+    }
+    if (data->colors != NULL)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
+        int size = data->count * 4 * sizeof(float);
+        if (cstrl_realloc_float(&data->colors, size / sizeof(float)))
+        {
+            printf("Failed to realloc colors\n");
+            return;
+        }
+        memset(data->colors, 0, size);
+        glBufferData(GL_ARRAY_BUFFER, size, data->colors, GL_DYNAMIC_DRAW);
+    }
+    if (data->indices != NULL)
+    {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data->ebo);
+        data->indices_count = 1;
+        int size = data->indices_count * 6 * sizeof(int);
+        if (!cstrl_realloc_int(&data->indices, size / sizeof(int)))
+        {
+            printf("Failed to realloc indices\n");
+            return;
+        }
+        memset(data->indices, 0, size);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data->indices, GL_DYNAMIC_DRAW);
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
 CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data)
 {
     internal_data *internal_data = data->internal_data;
@@ -365,6 +420,13 @@ CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data)
     glDrawElements(GL_TRIANGLES, internal_data->indices_count, GL_UNSIGNED_INT, 0);
 }
 
+CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data)
+{
+    internal_data *internal_data = data->internal_data;
+    glBindVertexArray(internal_data->vao);
+    glDrawArrays(GL_LINES, 0, internal_data->count);
+}
+
 CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state)
 {
     cstrl_opengl_platform_destroy(platform_state);
@@ -373,6 +435,18 @@ CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state)
 CSTRL_API void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state)
 {
     cstrl_opengl_platform_swap_buffers(platform_state);
+}
+
+CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled)
+{
+    if (enabled)
+    {
+        glEnable(GL_DEPTH_TEST);
+    }
+    else
+    {
+        glDisable(GL_DEPTH_TEST);
+    }
 }
 
 #endif
