@@ -80,6 +80,13 @@ typedef struct vec4
             float z;
             float w;
         };
+        struct
+        {
+            float r;
+            float g;
+            float b;
+            float a;
+        };
         float v[4];
     };
 } vec4;

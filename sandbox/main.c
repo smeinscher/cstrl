@@ -12,6 +12,6 @@
 
 int main()
 {
-    int result = planet();
+    int result = planet_game();
     return result;
 }

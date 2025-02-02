@@ -64,6 +64,8 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state);
 
 CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a);
 
+CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height);
+
 CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data();
 
 CSTRL_API void cstrl_renderer_free_render_data(cstrl_render_data *render_data);

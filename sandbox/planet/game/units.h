@@ -4,6 +4,8 @@
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_types.h"
 
+#define UNIT_SIZE (vec3){0.075f, 0.075f, 0.0f}
+
 typedef enum team_t
 {
     RED,
@@ -23,13 +25,13 @@ typedef struct units_t
     vec3 *positions;
     int *teams;
     bool *active;
-    int *formation_ids;
+    int *formation_id;
     da_int free_ids;
 } units_t;
 
 bool units_init(units_t *units);
 
-bool units_add(units_t *units, vec3 positions, team_t team);
+int units_add(units_t *units, vec3 positions, team_t team);
 
 void units_remove(units_t *units, int unit_id);
 

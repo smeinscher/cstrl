@@ -54,7 +54,7 @@ bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
 
     glXMakeCurrent(state->display, state->main_window, gl_context);
     gladLoadGL();
-    glViewport(0, 0, 800, 600);
+    glViewport(0, 0, state->state_common.window_width, state->state_common.window_height);
 
     return true;
 }
