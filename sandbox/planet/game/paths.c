@@ -173,6 +173,15 @@ void paths_remove(paths_t *paths, int path_id)
     cstrl_da_int_push_back(&paths->free_ids, path_id);
 }
 
+void paths_recursive_remove(paths_t *paths, int path_id)
+{
+    if (paths->next[path_id] != -1)
+    {
+        paths_recursive_remove(paths, paths->next[path_id]);
+    }
+    paths_remove(paths, path_id);
+}
+
 void paths_free(paths_t *paths)
 {
     paths->count = 0;

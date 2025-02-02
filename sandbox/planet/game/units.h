@@ -22,8 +22,8 @@ typedef struct units_t
 {
     size_t count;
     size_t capacity;
-    vec3 *positions;
-    int *teams;
+    vec3 *position;
+    int *team;
     bool *active;
     int *formation_id;
     da_int free_ids;

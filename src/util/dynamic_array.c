@@ -12,6 +12,9 @@
 
 #define GROWTH_FACTOR 2
 
+// TODO: see how much repeated code I can replace with macros
+// TODO: investigate asserts
+
 CSTRL_API void cstrl_da_int_init(da_int *da, size_t initial_size)
 {
     da->size = 0;
@@ -68,13 +71,21 @@ CSTRL_API void cstrl_da_string_init(da_string *da, size_t initial_size)
     da->capacity = initial_size;
 }
 
+#define CHECK_DYNAMIC_ARRAY(da_struct, da_array)                                                                       \
+    if (da_struct == NULL)                                                                                             \
+    {                                                                                                                  \
+        log_error("Dynamic array pointer is NULL");                                                                    \
+        return false;                                                                                                  \
+    }                                                                                                                  \
+    if (da_array == NULL)                                                                                              \
+    {                                                                                                                  \
+        log_error("Dynamic array not allocated");                                                                      \
+        return false;                                                                                                  \
+    }
+
 CSTRL_API bool cstrl_da_int_reserve(da_int *da, size_t new_capacity)
 {
-    if (da == NULL || da->array == NULL)
-    {
-        log_error("Invalid dynamic array structure");
-        return false;
-    }
+    CHECK_DYNAMIC_ARRAY(da, da->array);
     if (new_capacity >= SIZE_MAX / sizeof(int))
     {
         log_error("New capacity is too large");
@@ -93,11 +104,7 @@ CSTRL_API bool cstrl_da_int_reserve(da_int *da, size_t new_capacity)
 
 CSTRL_API bool cstrl_da_float_reserve(da_float *da, size_t new_capacity)
 {
-    if (da == NULL || da->array == NULL)
-    {
-        log_error("Invalid dynamic array structure");
-        return false;
-    }
+    CHECK_DYNAMIC_ARRAY(da, da->array);
     if (new_capacity >= SIZE_MAX / sizeof(float))
     {
         log_error("New capacity is too large");
@@ -116,16 +123,7 @@ CSTRL_API bool cstrl_da_float_reserve(da_float *da, size_t new_capacity)
 
 CSTRL_API bool cstrl_string_reserve(string *str, size_t new_capacity)
 {
-    if (str == NULL || str->array == NULL)
-    {
-        log_error("Invalid dynamic array structure");
-        return false;
-    }
-    if (new_capacity >= SIZE_MAX / sizeof(char))
-    {
-        log_error("New capacity is too large");
-        return false;
-    }
+    CHECK_DYNAMIC_ARRAY(str, str->array);
     char *temp = realloc(str->array, new_capacity * sizeof(char));
     if (temp == NULL)
     {
@@ -139,16 +137,7 @@ CSTRL_API bool cstrl_string_reserve(string *str, size_t new_capacity)
 
 CSTRL_API bool cstrl_da_string_reserve(da_string *da, size_t new_capacity)
 {
-    if (da == NULL || da->array == NULL)
-    {
-        log_error("Invalid dynamic array structure");
-        return false;
-    }
-    if (new_capacity >= SIZE_MAX / sizeof(string))
-    {
-        log_error("New capacity is too large");
-        return false;
-    }
+    CHECK_DYNAMIC_ARRAY(da, da->array);
     string *temp = realloc(da->array, new_capacity * sizeof(string));
     if (temp == NULL)
     {

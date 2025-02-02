@@ -26,6 +26,8 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev);
 
 void paths_remove(paths_t *paths, int path_id);
 
+void paths_recursive_remove(paths_t *paths, int path_id);
+
 void paths_free(paths_t *paths);
 
 void paths_update(paths_t *paths);

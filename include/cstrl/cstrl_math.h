@@ -182,8 +182,8 @@ typedef struct transform
     vec3 scale;
 } transform;
 
-#define cstrl_max(a, b) a > b ? a : b
-#define cstrl_min(a, b) a < b ? a : b
+#define cstrl_max(a, b) (a > b ? a : b)
+#define cstrl_min(a, b) (a < b ? a : b)
 
 /*
  *
@@ -251,6 +251,20 @@ CSTRL_INLINE float cstrl_vec2_dot(const vec2 a, const vec2 b)
 CSTRL_INLINE vec2 cstrl_vec2_negate(const vec2 v)
 {
     return (vec2){-v.x, -v.y};
+}
+
+CSTRL_INLINE bool cstrl_vec2_point_inside_rect(const vec2 m, const vec2 a, const vec2 b, const vec2 d)
+{
+    vec2 am = cstrl_vec2_mult(a, m);
+    vec2 ab = cstrl_vec2_mult(b, m);
+    vec2 ad = cstrl_vec2_mult(a, d);
+
+    float am_dot_ab = cstrl_vec2_dot(am, ab);
+    float ab_dot_ab = cstrl_vec2_dot(ab, ab);
+    float am_dot_ad = cstrl_vec2_dot(am, ad);
+    float ad_dot_ad = cstrl_vec2_dot(ad, ad);
+
+    return am_dot_ab > 0.0f && am_dot_ab < ab_dot_ab && am_dot_ad > 0.0f && am_dot_ad < ad_dot_ad;
 }
 
 /*
@@ -479,6 +493,7 @@ CSTRL_INLINE vec4 cstrl_vec4_mult_mat4(const vec4 v, const mat4 m)
 
     return (vec4){x, y, z, w};
 }
+
 /*
  *
  *      mat3x3 math functions

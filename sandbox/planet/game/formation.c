@@ -12,6 +12,7 @@ bool formations_init(formations_t *formations)
     formations->active = NULL;
     formations->unit_ids = NULL;
 
+    cstrl_da_int_init(&formations->free_ids, 1);
     formations->moving = malloc(sizeof(bool));
     if (!formations->moving)
     {
@@ -43,7 +44,7 @@ bool formations_init(formations_t *formations)
     return true;
 }
 
-int formations_add(formations_t *formations, int *unit_ids)
+int formations_add(formations_t *formations)
 {
     int new_id = 0;
     if (formations->free_ids.size == 0)
@@ -82,8 +83,6 @@ int formations_add(formations_t *formations, int *unit_ids)
     formations->active[new_id] = true;
     formations->path_head[new_id] = -1;
     cstrl_da_int_init(&formations->unit_ids[new_id], 1);
-    // TODO: go through list
-    cstrl_da_int_push_back(&formations->unit_ids[new_id], unit_ids[0]);
     return new_id;
 }
 
@@ -122,4 +121,8 @@ void formations_remove_unit(formations_t *formations, int formation_id, int unit
 {
     cstrl_da_int_remove(&formations->unit_ids[formation_id],
                         cstrl_da_int_find_first(&formations->unit_ids[formation_id], unit_id));
+    if (formations->unit_ids[formation_id].size == 0)
+    {
+        formations_remove(formations, formation_id);
+    }
 }

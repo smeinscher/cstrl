@@ -41,7 +41,7 @@ typedef struct players_t
 
 static units_t g_units;
 static formations_t g_formations;
-static int g_human_selected_formation = 0;
+static int g_human_selected_formation = -1;
 static paths_t g_paths;
 static players_t g_players;
 
@@ -53,9 +53,9 @@ static const vec3 PATH_MARKER_SIZE = {0.02f, 0.02f, 0.0f};
 static const vec4 PATH_MARKER_COLOR = {0.8f, 0.8f, 0.8f, 0.9f};
 
 static const vec4 UNIT_TEAM_COLORS[] = {
-    (vec4){1.0f, 0.0f, 0.0f, 1.0f}, (vec4){0.0f, 1.0f, 0.0f, 1.0f}, (vec4){0.0f, 0.0f, 1.0f, 1.0f},
-    (vec4){1.0f, 1.0f, 0.0f, 1.0f}, (vec4){1.0f, 0.0f, 1.0f, 1.0f}, (vec4){0.0f, 1.0f, 1.0f, 1.0f},
-    (vec4){1.0f, 1.0f, 1.0f, 1.0f}, (vec4){0.3f, 0.3f, 0.3f, 1.0f},
+    (vec4){1.0f, 0.0f, 0.0f, 0.4f}, (vec4){0.0f, 1.0f, 0.0f, 0.4f}, (vec4){0.0f, 0.0f, 1.0f, 0.4f},
+    (vec4){1.0f, 1.0f, 0.0f, 0.4f}, (vec4){1.0f, 0.0f, 1.0f, 0.4f}, (vec4){0.0f, 1.0f, 1.0f, 0.4f},
+    (vec4){1.0f, 1.0f, 1.0f, 0.4f}, (vec4){0.3f, 0.3f, 0.3f, 0.4f},
 };
 
 static bool g_render_path_markers = true;
@@ -113,12 +113,10 @@ static void generate_line_segments(da_float *positions, vec3 origin, vec3 destin
     generate_line_segments(positions, mid_point, destination);
 }
 
-static vec3 mouse_cursor_ray_cast()
+static vec3 screen_to_world(vec2 screen_coords, vec2 screen_size)
 {
-    int width, height;
-    cstrl_platform_get_window_size(&g_platform_state, &width, &height);
-    float x = (2.0f * g_mouse_position_x) / (float)width - 1.0f;
-    float y = 1.0f - (2.0f * g_mouse_position_y) / (float)height;
+    float x = (2.0f * screen_coords.x) / screen_size.x - 1.0f;
+    float y = 1.0f - (2.0f * screen_coords.y) / screen_size.y;
 
     vec4 ray_clip = {x, y, -1.0f, 1.0f};
     vec4 ray_eye = cstrl_vec4_mult_mat4(ray_clip, cstrl_mat4_inverse(g_main_camera->projection));
@@ -129,13 +127,33 @@ static vec3 mouse_cursor_ray_cast()
     return cstrl_vec3_normalize((vec3){ray_world.x, ray_world.y, ray_world.z});
 }
 
-static void new_formation()
+static vec2 world_to_screen(vec3 world_coords, vec2 screen_size)
 {
-    // TODO: get a selection of unit ids
-    int unit_id = 0;
-    int formation_id = formations_add(&g_formations, &unit_id);
+    printf("world_coords: %f, %f, %f\n", world_coords.x, world_coords.y, world_coords.z);
+    vec4 world_view = cstrl_vec4_mult_mat4((vec4){world_coords.x, world_coords.y, world_coords.z, 1.0f},
+                                           cstrl_mat4_transpose(g_main_camera->view));
+    vec4 clip_space = cstrl_vec4_mult_mat4(world_view, cstrl_mat4_transpose(g_main_camera->projection));
+    printf("clip_space: %f, %f, %f, %f\n", clip_space.x, clip_space.y, clip_space.z, clip_space.w);
+    vec3 ndc_space = cstrl_vec3_div_scalar(cstrl_vec4_to_vec3(clip_space), clip_space.w);
+    printf("ndc_space: %f, %f, %f\n", ndc_space.x, ndc_space.y, ndc_space.z);
+    vec2 window_space;
+    window_space.x = (ndc_space.x + 1.0f) / 2.0f * screen_size.x;
+    window_space.y = (1.0f - ndc_space.y) / 2.0f * screen_size.y;
+    return window_space;
+}
+
+static vec3 mouse_cursor_ray_cast()
+{
+    int width, height;
+    cstrl_platform_get_window_size(&g_platform_state, &width, &height);
+    return screen_to_world((vec2){g_mouse_position_x, g_mouse_position_y}, (vec2){width, height});
+}
+
+static int new_formation()
+{
+    int formation_id = formations_add(&g_formations);
     g_human_selected_formation = formation_id;
-    g_units.formation_id[unit_id] = formation_id;
+    return formation_id;
 }
 
 static void new_path(vec3 start_position, vec3 end_position, bool in_queue, int prev)
@@ -157,11 +175,11 @@ static void new_path(vec3 start_position, vec3 end_position, bool in_queue, int 
 
 static void move_units_normal_mode(vec3 end_position)
 {
-    if (g_formations.count < 1)
+    if (g_human_selected_formation == -1)
     {
-        new_formation();
+        return;
     }
-    vec3 start_position = g_units.positions[g_formations.unit_ids[g_human_selected_formation].array[0]];
+    vec3 start_position = g_units.position[g_formations.unit_ids[g_human_selected_formation].array[0]];
     if (g_formations.path_head[g_human_selected_formation] == -1)
     {
         new_path(start_position, end_position, false, -1);
@@ -190,16 +208,16 @@ static void move_units_normal_mode(vec3 end_position)
 
 static void move_units_path_mode(vec3 end_position)
 {
+    if (g_human_selected_formation == -1)
+    {
+        return;
+    }
     vec3 start_position;
     bool path_in_queue = false;
     int prev_path = -1;
-    if (g_formations.count < 1)
-    {
-        new_formation();
-    }
     if (g_formations.path_head[g_human_selected_formation] == -1)
     {
-        start_position = g_units.positions[g_formations.unit_ids[g_human_selected_formation].array[0]];
+        start_position = g_units.position[g_formations.unit_ids[g_human_selected_formation].array[0]];
     }
     else
     {
@@ -233,6 +251,36 @@ static void move_units_to_cursor_position(bool path_mode)
     }
 }
 
+// TODO: replace all instances of positions, size, and rotation with transform
+static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 position, vec3 size, quat rotation)
+{
+    float x0 = -0.5f;
+    float x1 = 0.5f;
+    float y0 = -0.5f;
+    float y1 = 0.5f;
+    float z = 0.0f;
+
+    vec3 point0 = cstrl_vec3_mult((vec3){x0, y0, z}, size);
+    vec3 point1 = cstrl_vec3_mult((vec3){x1, y0, z}, size);
+    vec3 point2 = cstrl_vec3_mult((vec3){x1, y1, z}, size);
+    vec3 point3 = cstrl_vec3_mult((vec3){x0, y1, z}, size);
+
+    point0 = cstrl_vec3_rotate_by_quat(point0, rotation);
+    point1 = cstrl_vec3_rotate_by_quat(point1, rotation);
+    point2 = cstrl_vec3_rotate_by_quat(point2, rotation);
+    point3 = cstrl_vec3_rotate_by_quat(point3, rotation);
+
+    point0 = cstrl_vec3_add(point0, position);
+    point1 = cstrl_vec3_add(point1, position);
+    point2 = cstrl_vec3_add(point2, position);
+    point3 = cstrl_vec3_add(point3, position);
+
+    *p0 = point0;
+    *p1 = point1;
+    *p2 = point2;
+    *p3 = point3;
+}
+
 static vec3 get_point_on_path(vec3 start_position, vec3 end_position, float t)
 {
     vec3 current = cstrl_vec3_normalize(cstrl_vec3_sub(start_position, g_planet_position));
@@ -249,6 +297,76 @@ static vec3 get_point_on_path(vec3 start_position, vec3 end_position, float t)
     position = cstrl_vec3_add(position, g_planet_position);
 
     return position;
+}
+
+static void select_units()
+{
+    int width, height;
+    cstrl_platform_get_window_size(&g_platform_state, &width, &height);
+    vec2 min =
+        (vec2){cstrl_min(g_selection_start.x, g_selection_end.x), cstrl_min(g_selection_start.y, g_selection_end.y)};
+    min = cstrl_vec2_div_scalar(min, width / 2.0f);
+    vec2 max =
+        (vec2){cstrl_max(g_selection_start.x, g_selection_end.x), cstrl_max(g_selection_start.y, g_selection_end.y)};
+    max = cstrl_vec2_div_scalar(max, height / 2.0f);
+    da_int selected_units;
+    cstrl_da_int_init(&selected_units, 1);
+    g_human_selected_formation = -1;
+    int formation_state = -1;
+    quat unit_rotation = cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
+    for (int i = 0; i < g_units.count; i++)
+    {
+        float dot =
+            cstrl_vec3_dot(cstrl_vec3_normalize(g_units.position[i]), cstrl_vec3_normalize(g_main_camera->position));
+        if (dot < 0.05f)
+        {
+            continue;
+        }
+        vec3 p0, p1, p2, p3;
+        get_points(&p0, &p1, &p2, &p3, g_units.position[i], UNIT_SIZE, unit_rotation);
+        vec2 p0_screen = world_to_screen(p0, (vec2){2.0f, 2.0f});
+        vec2 p1_screen = world_to_screen(p1, (vec2){2.0f, 2.0f});
+        vec2 p2_screen = world_to_screen(p2, (vec2){2.0f, 2.0f});
+        vec2 p3_screen = world_to_screen(p3, (vec2){2.0f, 2.0f});
+        printf("p0_screen: %f, %f\n", p0_screen.x, p0_screen.y);
+        printf("p1_screen: %f, %f\n", p1_screen.x, p1_screen.y);
+        printf("p2_screen: %f, %f\n", p2_screen.x, p2_screen.y);
+        printf("p3_screen: %f, %f\n", p3_screen.x, p3_screen.y);
+        if (cstrl_vec2_point_inside_rect(min, p0_screen, p1_screen, p3_screen) ||
+            cstrl_vec2_point_inside_rect(max, p0_screen, p1_screen, p3_screen) ||
+            cstrl_vec2_point_inside_rect((vec2){min.x, max.y}, p0_screen, p1_screen, p3_screen) ||
+            cstrl_vec2_point_inside_rect((vec2){max.x, min.y}, p0_screen, p1_screen, p3_screen))
+        {
+            printf("Hit!\n");
+            cstrl_da_int_push_back(&selected_units, i);
+            if (g_units.formation_id[i] != -1)
+            {
+                if (formation_state == -1)
+                {
+                    formation_state = g_units.formation_id[i];
+                }
+                else
+                {
+                    formation_state = -2;
+                }
+            }
+        }
+    }
+    if (selected_units.size == 0 || formation_state != -1)
+    {
+        printf("duh\n");
+        g_human_selected_formation = formation_state != -2 ? formation_state : -1;
+        cstrl_da_int_free(&selected_units);
+        return;
+    }
+    g_human_selected_formation = new_formation();
+    for (int i = 0; i < selected_units.size; i++)
+    {
+        int id = selected_units.array[i];
+        formations_add_unit(&g_formations, g_human_selected_formation, id);
+        g_units.formation_id[id] = g_human_selected_formation;
+    }
+    cstrl_da_int_free(&selected_units);
 }
 
 static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
@@ -341,19 +459,24 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_rotation &= ~CSTRL_CAMERA_DIRECTION_RIGHT;
         }
         break;
-    case CSTRL_KEY_1:
+    case CSTRL_KEY_2:
         if (action == CSTRL_ACTION_PRESS)
         {
             g_main_camera->position = (vec3){-3.0f, 0.0f, 0.0f};
             g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
             cstrl_camera_update(g_main_camera, g_movement, g_rotation);
+            for (int i = 0; i < 4; i++)
+            {
+                printf("%f, %f, %f, %f\n", g_main_camera->view.m[i * 4], g_main_camera->view.m[i * 4 + 1],
+                       g_main_camera->view.m[i * 4 + 2], g_main_camera->view.m[i * 4 + 3]);
+            }
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
         }
         break;
-    case CSTRL_KEY_2:
+    case CSTRL_KEY_3:
         if (action == CSTRL_ACTION_PRESS)
         {
             g_main_camera->position = (vec3){0.0f, 0.0f, -3.0f};
@@ -365,7 +488,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
         {
         }
         break;
-    case CSTRL_KEY_3:
+    case CSTRL_KEY_4:
         if (action == CSTRL_ACTION_PRESS)
         {
             g_main_camera->position = (vec3){3.0f, 0.0f, 0.0f};
@@ -377,7 +500,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
         {
         }
         break;
-    case CSTRL_KEY_4:
+    case CSTRL_KEY_1:
     case CSTRL_KEY_R:
         if (action == CSTRL_ACTION_PRESS)
         {
@@ -412,6 +535,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
                 cstrl_platform_set_show_cursor(state, false);
             }
         }
+        break;
     case CSTRL_KEY_F:
         if (action == CSTRL_ACTION_PRESS)
         {
@@ -423,6 +547,19 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
                 units_add(&g_units, position, g_human_team);
             }
         }
+        break;
+    case CSTRL_KEY_C:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            printf("mouse position: %d, %d\n", g_mouse_position_x, g_mouse_position_y);
+        }
+        break;
+    case CSTRL_KEY_6:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            move_units_normal_mode((vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x / 2.0f});
+        }
+        break;
     default:
         break;
     }
@@ -477,6 +614,7 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
                 g_making_selection = true;
                 g_selection_start = (vec2){g_mouse_position_x, g_mouse_position_y};
                 g_selection_end = g_selection_start;
+                g_human_selected_formation = -1;
             }
             else
             {
@@ -485,7 +623,11 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            g_making_selection = false;
+            if (g_making_selection)
+            {
+                select_units();
+                g_making_selection = false;
+            }
             g_moving_planet = false;
             g_last_x = -1;
             g_last_y = -1;
@@ -500,41 +642,11 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
     }
 }
 
-// TODO: replace all instances of positions, size, and rotation with transform
-static void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, vec3 position, vec3 size, quat rotation, float z_offset)
-{
-    float x0 = -0.5f;
-    float x1 = 0.5f;
-    float y0 = -0.5f;
-    float y1 = 0.5f;
-    float z = z_offset;
-
-    vec3 point0 = cstrl_vec3_mult((vec3){x0, y0, z}, size);
-    vec3 point1 = cstrl_vec3_mult((vec3){x1, y0, z}, size);
-    vec3 point2 = cstrl_vec3_mult((vec3){x1, y1, z}, size);
-    vec3 point3 = cstrl_vec3_mult((vec3){x0, y1, z}, size);
-
-    point0 = cstrl_vec3_rotate_by_quat(point0, rotation);
-    point1 = cstrl_vec3_rotate_by_quat(point1, rotation);
-    point2 = cstrl_vec3_rotate_by_quat(point2, rotation);
-    point3 = cstrl_vec3_rotate_by_quat(point3, rotation);
-
-    point0 = cstrl_vec3_add(point0, position);
-    point1 = cstrl_vec3_add(point1, position);
-    point2 = cstrl_vec3_add(point2, position);
-    point3 = cstrl_vec3_add(point3, position);
-
-    *p0 = point0;
-    *p1 = point1;
-    *p2 = point2;
-    *p3 = point3;
-}
-
 static void add_billboard_object(da_float *positions, da_int *indices, da_float *uvs, da_float *colors, vec3 position,
-                                 vec3 size, quat rotation, vec4 color, float z_offset)
+                                 vec3 size, quat rotation, vec4 color)
 {
     vec3 point0, point1, point2, point3;
-    get_points(&point0, &point1, &point2, &point3, position, size, rotation, z_offset);
+    get_points(&point0, &point1, &point2, &point3, position, size, rotation);
 
     cstrl_da_float_push_back(positions, point0.x);
     cstrl_da_float_push_back(positions, point0.y);
@@ -579,12 +691,12 @@ static void add_billboard_object(da_float *positions, da_int *indices, da_float 
 }
 
 static void update_billboard_object(da_float *positions, da_int *indices, da_float *uvs, da_float *colors, size_t index,
-                                    vec3 new_position, vec3 new_size, quat new_rotation, vec4 new_color, float z_offset)
+                                    vec3 new_position, vec3 new_size, quat new_rotation, vec4 new_color)
 {
     if ((index + 1) * 12 <= positions->size)
     {
         vec3 point0, point1, point2, point3;
-        get_points(&point0, &point1, &point2, &point3, new_position, new_size, new_rotation, z_offset);
+        get_points(&point0, &point1, &point2, &point3, new_position, new_size, new_rotation);
         positions->array[index * 12] = point0.x;
         positions->array[index * 12 + 1] = point0.y;
         positions->array[index * 12 + 2] = point0.z;
@@ -617,8 +729,7 @@ static void update_billboard_object(da_float *positions, da_int *indices, da_flo
     }
     else
     {
-        add_billboard_object(positions, indices, uvs, colors, new_position, new_size, new_rotation, new_color,
-                             z_offset);
+        add_billboard_object(positions, indices, uvs, colors, new_position, new_size, new_rotation, new_color);
     }
 }
 
@@ -802,8 +913,8 @@ int planet_game()
     cstrl_da_float_init(&unit_uvs, 8);
     da_float unit_colors;
     cstrl_da_float_init(&unit_colors, 16);
-    add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, g_units.positions[0], UNIT_SIZE,
-                         (quat){1.0f, 0.0f, 0.0f, 0.0f}, (vec4){0.0f, 1.0f, 0.0f, 1.0f}, 1.0f + UNIT_SIZE.x * 0.5f);
+    add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, g_units.position[0], UNIT_SIZE,
+                         (quat){1.0f, 0.0f, 0.0f, 0.0f}, (vec4){0.0f, 1.0f, 0.0f, 1.0f});
     cstrl_renderer_add_positions(unit_render_data, unit_positions.array, 3, 4);
     cstrl_renderer_add_indices(unit_render_data, unit_indices.array, 6);
     cstrl_renderer_add_uvs(unit_render_data, unit_uvs.array);
@@ -821,8 +932,7 @@ int planet_game()
     da_float path_marker_colors;
     cstrl_da_float_init(&path_marker_colors, 16);
     add_billboard_object(&path_marker_positions, &path_marker_indices, NULL, &path_marker_colors,
-                         (vec3){0.0f, 0.0f, 0.0f}, PATH_MARKER_SIZE, (quat){1.0f, 0.0f, 0.0f, 0.0f}, PATH_MARKER_COLOR,
-                         1.0f + PATH_MARKER_SIZE.x * 0.5f);
+                         (vec3){0.0f, 0.0f, 0.0f}, PATH_MARKER_SIZE, (quat){1.0f, 0.0f, 0.0f, 0.0f}, PATH_MARKER_COLOR);
     cstrl_renderer_add_positions(path_marker_render_data, path_marker_positions.array, 3, 4);
     cstrl_renderer_add_indices(path_marker_render_data, path_marker_indices.array, 6);
     cstrl_renderer_add_colors(path_marker_render_data, path_marker_colors.array);
@@ -911,7 +1021,7 @@ int planet_game()
                 if (formation_id != -1 && g_formations.path_head[formation_id] != -1)
                 {
                     int path_id = g_formations.path_head[formation_id];
-                    if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_paths.end_positions[path_id], g_units.positions[i]))) <
+                    if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_paths.end_positions[path_id], g_units.position[i]))) <
                         UNIT_SIZE.x * 0.5f)
                     {
                         g_paths.render[path_id] = false;
@@ -929,20 +1039,25 @@ int planet_game()
                     {
                         vec3 start_position = g_paths.start_positions[path_id];
                         vec3 end_position = g_paths.end_positions[path_id];
-                        g_units.positions[i] =
+                        g_units.position[i] =
                             get_point_on_path(start_position, end_position, g_paths.progress[path_id]);
                     }
                 }
+                vec4 color = UNIT_TEAM_COLORS[g_units.team[i]];
+                if (g_human_selected_formation != -1 &&
+                    cstrl_da_int_find_first(&g_formations.unit_ids[g_human_selected_formation], i) != -1)
+                {
+                    color.a = 1.0f;
+                }
                 update_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
-                                        g_units.positions[i], UNIT_SIZE, billboard_rotation,
-                                        UNIT_TEAM_COLORS[g_units.teams[i]], 1.0f + UNIT_SIZE.x * 0.5f);
+                                        g_units.position[i], UNIT_SIZE, billboard_rotation, color);
                 unit_render_index++;
             }
             cstrl_da_float_clear(&path_line_positions);
             cstrl_da_float_clear(&path_marker_positions);
             cstrl_renderer_clear_render_attributes(path_line_render_data);
             if ((g_render_path_lines || g_render_path_markers) && g_formations.count > 0 &&
-                g_formations.path_head[g_human_selected_formation] != -1)
+                g_human_selected_formation != -1 && g_formations.path_head[g_human_selected_formation] != -1)
             {
                 int path_id = g_formations.path_head[g_human_selected_formation];
                 int render_index = 0;
@@ -957,7 +1072,7 @@ int planet_game()
                         }
                         update_billboard_object(&path_marker_positions, &path_marker_indices, NULL, &path_marker_colors,
                                                 render_index, g_paths.end_positions[path_id], PATH_MARKER_SIZE,
-                                                billboard_rotation, PATH_MARKER_COLOR, 0.0f);
+                                                billboard_rotation, PATH_MARKER_COLOR);
                         render_index++;
                     }
                     if (g_render_path_lines)
@@ -966,7 +1081,7 @@ int planet_game()
                         if (!g_paths.in_queue[path_id])
                         {
                             // TODO: make start the leading units position
-                            start = g_units.positions[g_formations.unit_ids[g_human_selected_formation].array[0]];
+                            start = g_units.position[g_formations.unit_ids[g_human_selected_formation].array[0]];
                         }
                         generate_line_segments(&path_line_positions, start, g_paths.end_positions[path_id]);
                         path_id = g_paths.next[path_id];
@@ -1067,6 +1182,10 @@ int planet_game()
     cstrl_da_float_free(&path_marker_positions);
     cstrl_da_int_free(&path_marker_indices);
     cstrl_da_float_free(&path_marker_colors);
+
+    cstrl_da_float_free(&selection_box_positions);
+    cstrl_da_int_free(&selection_box_indices);
+    cstrl_da_float_free(&selection_box_colors);
 
     cstrl_camera_free(g_main_camera);
     cstrl_camera_free(ui_camera);

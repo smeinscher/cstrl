@@ -17,7 +17,7 @@ typedef struct formations_t
 
 bool formations_init(formations_t *formations);
 
-int formations_add(formations_t *formations, int *unit_ids);
+int formations_add(formations_t *formations);
 
 void formations_remove(formations_t *formations, int formation_id);
 
