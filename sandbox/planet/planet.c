@@ -129,13 +129,10 @@ static vec3 screen_to_world(vec2 screen_coords, vec2 screen_size)
 
 static vec2 world_to_screen(vec3 world_coords, vec2 screen_size)
 {
-    printf("world_coords: %f, %f, %f\n", world_coords.x, world_coords.y, world_coords.z);
     vec4 world_view = cstrl_vec4_mult_mat4((vec4){world_coords.x, world_coords.y, world_coords.z, 1.0f},
                                            cstrl_mat4_transpose(g_main_camera->view));
     vec4 clip_space = cstrl_vec4_mult_mat4(world_view, cstrl_mat4_transpose(g_main_camera->projection));
-    printf("clip_space: %f, %f, %f, %f\n", clip_space.x, clip_space.y, clip_space.z, clip_space.w);
     vec3 ndc_space = cstrl_vec3_div_scalar(cstrl_vec4_to_vec3(clip_space), clip_space.w);
-    printf("ndc_space: %f, %f, %f\n", ndc_space.x, ndc_space.y, ndc_space.z);
     vec2 window_space;
     window_space.x = (ndc_space.x + 1.0f) / 2.0f * screen_size.x;
     window_space.y = (1.0f - ndc_space.y) / 2.0f * screen_size.y;
@@ -305,10 +302,12 @@ static void select_units()
     cstrl_platform_get_window_size(&g_platform_state, &width, &height);
     vec2 min =
         (vec2){cstrl_min(g_selection_start.x, g_selection_end.x), cstrl_min(g_selection_start.y, g_selection_end.y)};
-    min = cstrl_vec2_div_scalar(min, width / 2.0f);
+    min.x /= width / 2.0f;
+    min.y /= height / 2.0f;
     vec2 max =
         (vec2){cstrl_max(g_selection_start.x, g_selection_end.x), cstrl_max(g_selection_start.y, g_selection_end.y)};
-    max = cstrl_vec2_div_scalar(max, height / 2.0f);
+    max.x /= width / 2.0f;
+    max.y /= height / 2.0f;
     da_int selected_units;
     cstrl_da_int_init(&selected_units, 1);
     g_human_selected_formation = -1;
@@ -325,17 +324,11 @@ static void select_units()
         vec3 p0, p1, p2, p3;
         get_points(&p0, &p1, &p2, &p3, g_units.position[i], UNIT_SIZE, unit_rotation);
         vec2 p0_screen = world_to_screen(p0, (vec2){2.0f, 2.0f});
-        vec2 p1_screen = world_to_screen(p1, (vec2){2.0f, 2.0f});
         vec2 p2_screen = world_to_screen(p2, (vec2){2.0f, 2.0f});
-        vec2 p3_screen = world_to_screen(p3, (vec2){2.0f, 2.0f});
-        printf("p0_screen: %f, %f\n", p0_screen.x, p0_screen.y);
-        printf("p1_screen: %f, %f\n", p1_screen.x, p1_screen.y);
-        printf("p2_screen: %f, %f\n", p2_screen.x, p2_screen.y);
-        printf("p3_screen: %f, %f\n", p3_screen.x, p3_screen.y);
-        if (cstrl_vec2_point_inside_rect(min, p0_screen, p1_screen, p3_screen) ||
-            cstrl_vec2_point_inside_rect(max, p0_screen, p1_screen, p3_screen) ||
-            cstrl_vec2_point_inside_rect((vec2){min.x, max.y}, p0_screen, p1_screen, p3_screen) ||
-            cstrl_vec2_point_inside_rect((vec2){max.x, min.y}, p0_screen, p1_screen, p3_screen))
+        vec2 p_min = (vec2){cstrl_min(p0_screen.x, p2_screen.x), cstrl_min(p0_screen.y, p2_screen.y)}; 
+        vec2 p_max = (vec2){cstrl_max(p0_screen.x, p2_screen.x), cstrl_max(p0_screen.y, p2_screen.y)}; 
+        if (max.x >= p_min.x && min.x <= p_max.x &&
+            max.y >= p_min.y && min.y <= p_max.y) 
         {
             printf("Hit!\n");
             cstrl_da_int_push_back(&selected_units, i);
