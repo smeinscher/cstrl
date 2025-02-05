@@ -30,6 +30,6 @@ void paths_recursive_remove(paths_t *paths, int path_id);
 
 void paths_free(paths_t *paths);
 
-void paths_update(paths_t *paths);
+void path_update(paths_t *paths, int path_id);
 
 #endif // PATHS_H

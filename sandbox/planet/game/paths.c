@@ -194,21 +194,18 @@ void paths_free(paths_t *paths)
     cstrl_da_int_free(&paths->free_ids);
 }
 
-void paths_update(paths_t *paths)
+void path_update(paths_t *paths, int path_id)
 {
-    for (int i = 0; i < paths->count; i++)
+    if (path_id == -1 || !paths->active[path_id] || paths->in_queue[path_id] || paths->completed[path_id])
     {
-        if (!paths->active[i] || paths->in_queue[i] || paths->completed[i])
-        {
-            continue;
-        }
-        // TODO: replace 0.0025f with speed variable
-        paths->progress[i] +=
-            0.0025f / cstrl_vec3_length(cstrl_vec3_sub(paths->end_positions[i], paths->start_positions[i]));
-        if (paths->progress[i] >= 1.0f)
-        {
-            paths->completed[i] = true;
-            paths->progress[i] = 0.0f;
-        }
+        return;
+    }
+    // TODO: replace 0.0025f with speed variable
+    paths->progress[path_id] +=
+        0.0025f / cstrl_vec3_length(cstrl_vec3_sub(paths->end_positions[path_id], paths->start_positions[path_id]));
+    if (paths->progress[path_id] >= 1.0f)
+    {
+        paths->completed[path_id] = true;
+        paths->progress[path_id] = 0.0f;
     }
 }

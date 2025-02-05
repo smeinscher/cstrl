@@ -99,5 +99,6 @@ CSTRL_API bool cstrl_realloc_da_int(da_int **da_int_ptr, size_t size)
         log_error("Error reallocating memory for da_int_ptr");
         return false;
     }
+    *da_int_ptr = temp_da_int_ptr;
     return true;
 }

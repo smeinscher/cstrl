@@ -140,6 +140,10 @@ add_executable(cstrl-sandbox
         sandbox/planet/game/players.h
         sandbox/planet/game/units.c
         sandbox/planet/game/units.h
+        sandbox/planet/game/sphere.c
+        sandbox/planet/game/sphere.h
+        sandbox/planet/helpers/helpers.c
+        sandbox/planet/helpers/helpers.h
 )
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
