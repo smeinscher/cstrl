@@ -11,9 +11,6 @@ set(CMAKE_C_STANDARD 11)
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O3")
 
-# For CLion for some reason
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-
 find_package(OpenGL)
 
 find_package(Vulkan)

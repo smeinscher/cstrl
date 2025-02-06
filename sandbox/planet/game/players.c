@@ -1,19 +1,23 @@
 #include "players.h"
-#include "cstrl/cstrl_util.h"
 #include "../helpers/helpers.h"
+#include "cstrl/cstrl_util.h"
 
 static const float FORMATION_OFFSETS[] = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
 
-static void new_path(players_t *players, int player_id, vec3 start_position, vec3 end_position, bool in_queue, int unit_id, int prev)
+static void new_path(players_t *players, int player_id, vec3 start_position, vec3 end_position, bool in_queue,
+                     int unit_id, int prev)
 {
     int new_path_id = paths_add(&players->paths[player_id], start_position, end_position, prev);
     if (new_path_id != -1)
     {
-        int unit_index = cstrl_da_int_find_first(&players->formations[player_id].unit_ids[players->selected_formation[player_id]], unit_id);
+        int unit_index = cstrl_da_int_find_first(
+            &players->formations[player_id].unit_ids[players->selected_formation[player_id]], unit_id);
         if (unit_index > 0)
         {
             vec3 path_vector = cstrl_vec3_sub(
-                end_position, players->units[player_id].position[players->formations[player_id].unit_ids[players->selected_formation[player_id]].array[0]]);
+                end_position,
+                players->units[player_id].position
+                    [players->formations[player_id].unit_ids[players->selected_formation[player_id]].array[0]]);
             path_vector = cstrl_vec3_normalize(path_vector);
             vec3 formation_line =
                 cstrl_vec3_normalize(cstrl_vec3_cross(path_vector, cstrl_vec3_normalize(end_position)));
@@ -31,7 +35,8 @@ static void new_path(players_t *players, int player_id, vec3 start_position, vec
         }
         else
         {
-            players->formations[player_id].path_heads[players->selected_formation[player_id]].array[unit_index] = new_path_id;
+            players->formations[player_id].path_heads[players->selected_formation[player_id]].array[unit_index] =
+                new_path_id;
             players->paths[player_id].in_queue[new_path_id] = false;
         }
     }
@@ -51,7 +56,8 @@ void players_set_units_in_formation_selected(players_t *players, int player_id)
     cstrl_da_int_clear(&players->selected_units[player_id]);
     for (int i = 0; i < players->formations[player_id].unit_ids[formation_id].size; i++)
     {
-        cstrl_da_int_push_back(&players->selected_units[player_id], players->formations[player_id].unit_ids[formation_id].array[i]);
+        cstrl_da_int_push_back(&players->selected_units[player_id],
+                               players->formations[player_id].unit_ids[formation_id].array[i]);
     }
 }
 
@@ -76,7 +82,7 @@ void players_add_selected_units_to_formation(players_t *players, int player_id)
             }
             formations_remove_unit(players->formations, old_formation_id, id);
         }
-        formations_add_unit(players->formations, players->selected_formation[player_id], id);
+        formations_add_unit(&players->formations[player_id], players->selected_formation[player_id], id);
         players->units[player_id].formation_id[id] = players->selected_formation[player_id];
     }
 }
@@ -90,6 +96,7 @@ void players_init(players_t *players, int count)
             players->active[i] = false;
             continue;
         }
+        players->active[i] = true;
         players->selected_formation[i] = -1;
         units_init(&players->units[i]);
         formations_init(&players->formations[i]);
@@ -149,14 +156,13 @@ void players_move_units_path_mode(players_t *players, int player_id, vec3 end_po
     }
 }
 
-void players_select_units(players_t *players, int player_id, int viewport_width, int viewport_height, vec2 selection_start, vec2 selection_end, cstrl_camera *camera)
+void players_select_units(players_t *players, int player_id, int viewport_width, int viewport_height,
+                          vec2 selection_start, vec2 selection_end, cstrl_camera *camera)
 {
-    vec2 min =
-        (vec2){cstrl_min(selection_start.x, selection_end.x), cstrl_min(selection_start.y, selection_end.y)};
+    vec2 min = (vec2){cstrl_min(selection_start.x, selection_end.x), cstrl_min(selection_start.y, selection_end.y)};
     min.x /= viewport_width / 2.0f;
     min.y /= viewport_height / 2.0f;
-    vec2 max =
-        (vec2){cstrl_max(selection_start.x, selection_end.x), cstrl_max(selection_start.y, selection_end.y)};
+    vec2 max = (vec2){cstrl_max(selection_start.x, selection_end.x), cstrl_max(selection_start.y, selection_end.y)};
     max.x /= viewport_width / 2.0f;
     max.y /= viewport_height / 2.0f;
     players->selected_formation[player_id] = -1;
@@ -165,8 +171,8 @@ void players_select_units(players_t *players, int player_id, int viewport_width,
     cstrl_da_int_clear(&players->selected_units[player_id]);
     for (int i = 0; i < players->units[player_id].count; i++)
     {
-        float dot =
-            cstrl_vec3_dot(cstrl_vec3_normalize(players->units[player_id].position[i]), cstrl_vec3_normalize(camera->position));
+        float dot = cstrl_vec3_dot(cstrl_vec3_normalize(players->units[player_id].position[i]),
+                                   cstrl_vec3_normalize(camera->position));
         if (dot < 0.05f)
         {
             continue;
@@ -198,4 +204,3 @@ void players_select_units(players_t *players, int player_id, int viewport_width,
         players->selected_formation[player_id] = formation_state;
     }
 }
-

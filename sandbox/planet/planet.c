@@ -6,6 +6,7 @@
 #include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_ui.h"
 #include "cstrl/cstrl_util.h"
+#include "game/ai.h"
 #include "game/formation.h"
 #include "game/paths.h"
 #include "game/players.h"
@@ -293,7 +294,8 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
         {
             if (g_making_selection)
             {
-                players_select_units(&g_players, g_human_player, WINDOW_WIDTH, WINDOW_HEIGHT, g_selection_start, g_selection_end, g_main_camera);
+                players_select_units(&g_players, g_human_player, WINDOW_WIDTH, WINDOW_HEIGHT, g_selection_start,
+                                     g_selection_end, g_main_camera);
                 g_making_selection = false;
             }
             g_moving_planet = false;
@@ -492,7 +494,8 @@ void update_formation_state(int player_id)
             }
             int unit_id = g_players.formations[player_id].unit_ids[i].array[j];
             path_update(&g_players.paths[player_id], path_id);
-            if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_players.paths[player_id].end_positions[path_id], g_players.units[player_id].position[unit_id]))) <
+            if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_players.paths[player_id].end_positions[path_id],
+                                                       g_players.units[player_id].position[unit_id]))) <
                 UNIT_SIZE.x * 0.5f)
             {
                 g_players.paths[player_id].render[path_id] = false;
@@ -509,7 +512,8 @@ void update_formation_state(int player_id)
             }
             vec3 start_position = g_players.paths[player_id].start_positions[path_id];
             vec3 end_position = g_players.paths[player_id].end_positions[path_id];
-            g_players.units[player_id].position[unit_id] = get_point_on_path(start_position, end_position, g_players.paths[player_id].progress[path_id]);
+            g_players.units[player_id].position[unit_id] =
+                get_point_on_path(start_position, end_position, g_players.paths[player_id].progress[path_id]);
         }
     }
 }
@@ -554,7 +558,6 @@ int planet_game()
 
     cstrl_texture planet_texture = cstrl_texture_generate_from_path("resources/textures/moon1024.bmp");
 
-
     players_init(&g_players, 6);
     units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f});
     units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f});
@@ -562,6 +565,9 @@ int planet_game()
     units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f});
     units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f});
     units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f});
+
+    ai_t ai;
+    ai_init(&ai, 6, g_human_player);
 
     cstrl_render_data *unit_render_data = cstrl_renderer_create_render_data();
     da_float unit_positions;
@@ -572,9 +578,10 @@ int planet_game()
     cstrl_da_float_init(&unit_uvs, 8);
     da_float unit_colors;
     cstrl_da_float_init(&unit_colors, 16);
-    add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors,
-                         (transform){g_players.units[g_human_player].position[0], (quat){1.0f, 0.0f, 0.0f, 0.0f}, UNIT_SIZE},
-                         (vec4){0.0f, 1.0f, 0.0f, 1.0f});
+    add_billboard_object(
+        &unit_positions, &unit_indices, &unit_uvs, &unit_colors,
+        (transform){g_players.units[g_human_player].position[0], (quat){1.0f, 0.0f, 0.0f, 0.0f}, UNIT_SIZE},
+        (vec4){0.0f, 1.0f, 0.0f, 1.0f});
     cstrl_renderer_add_positions(unit_render_data, unit_positions.array, 3, 4);
     cstrl_renderer_add_indices(unit_render_data, unit_indices.array, 6);
     cstrl_renderer_add_uvs(unit_render_data, unit_uvs.array);
@@ -681,6 +688,7 @@ int planet_game()
             cstrl_renderer_clear_render_attributes(path_marker_render_data);
             quat billboard_rotation =
                 cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
+            ai_update(&ai, &g_players);
             int unit_render_index = 0;
             for (int i = 0; i < MAX_PLAYER_COUNT; i++)
             {
@@ -700,7 +708,8 @@ int planet_game()
                         color.a = 1.0f;
                     }
                     update_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
-                                            (transform){g_players.units[i].position[j], billboard_rotation, UNIT_SIZE}, color);
+                                            (transform){g_players.units[i].position[j], billboard_rotation, UNIT_SIZE},
+                                            color);
                     unit_render_index++;
                 }
             }
@@ -715,22 +724,26 @@ int planet_game()
             {
                 int render_index = 0;
                 int g_human_selected_formation = g_players.selected_formation[g_human_player];
-                for (int i = 0; i < g_players.formations[g_human_player].path_heads[g_human_selected_formation].size; i++)
+                for (int i = 0; i < g_players.formations[g_human_player].path_heads[g_human_selected_formation].size;
+                     i++)
                 {
                     int path_id = g_players.formations[g_human_player].path_heads[g_human_selected_formation].array[i];
                     while (path_id != -1)
                     {
                         if (g_render_path_markers)
                         {
-                            if (!g_players.paths[g_human_player].render[path_id] || !g_players.paths[g_human_player].active[path_id] || g_players.paths[g_human_player].completed[path_id])
+                            if (!g_players.paths[g_human_player].render[path_id] ||
+                                !g_players.paths[g_human_player].active[path_id] ||
+                                g_players.paths[g_human_player].completed[path_id])
                             {
                                 path_id = g_players.paths[g_human_player].next[path_id];
                                 continue;
                             }
-                            update_billboard_object(
-                                &path_marker_positions, &path_marker_indices, NULL, &path_marker_colors, render_index,
-                                (transform){g_players.paths[g_human_player].end_positions[path_id], billboard_rotation, PATH_MARKER_SIZE},
-                                PATH_MARKER_COLOR);
+                            update_billboard_object(&path_marker_positions, &path_marker_indices, NULL,
+                                                    &path_marker_colors, render_index,
+                                                    (transform){g_players.paths[g_human_player].end_positions[path_id],
+                                                                billboard_rotation, PATH_MARKER_SIZE},
+                                                    PATH_MARKER_COLOR);
                             render_index++;
                         }
                         if (g_render_path_lines)
@@ -738,9 +751,13 @@ int planet_game()
                             vec3 start = g_players.paths[g_human_player].start_positions[path_id];
                             if (!g_players.paths[g_human_player].in_queue[path_id])
                             {
-                                start = g_players.units[g_human_player].position[g_players.formations[g_human_player].unit_ids[g_human_selected_formation].array[i]];
+                                start =
+                                    g_players.units[g_human_player].position[g_players.formations[g_human_player]
+                                                                                 .unit_ids[g_human_selected_formation]
+                                                                                 .array[i]];
                             }
-                            generate_line_segments(&path_line_positions, start, g_players.paths[g_human_player].end_positions[path_id]);
+                            generate_line_segments(&path_line_positions, start,
+                                                   g_players.paths[g_human_player].end_positions[path_id]);
                         }
                         path_id = g_players.paths[g_human_player].next[path_id];
                     }
