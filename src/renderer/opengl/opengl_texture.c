@@ -49,7 +49,6 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path)
     {
         return texture;
     }
-
     texture.id = texture_id;
     texture.path = path;
     texture.last_modified_timestamp = cstrl_get_file_timestamp(path);

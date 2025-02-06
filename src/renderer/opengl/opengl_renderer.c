@@ -64,9 +64,10 @@ CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data()
     internal_data *internal_data = data->internal_data;
 
     internal_data->vao = 0;
-    internal_data->vbos[0] = 0;
-    internal_data->vbos[1] = 0;
-    internal_data->vbos[2] = 0;
+    internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS] = 0;
+    internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS] = 0;
+    internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS] = 0;
+    internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_NORMALS] = 0;
     internal_data->ebo = 0;
     internal_data->count = 0;
     internal_data->dimensions = 2;

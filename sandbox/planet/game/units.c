@@ -8,7 +8,6 @@ bool units_init(units_t *units)
     units->count = 0;
     units->capacity = 1;
     units->position = NULL;
-    units->team = NULL;
     units->active = NULL;
     units->formation_id = NULL;
 
@@ -18,13 +17,6 @@ bool units_init(units_t *units)
     if (!units->position)
     {
         printf("Error allocating memory for unit positions\n");
-        units_free(units);
-        return false;
-    }
-    units->team = malloc(sizeof(team_t));
-    if (!units->team)
-    {
-        printf("Error allocating memory for unit teams\n");
         units_free(units);
         return false;
     }
@@ -46,7 +38,7 @@ bool units_init(units_t *units)
     return true;
 }
 
-int units_add(units_t *units, vec3 position, team_t team)
+int units_hit(units_t *units, vec3 position)
 {
     float new_x0 = position.x - UNIT_SIZE.x / 2.0f;
     float new_x1 = position.x + UNIT_SIZE.x / 2.0f;
@@ -64,8 +56,18 @@ int units_add(units_t *units, vec3 position, team_t team)
         bool same_side = cstrl_vec3_dot(position, units->position[i]) > 0.0f;
         if ((new_x0 < taken_x1 && new_x1 > taken_x0 && new_y0 < taken_y1 && new_y1 > taken_y0) && same_side)
         {
-            return -1;
+            return i;
         }
+    }
+    return -1;
+}
+
+int units_add(units_t *units, vec3 position)
+{
+    int unit_hit_id = units_hit(units, position);
+    if (unit_hit_id != -1)
+    {
+        return -1;
     }
     int new_id = 0;
     if (units->free_ids.size == 0)
@@ -77,11 +79,6 @@ int units_add(units_t *units, vec3 position, team_t team)
             if (!cstrl_realloc_vec3(&units->position, units->capacity))
             {
                 printf("Error allocating unit transforms\n");
-                return -1;
-            }
-            if (!cstrl_realloc_int(&units->team, units->capacity))
-            {
-                printf("Error allocating unit teams\n");
                 return -1;
             }
             if (!cstrl_realloc_bool(&units->active, units->capacity))
@@ -102,7 +99,6 @@ int units_add(units_t *units, vec3 position, team_t team)
     }
 
     units->position[new_id] = position;
-    units->team[new_id] = team;
     units->active[new_id] = true;
     units->formation_id[new_id] = -1;
 
@@ -112,7 +108,6 @@ int units_add(units_t *units, vec3 position, team_t team)
 void units_remove(units_t *units, int unit_id)
 {
     units->position[unit_id] = (vec3){0.0f, 0.0f, 0.0f};
-    units->team[unit_id] = NO_TEAM;
     units->active[unit_id] = false;
     cstrl_da_int_push_back(&units->free_ids, unit_id);
 }
@@ -122,7 +117,6 @@ void units_free(units_t *units)
     units->count = 0;
     units->capacity = 0;
     free(units->position);
-    free(units->team);
     free(units->active);
     cstrl_da_int_free(&units->free_ids);
 }

@@ -8,6 +8,7 @@
 #include "cstrl/cstrl_util.h"
 #include "game/formation.h"
 #include "game/paths.h"
+#include "game/players.h"
 #include "game/sphere.h"
 #include "game/units.h"
 #include "helpers/helpers.h"
@@ -20,7 +21,7 @@
 #define PLANET_LATITUDE_POINTS 18
 #define PLANET_LONGITUDE_POINTS 36
 
-#define PLANET_LATITUDE_MAX_COS 0.9f
+#define PLANET_LATITUDE_MAX_COS 0.98f
 
 static cstrl_camera *g_main_camera;
 static cstrl_camera_direction_mask g_movement;
@@ -34,20 +35,8 @@ static int g_last_y = -1;
 static float g_rotation_speed = 0.0004f;
 static bool g_moving_planet = false;
 
-typedef struct players_t
-{
-    size_t count;
-    size_t capacity;
-    bool active;
-    float *score;
-    da_int free_ids;
-} players_t;
-
-static units_t g_units;
-static formations_t g_formations;
-static int g_human_selected_formation = -1;
-static paths_t g_paths;
 static players_t g_players;
+static int g_human_player = 0;
 
 static vec3 g_planet_position = (vec3){0.0f, 0.0f, 0.0f};
 
@@ -57,66 +46,17 @@ static const vec3 PATH_MARKER_SIZE = {0.02f, 0.02f, 0.0f};
 static const vec4 PATH_MARKER_COLOR = {0.8f, 0.8f, 0.8f, 0.9f};
 
 static const vec4 UNIT_TEAM_COLORS[] = {
-    (vec4){1.0f, 0.0f, 0.0f, 0.4f}, (vec4){0.0f, 1.0f, 0.0f, 0.4f}, (vec4){0.0f, 0.0f, 1.0f, 0.4f},
-    (vec4){1.0f, 1.0f, 0.0f, 0.4f}, (vec4){1.0f, 0.0f, 1.0f, 0.4f}, (vec4){0.0f, 1.0f, 1.0f, 0.4f},
-    (vec4){1.0f, 1.0f, 1.0f, 0.4f}, (vec4){0.3f, 0.3f, 0.3f, 0.4f},
+    (vec4){0.6f, 0.0f, 0.0f, 0.8f}, (vec4){0.0f, 0.6f, 0.0f, 0.8f}, (vec4){0.0f, 0.0f, 0.6f, 0.8f},
+    (vec4){0.6f, 0.6f, 0.0f, 0.8f}, (vec4){0.6f, 0.0f, 0.6f, 0.8f}, (vec4){0.0f, 0.6f, 0.6f, 0.8f},
+    (vec4){0.6f, 0.6f, 0.6f, 0.8f}, (vec4){0.3f, 0.3f, 0.3f, 0.8f},
 };
-
-static const float FORMATION_OFFSETS[] = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
 
 static bool g_render_path_markers = true;
 static bool g_render_path_lines = true;
 
-static team_t g_human_team = RED;
-
 static bool g_making_selection = false;
 static vec2 g_selection_start;
 static vec2 g_selection_end;
-static da_int g_selected_units;
-
-static void set_units_in_formation_selected()
-{
-    if (g_selected_units.size == 0)
-    {
-        return;
-    }
-    int formation_id = g_units.formation_id[g_selected_units.array[0]];
-    if (formation_id == -1)
-    {
-        return;
-    }
-    cstrl_da_int_clear(&g_selected_units);
-    for (int i = 0; i < g_formations.unit_ids[formation_id].size; i++)
-    {
-        cstrl_da_int_push_back(&g_selected_units, g_formations.unit_ids[formation_id].array[i]);
-    }
-}
-
-static void add_selected_units_to_formation()
-{
-    g_human_selected_formation = formations_add(&g_formations);
-    if (g_human_selected_formation == -1)
-    {
-        return;
-    }
-    for (int i = 0; i < g_selected_units.size; i++)
-    {
-        int id = g_selected_units.array[i];
-        int old_formation_id = g_units.formation_id[id];
-        if (old_formation_id != -1)
-        {
-            int unit_index = cstrl_da_int_find_first(&g_formations.unit_ids[old_formation_id], id);
-            int path_id = g_formations.path_heads[old_formation_id].array[unit_index];
-            if (path_id != -1)
-            {
-                paths_recursive_remove(&g_paths, path_id);
-            }
-            formations_remove_unit(&g_formations, old_formation_id, id);
-        }
-        formations_add_unit(&g_formations, g_human_selected_formation, id);
-        g_units.formation_id[id] = g_human_selected_formation;
-    }
-}
 
 static vec3 position_from_ray_cast(vec3 d, float t)
 {
@@ -133,93 +73,9 @@ static vec3 mouse_cursor_ray_cast()
                            g_main_camera->projection, g_main_camera->view);
 }
 
-static void new_path(vec3 start_position, vec3 end_position, bool in_queue, int unit_id, int prev)
-{
-    int new_path_id = paths_add(&g_paths, start_position, end_position, prev);
-    if (new_path_id != -1)
-    {
-        int unit_index = cstrl_da_int_find_first(&g_formations.unit_ids[g_human_selected_formation], unit_id);
-        if (unit_index > 0)
-        {
-            vec3 path_vector = cstrl_vec3_sub(
-                end_position, g_units.position[g_formations.unit_ids[g_human_selected_formation].array[0]]);
-            path_vector = cstrl_vec3_normalize(path_vector);
-            vec3 formation_line =
-                cstrl_vec3_normalize(cstrl_vec3_cross(path_vector, cstrl_vec3_normalize(end_position)));
-            vec3 new_end_position = cstrl_vec3_add(
-                end_position, cstrl_vec3_mult_scalar(formation_line, FORMATION_OFFSETS[unit_index % 5] * UNIT_SIZE.x));
-            new_end_position = cstrl_vec3_sub(
-                new_end_position, cstrl_vec3_mult_scalar(path_vector, floorf(unit_index / 5.0f) * UNIT_SIZE.y * 1.5f));
-            new_end_position =
-                cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_end_position), 1.0f + UNIT_SIZE.x * 0.5f);
-            g_paths.end_positions[new_path_id] = new_end_position;
-        }
-        if (g_formations.path_heads[g_human_selected_formation].array[unit_index] != -1)
-        {
-            g_paths.in_queue[new_path_id] = true;
-        }
-        else
-        {
-            g_formations.path_heads[g_human_selected_formation].array[unit_index] = new_path_id;
-            g_paths.in_queue[new_path_id] = false;
-        }
-    }
-}
-
-static void move_units_normal_mode(vec3 end_position)
-{
-    if (g_human_selected_formation == -1)
-    {
-        add_selected_units_to_formation();
-    }
-    for (int i = 0; i < g_formations.unit_ids[g_human_selected_formation].size; i++)
-    {
-        int unit_id = g_formations.unit_ids[g_human_selected_formation].array[i];
-        vec3 start_position = g_units.position[unit_id];
-        int head_path_id = g_formations.path_heads[g_human_selected_formation].array[i];
-        if (head_path_id != -1)
-        {
-            paths_recursive_remove(&g_paths, head_path_id);
-            g_formations.path_heads[g_human_selected_formation].array[i] = -1;
-        }
-        new_path(start_position, end_position, false, unit_id, -1);
-    }
-}
-
-static void move_units_path_mode(vec3 end_position)
-{
-    if (g_human_selected_formation == -1)
-    {
-        add_selected_units_to_formation();
-    }
-    for (int i = 0; i < g_formations.unit_ids[g_human_selected_formation].size; i++)
-    {
-        int unit_id = g_formations.unit_ids[g_human_selected_formation].array[i];
-        vec3 start_position;
-        bool path_in_queue = false;
-        int prev_path = -1;
-        int path_id = g_formations.path_heads[g_human_selected_formation].array[i];
-        if (path_id == -1)
-        {
-            start_position = g_units.position[unit_id];
-        }
-        else
-        {
-            while (g_paths.next[path_id] != -1)
-            {
-                path_id = g_paths.next[path_id];
-            }
-            prev_path = path_id;
-            start_position = g_paths.end_positions[path_id];
-            path_in_queue = true;
-        }
-        new_path(start_position, end_position, path_in_queue, unit_id, prev_path);
-    }
-}
-
 static void move_units_to_cursor_position(bool path_mode)
 {
-    if (g_selected_units.size == 0)
+    if (g_players.selected_units[g_human_player].size == 0)
     {
         return;
     }
@@ -230,11 +86,11 @@ static void move_units_to_cursor_position(bool path_mode)
         vec3 end_position = position_from_ray_cast(d, t);
         if (path_mode)
         {
-            move_units_path_mode(end_position);
+            players_move_units_path_mode(&g_players, g_human_player, end_position);
         }
         else
         {
-            move_units_normal_mode(end_position);
+            players_move_units_normal_mode(&g_players, g_human_player, end_position);
         }
     }
 }
@@ -257,59 +113,6 @@ static vec3 get_point_on_path(vec3 start_position, vec3 end_position, float t)
     return position;
 }
 
-static void select_units()
-{
-    int width, height;
-    cstrl_platform_get_window_size(&g_platform_state, &width, &height);
-    vec2 min =
-        (vec2){cstrl_min(g_selection_start.x, g_selection_end.x), cstrl_min(g_selection_start.y, g_selection_end.y)};
-    min.x /= width / 2.0f;
-    min.y /= height / 2.0f;
-    vec2 max =
-        (vec2){cstrl_max(g_selection_start.x, g_selection_end.x), cstrl_max(g_selection_start.y, g_selection_end.y)};
-    max.x /= width / 2.0f;
-    max.y /= height / 2.0f;
-    g_human_selected_formation = -1;
-    int formation_state = -1;
-    quat unit_rotation = cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
-    cstrl_da_int_clear(&g_selected_units);
-    for (int i = 0; i < g_units.count; i++)
-    {
-        float dot =
-            cstrl_vec3_dot(cstrl_vec3_normalize(g_units.position[i]), cstrl_vec3_normalize(g_main_camera->position));
-        if (dot < 0.05f)
-        {
-            continue;
-        }
-        vec3 p0, p1, p2, p3;
-        get_points(&p0, &p1, &p2, &p3, (transform){g_units.position[i], unit_rotation, UNIT_SIZE});
-        vec2 p0_screen = world_to_screen(p0, (vec2){2.0f, 2.0f}, g_main_camera->projection, g_main_camera->view);
-        vec2 p2_screen = world_to_screen(p2, (vec2){2.0f, 2.0f}, g_main_camera->projection, g_main_camera->view);
-        vec2 p_min = (vec2){cstrl_min(p0_screen.x, p2_screen.x), cstrl_min(p0_screen.y, p2_screen.y)};
-        vec2 p_max = (vec2){cstrl_max(p0_screen.x, p2_screen.x), cstrl_max(p0_screen.y, p2_screen.y)};
-        if (max.x >= p_min.x && min.x <= p_max.x && max.y >= p_min.y && min.y <= p_max.y)
-        {
-            cstrl_da_int_push_back(&g_selected_units, i);
-            if (g_units.formation_id[i] != formation_state)
-            {
-                if (formation_state == -1)
-                {
-                    formation_state = g_units.formation_id[i];
-                }
-                else
-                {
-                    formation_state = -2;
-                }
-            }
-        }
-    }
-    if (formation_state > -1)
-    {
-        g_human_selected_formation = formation_state;
-        // set_units_in_formation_selected();
-    }
-}
-
 static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
     switch (key)
@@ -320,84 +123,14 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             cstrl_platform_set_should_exit(true);
         }
         break;
-    case CSTRL_KEY_W:
+    case CSTRL_KEY_1:
+    case CSTRL_KEY_R:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_movement |= CSTRL_CAMERA_DIRECTION_UP;
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-            g_movement &= ~CSTRL_CAMERA_DIRECTION_UP;
-        }
-        break;
-    case CSTRL_KEY_S:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            g_movement |= CSTRL_CAMERA_DIRECTION_DOWN;
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-            g_movement &= ~CSTRL_CAMERA_DIRECTION_DOWN;
-        }
-        break;
-    case CSTRL_KEY_A:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            g_movement |= CSTRL_CAMERA_DIRECTION_LEFT;
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-            g_movement &= ~CSTRL_CAMERA_DIRECTION_LEFT;
-        }
-        break;
-    case CSTRL_KEY_D:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            g_movement |= CSTRL_CAMERA_DIRECTION_RIGHT;
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-            g_movement &= ~CSTRL_CAMERA_DIRECTION_RIGHT;
-        }
-        break;
-    case CSTRL_KEY_Z:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            g_rotation |= CSTRL_CAMERA_DIRECTION_UP;
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-            g_rotation &= ~CSTRL_CAMERA_DIRECTION_UP;
-        }
-        break;
-    case CSTRL_KEY_X:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            g_rotation |= CSTRL_CAMERA_DIRECTION_DOWN;
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-            g_rotation &= ~CSTRL_CAMERA_DIRECTION_DOWN;
-        }
-        break;
-    case CSTRL_KEY_Q:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            g_rotation |= CSTRL_CAMERA_DIRECTION_LEFT;
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-            g_rotation &= ~CSTRL_CAMERA_DIRECTION_LEFT;
-        }
-        break;
-    case CSTRL_KEY_E:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            g_rotation |= CSTRL_CAMERA_DIRECTION_RIGHT;
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-            g_rotation &= ~CSTRL_CAMERA_DIRECTION_RIGHT;
+            g_main_camera->position = (vec3){0.0f, 0.0f, 3.0f};
+            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
+            g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            cstrl_camera_update(g_main_camera, g_movement, g_rotation);
         }
         break;
     case CSTRL_KEY_2:
@@ -413,9 +146,6 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
                        g_main_camera->view.m[i * 4 + 2], g_main_camera->view.m[i * 4 + 3]);
             }
         }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-        }
         break;
     case CSTRL_KEY_3:
         if (action == CSTRL_ACTION_PRESS)
@@ -424,9 +154,6 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
             cstrl_camera_update(g_main_camera, g_movement, g_rotation);
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
         }
         break;
     case CSTRL_KEY_4:
@@ -437,44 +164,12 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
             cstrl_camera_update(g_main_camera, g_movement, g_rotation);
         }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-        }
-        break;
-    case CSTRL_KEY_1:
-    case CSTRL_KEY_R:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            g_main_camera->position = (vec3){0.0f, 0.0f, 3.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
-            g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
-            cstrl_camera_update(g_main_camera, g_movement, g_rotation);
-        }
-        else if (action == CSTRL_ACTION_RELEASE)
-        {
-        }
         break;
     case CSTRL_KEY_5:
         if (action == CSTRL_ACTION_PRESS)
         {
             g_render_path_markers = !g_render_path_markers;
             g_render_path_lines = g_render_path_markers;
-        }
-        break;
-    case CSTRL_KEY_M:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            cstrl_mouse_mode mode = cstrl_platform_get_mouse_mode(state);
-            if (mode == CSTRL_MOUSE_DISABLED)
-            {
-                cstrl_platform_set_mouse_mode(state, CSTRL_MOUSE_NORMAL);
-                cstrl_platform_set_show_cursor(state, true);
-            }
-            else
-            {
-                cstrl_platform_set_mouse_mode(state, CSTRL_MOUSE_DISABLED);
-                cstrl_platform_set_show_cursor(state, false);
-            }
         }
         break;
     case CSTRL_KEY_F:
@@ -485,32 +180,51 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             if (hit_check(d, &t, g_main_camera->position, g_planet_position, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
             {
                 vec3 position = position_from_ray_cast(d, t);
-                units_add(&g_units, position, g_human_team);
+                units_add(&g_players.units[g_human_player], position);
             }
         }
         break;
     case CSTRL_KEY_C:
         if (action == CSTRL_ACTION_PRESS)
         {
-            printf("mouse position: %d, %d\n", g_mouse_position_x, g_mouse_position_y);
-        }
-        break;
-    case CSTRL_KEY_6:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            move_units_normal_mode((vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x / 2.0f});
+            vec3 d = mouse_cursor_ray_cast();
+            float t;
+            if (hit_check(d, &t, g_main_camera->position, g_planet_position, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            {
+                vec3 position = position_from_ray_cast(d, t);
+                int unit_id = -1;
+                int player_id = -1;
+                for (int i = 0; i < MAX_PLAYER_COUNT; i++)
+                {
+                    unit_id = units_hit(&g_players.units[i], position);
+                    if (unit_id != -1)
+                    {
+                        player_id = i;
+                        break;
+                    }
+                }
+                if (unit_id != -1)
+                {
+                    // int new_team = g_players.units[player_id].player_id[unit_id] + 1;
+                    // if (new_team > NO_TEAM)
+                    // {
+                    //     new_team = RED;
+                    // }
+                    // g_players.units[player_id].player_id[unit_id] = new_team;
+                }
+            }
         }
         break;
     case CSTRL_KEY_T:
         if (action == CSTRL_ACTION_PRESS)
         {
-            set_units_in_formation_selected();
+            players_set_units_in_formation_selected(&g_players, g_human_player);
         }
         break;
     case CSTRL_KEY_B:
         if (action == CSTRL_ACTION_PRESS)
         {
-            add_selected_units_to_formation();
+            players_add_selected_units_to_formation(&g_players, g_human_player);
         }
         break;
     default:
@@ -567,8 +281,8 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
                 g_making_selection = true;
                 g_selection_start = (vec2){g_mouse_position_x, g_mouse_position_y};
                 g_selection_end = g_selection_start;
-                g_human_selected_formation = -1;
-                cstrl_da_int_clear(&g_selected_units);
+                g_players.selected_formation[g_human_player] = -1;
+                cstrl_da_int_clear(&g_players.selected_units[g_human_player]);
             }
             else
             {
@@ -579,7 +293,7 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
         {
             if (g_making_selection)
             {
-                select_units();
+                players_select_units(&g_players, g_human_player, WINDOW_WIDTH, WINDOW_HEIGHT, g_selection_start, g_selection_end, g_main_camera);
                 g_making_selection = false;
             }
             g_moving_planet = false;
@@ -765,37 +479,37 @@ static void update_ui_object(da_float *positions, da_int *indices, da_float *uvs
     }
 }
 
-void update_formation_state()
+void update_formation_state(int player_id)
 {
-    for (int i = 0; i < g_formations.count; i++)
+    for (int i = 0; i < g_players.formations[player_id].count; i++)
     {
-        for (int j = 0; j < g_formations.unit_ids[i].size; j++)
+        for (int j = 0; j < g_players.formations[player_id].unit_ids[i].size; j++)
         {
-            int path_id = g_formations.path_heads[i].array[j];
+            int path_id = g_players.formations[player_id].path_heads[i].array[j];
             if (path_id == -1)
             {
                 continue;
             }
-            int unit_id = g_formations.unit_ids[i].array[j];
-            path_update(&g_paths, path_id);
-            if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_paths.end_positions[path_id], g_units.position[unit_id]))) <
+            int unit_id = g_players.formations[player_id].unit_ids[i].array[j];
+            path_update(&g_players.paths[player_id], path_id);
+            if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_players.paths[player_id].end_positions[path_id], g_players.units[player_id].position[unit_id]))) <
                 UNIT_SIZE.x * 0.5f)
             {
-                g_paths.render[path_id] = false;
+                g_players.paths[player_id].render[path_id] = false;
             }
-            if (g_paths.completed[path_id] || !g_paths.active[path_id])
+            if (g_players.paths[player_id].completed[path_id] || !g_players.paths[player_id].active[path_id])
             {
-                g_formations.path_heads[i].array[j] = g_paths.next[path_id];
-                if (g_formations.path_heads[i].array[j] != -1)
+                g_players.formations[player_id].path_heads[i].array[j] = g_players.paths[player_id].next[path_id];
+                if (g_players.formations[player_id].path_heads[i].array[j] != -1)
                 {
-                    g_paths.in_queue[g_formations.path_heads[i].array[j]] = false;
+                    g_players.paths[player_id].in_queue[g_players.formations[player_id].path_heads[i].array[j]] = false;
                 }
-                paths_remove(&g_paths, path_id);
+                paths_remove(&g_players.paths[player_id], path_id);
                 continue;
             }
-            vec3 start_position = g_paths.start_positions[path_id];
-            vec3 end_position = g_paths.end_positions[path_id];
-            g_units.position[unit_id] = get_point_on_path(start_position, end_position, g_paths.progress[path_id]);
+            vec3 start_position = g_players.paths[player_id].start_positions[path_id];
+            vec3 end_position = g_players.paths[player_id].end_positions[path_id];
+            g_players.units[player_id].position[unit_id] = get_point_on_path(start_position, end_position, g_players.paths[player_id].progress[path_id]);
         }
     }
 }
@@ -840,11 +554,14 @@ int planet_game()
 
     cstrl_texture planet_texture = cstrl_texture_generate_from_path("resources/textures/moon1024.bmp");
 
-    units_init(&g_units);
-    formations_init(&g_formations);
-    paths_init(&g_paths);
 
-    units_add(&g_units, (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, g_human_team);
+    players_init(&g_players, 6);
+    units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f});
+    units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f});
+    units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f});
+    units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f});
+    units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f});
+    units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f});
 
     cstrl_render_data *unit_render_data = cstrl_renderer_create_render_data();
     da_float unit_positions;
@@ -856,7 +573,7 @@ int planet_game()
     da_float unit_colors;
     cstrl_da_float_init(&unit_colors, 16);
     add_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors,
-                         (transform){g_units.position[0], (quat){1.0f, 0.0f, 0.0f, 0.0f}, UNIT_SIZE},
+                         (transform){g_players.units[g_human_player].position[0], (quat){1.0f, 0.0f, 0.0f, 0.0f}, UNIT_SIZE},
                          (vec4){0.0f, 1.0f, 0.0f, 1.0f});
     cstrl_renderer_add_positions(unit_render_data, unit_positions.array, 3, 4);
     cstrl_renderer_add_indices(unit_render_data, unit_indices.array, 6);
@@ -912,16 +629,14 @@ int planet_game()
     cstrl_shader selection_box_shader = cstrl_load_shaders_from_files("resources/shaders/default_no_texture.vert",
                                                                       "resources/shaders/default_no_texture.frag");
 
-    cstrl_da_int_init(&g_selected_units, 1);
-
     g_main_camera = cstrl_camera_create(WINDOW_WIDTH, WINDOW_HEIGHT, false);
     g_main_camera->position.z = 3.0f;
 
     cstrl_camera *ui_camera = cstrl_camera_create(WINDOW_WIDTH, WINDOW_HEIGHT, true);
     cstrl_camera_update(ui_camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
 
-    cstrl_set_uniform_3f(planet_shader.program, "material.ambient", 0.4f, 0.2f, 0.8f);
-    cstrl_set_uniform_3f(planet_shader.program, "material.diffuse", 1.0f, 0.5f, 0.31f);
+    cstrl_set_uniform_3f(planet_shader.program, "material.ambient", 0.3f, 0.3f, 0.3f);
+    cstrl_set_uniform_3f(planet_shader.program, "material.diffuse", 0.5f, 0.5f, 0.5f);
     cstrl_set_uniform_3f(planet_shader.program, "material.specular", 0.5f, 0.5f, 0.5f);
     cstrl_set_uniform_float(planet_shader.program, "material.shininess", 4.0f);
     cstrl_set_uniform_3f(planet_shader.program, "light.specular", 1.0f, 1.0f, 1.0f);
@@ -959,68 +674,75 @@ int planet_game()
             cstrl_da_float_clear(&unit_uvs);
             cstrl_da_float_clear(&unit_colors);
             cstrl_renderer_clear_render_attributes(unit_render_data);
+
+            cstrl_da_float_clear(&path_line_positions);
+            cstrl_da_float_clear(&path_marker_positions);
+            cstrl_renderer_clear_render_attributes(path_line_render_data);
+            cstrl_renderer_clear_render_attributes(path_marker_render_data);
             quat billboard_rotation =
                 cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
-            update_formation_state();
             int unit_render_index = 0;
-            for (int i = 0; i < g_units.count; i++)
+            for (int i = 0; i < MAX_PLAYER_COUNT; i++)
             {
-                if (!g_units.active[i])
+                update_formation_state(i);
+                for (int j = 0; j < g_players.units[i].count; j++)
                 {
-                    continue;
+                    if (!g_players.units[i].active[j])
+                    {
+                        continue;
+                    }
+                    vec4 color = UNIT_TEAM_COLORS[i];
+                    if (i == g_human_player && cstrl_da_int_find_first(&g_players.selected_units[i], j) != -1)
+                    {
+                        color.r += 0.2f;
+                        color.g += 0.2f;
+                        color.b += 0.2f;
+                        color.a = 1.0f;
+                    }
+                    update_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
+                                            (transform){g_players.units[i].position[j], billboard_rotation, UNIT_SIZE}, color);
+                    unit_render_index++;
                 }
-                vec4 color = UNIT_TEAM_COLORS[g_units.team[i]];
-                if (cstrl_da_int_find_first(&g_selected_units, i) != -1)
-                {
-                    color.a = 1.0f;
-                }
-                update_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
-                                        (transform){g_units.position[i], billboard_rotation, UNIT_SIZE}, color);
-                unit_render_index++;
             }
-            if (g_units.count > 0)
+            if (unit_positions.size > 0)
             {
                 cstrl_renderer_modify_render_attributes(unit_render_data, unit_positions.array, unit_uvs.array,
                                                         unit_colors.array, unit_positions.size / 3);
                 cstrl_renderer_modify_indices(unit_render_data, unit_indices.array, 0, unit_indices.size);
             }
 
-            cstrl_da_float_clear(&path_line_positions);
-            cstrl_da_float_clear(&path_marker_positions);
-            cstrl_renderer_clear_render_attributes(path_line_render_data);
-            cstrl_renderer_clear_render_attributes(path_marker_render_data);
-            if ((g_render_path_lines || g_render_path_markers) && g_formations.count > 0 &&
-                g_human_selected_formation != -1)
+            if ((g_render_path_lines || g_render_path_markers) && g_players.selected_formation[g_human_player] != -1)
             {
                 int render_index = 0;
-                for (int i = 0; i < g_formations.path_heads[g_human_selected_formation].size; i++)
+                int g_human_selected_formation = g_players.selected_formation[g_human_player];
+                for (int i = 0; i < g_players.formations[g_human_player].path_heads[g_human_selected_formation].size; i++)
                 {
-                    int path_id = g_formations.path_heads[g_human_selected_formation].array[i];
+                    int path_id = g_players.formations[g_human_player].path_heads[g_human_selected_formation].array[i];
                     while (path_id != -1)
                     {
                         if (g_render_path_markers)
                         {
-                            if (!g_paths.render[path_id] || !g_paths.active[path_id] || g_paths.completed[path_id])
+                            if (!g_players.paths[g_human_player].render[path_id] || !g_players.paths[g_human_player].active[path_id] || g_players.paths[g_human_player].completed[path_id])
                             {
-                                path_id = g_paths.next[path_id];
+                                path_id = g_players.paths[g_human_player].next[path_id];
                                 continue;
                             }
                             update_billboard_object(
                                 &path_marker_positions, &path_marker_indices, NULL, &path_marker_colors, render_index,
-                                (transform){g_paths.end_positions[path_id], billboard_rotation, PATH_MARKER_SIZE},
+                                (transform){g_players.paths[g_human_player].end_positions[path_id], billboard_rotation, PATH_MARKER_SIZE},
                                 PATH_MARKER_COLOR);
                             render_index++;
                         }
                         if (g_render_path_lines)
                         {
-                            vec3 start = g_paths.start_positions[path_id];
-                            if (!g_paths.in_queue[path_id])
+                            vec3 start = g_players.paths[g_human_player].start_positions[path_id];
+                            if (!g_players.paths[g_human_player].in_queue[path_id])
                             {
-                                start = g_units.position[g_formations.unit_ids[g_human_selected_formation].array[i]];
+                                start = g_players.units[g_human_player].position[g_players.formations[g_human_player].unit_ids[g_human_selected_formation].array[i]];
                             }
-                            generate_line_segments(&path_line_positions, start, g_paths.end_positions[path_id]);
+                            generate_line_segments(&path_line_positions, start, g_players.paths[g_human_player].end_positions[path_id]);
                         }
-                        path_id = g_paths.next[path_id];
+                        path_id = g_players.paths[g_human_player].next[path_id];
                     }
                 }
                 if (path_marker_positions.size > 0)
@@ -1095,10 +817,6 @@ int planet_game()
         cstrl_renderer_swap_buffers(&g_platform_state);
     }
 
-    units_free(&g_units);
-    formations_free(&g_formations);
-    paths_free(&g_paths);
-
     cstrl_da_float_free(&unit_positions);
     cstrl_da_float_free(&unit_uvs);
     cstrl_da_float_free(&unit_colors);
@@ -1108,16 +826,19 @@ int planet_game()
     cstrl_da_int_free(&path_marker_indices);
     cstrl_da_float_free(&path_marker_colors);
 
+    cstrl_da_float_free(&path_line_positions);
+
     cstrl_da_float_free(&selection_box_positions);
     cstrl_da_int_free(&selection_box_indices);
     cstrl_da_float_free(&selection_box_colors);
-
-    cstrl_da_int_free(&g_selected_units);
 
     cstrl_camera_free(g_main_camera);
     cstrl_camera_free(ui_camera);
     cstrl_renderer_free_render_data(planet_render_data);
     cstrl_renderer_free_render_data(unit_render_data);
+    cstrl_renderer_free_render_data(path_marker_render_data);
+    cstrl_renderer_free_render_data(path_line_render_data);
+    cstrl_renderer_free_render_data(selection_box_render_data);
     cstrl_ui_shutdown(context);
     cstrl_renderer_shutdown(&g_platform_state);
     cstrl_platform_shutdown(&g_platform_state);

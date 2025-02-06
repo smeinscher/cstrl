@@ -23,7 +23,6 @@ typedef struct units_t
     size_t count;
     size_t capacity;
     vec3 *position;
-    int *team;
     bool *active;
     int *formation_id;
     da_int free_ids;
@@ -31,7 +30,9 @@ typedef struct units_t
 
 bool units_init(units_t *units);
 
-int units_add(units_t *units, vec3 positions, team_t team);
+int units_hit(units_t *units, vec3 position);
+
+int units_add(units_t *units, vec3 positions);
 
 void units_remove(units_t *units, int unit_id);
 
