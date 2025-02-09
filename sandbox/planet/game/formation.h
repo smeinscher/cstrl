@@ -10,6 +10,7 @@ typedef struct formations_t
     size_t count;
     size_t capacity;
     bool *active;
+    bool *moving;
     da_int *path_heads;
     da_int *unit_ids;
     da_int free_ids;

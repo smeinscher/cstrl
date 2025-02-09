@@ -2,6 +2,8 @@
 #include "cstrl/cstrl_util.h"
 #include <stdlib.h>
 
+#define TRAVEL_SPEED 0.0005f
+
 bool paths_init(paths_t *paths)
 {
     paths->count = 0;
@@ -9,6 +11,7 @@ bool paths_init(paths_t *paths)
     paths->start_positions = NULL;
     paths->end_positions = NULL;
     paths->progress = NULL;
+    paths->speed = NULL;
     paths->completed = NULL;
     paths->render = NULL;
     paths->in_queue = NULL;
@@ -51,6 +54,13 @@ bool paths_init(paths_t *paths)
         paths_free(paths);
         return false;
     }
+    paths->speed = malloc(sizeof(float));
+    if (!paths->speed)
+    {
+        printf("Error allocating memory for path speed\n");
+        paths_free(paths);
+        return false;
+    }
     paths->completed = malloc(sizeof(bool));
     if (!paths->completed)
     {
@@ -83,7 +93,7 @@ bool paths_init(paths_t *paths)
     return true;
 }
 
-int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev)
+int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev, float speed)
 {
     int new_id = 0;
     if (paths->free_ids.size == 0)
@@ -115,6 +125,11 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev)
             if (!cstrl_realloc_float(&paths->progress, paths->capacity))
             {
                 printf("Error allocating paths progress\n");
+                return -1;
+            }
+            if (!cstrl_realloc_float(&paths->speed, paths->capacity))
+            {
+                printf("Error allocating paths speed\n");
                 return -1;
             }
             if (!cstrl_realloc_bool(&paths->completed, paths->capacity))
@@ -153,6 +168,7 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev)
     paths->start_positions[new_id] = start_position;
     paths->end_positions[new_id] = end_position;
     paths->progress[new_id] = 0.0f;
+    paths->speed[new_id] = speed;
     paths->completed[new_id] = false;
     paths->render[new_id] = true;
     paths->in_queue[new_id] = false;
@@ -200,9 +216,9 @@ void path_update(paths_t *paths, int path_id)
     {
         return;
     }
-    // TODO: replace 0.0025f with speed variable
     paths->progress[path_id] +=
-        0.0025f / cstrl_vec3_length(cstrl_vec3_sub(paths->end_positions[path_id], paths->start_positions[path_id]));
+        paths->speed[path_id] /
+        cstrl_vec3_length(cstrl_vec3_sub(paths->end_positions[path_id], paths->start_positions[path_id]));
     if (paths->progress[path_id] >= 1.0f)
     {
         paths->completed[path_id] = true;

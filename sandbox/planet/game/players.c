@@ -7,7 +7,8 @@ static const float FORMATION_OFFSETS[] = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
 static void new_path(players_t *players, int player_id, vec3 start_position, vec3 end_position, bool in_queue,
                      int unit_id, int prev)
 {
-    int new_path_id = paths_add(&players->paths[player_id], start_position, end_position, prev);
+    int new_path_id = paths_add(&players->paths[player_id], start_position, end_position, prev,
+                                players->units[player_id].type[unit_id] == JET ? 0.005f : 0.0005f);
     if (new_path_id != -1)
     {
         int unit_index = cstrl_da_int_find_first(
@@ -171,6 +172,10 @@ void players_select_units(players_t *players, int player_id, int viewport_width,
     cstrl_da_int_clear(&players->selected_units[player_id]);
     for (int i = 0; i < players->units[player_id].count; i++)
     {
+        if (players->units[player_id].type[i] == CITY || players->units[player_id].type[i] == JET)
+        {
+            continue;
+        }
         float dot = cstrl_vec3_dot(cstrl_vec3_normalize(players->units[player_id].position[i]),
                                    cstrl_vec3_normalize(camera->position));
         if (dot < 0.05f)

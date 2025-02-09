@@ -1,23 +1,68 @@
 #include "ai.h"
-#include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_util.h"
+#include "formation.h"
 #include "players.h"
 #include <math.h>
+#include <stdlib.h>
 
-static void move_in_circle(ai_t *ai, int ai_id, players_t *players)
+static void move_randomly(ai_t *ai, int ai_id, players_t *players)
 {
-    if (players->selected_units[ai_id].size == 0)
+    if (players->formations[ai_id].count == 0)
     {
-        cstrl_da_int_push_back(&players->selected_units[ai_id], 0);
+        int ground_formation_id = -1;
+        for (int i = 0; i < players->units[ai_id].count; i++)
+        {
+            if (players->units[ai_id].type[i] == HUMVEE || players->units[ai_id].type[i] == TANK)
+            {
+                if (ground_formation_id == -1)
+                {
+                    ground_formation_id = formations_add(&players->formations[ai_id]);
+                }
+                formations_add_unit(&players->formations[ai_id], ground_formation_id, i);
+                players->units[ai_id].formation_id[i] = ground_formation_id;
+                if (players->formations[ai_id].unit_ids[ground_formation_id].size >= 5)
+                {
+                    ground_formation_id = -1;
+                }
+            }
+            else if (players->units[ai_id].type[i] == JET)
+            {
+                players->units[ai_id].formation_id[i] = formations_add(&players->formations[ai_id]);
+                formations_add_unit(&players->formations[ai_id], players->units[ai_id].formation_id[i], i);
+            }
+        }
     }
-    if (players->paths[ai_id].count == 0 || players->paths[ai_id].active[0] == false)
+    for (int i = 0; i < players->formations[ai_id].count; i++)
     {
-        vec3 new_position =
-            cstrl_vec3_add(players->units[ai_id].position[0],
-                           (vec3){cosf(cstrl_platform_get_absolute_time()), sinf(cstrl_platform_get_absolute_time()),
-                                  cosf(cstrl_platform_get_absolute_time())});
-        new_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_position), 1.0f + UNIT_SIZE.x * 0.5f);
-        players_move_units_normal_mode(players, ai_id, new_position);
+        players->selected_formation[ai_id] = i;
+        if (!players->formations[ai_id].moving[i])
+        {
+            int leader_unit_id = players->formations[ai_id].unit_ids[i].array[0];
+            vec3 new_position = cstrl_vec3_add(players->units[ai_id].position[leader_unit_id],
+                                               (vec3){cosf(rand()), sinf(rand()), cosf(rand())});
+            if (players->units[ai_id].type[leader_unit_id] != JET)
+            {
+                new_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_position), 1.0f + UNIT_SIZE.x * 0.5f);
+            }
+            else
+            {
+                new_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_position), 1.0f + UNIT_SIZE.x * 5.0f);
+            }
+            players_move_units_normal_mode(players, ai_id, new_position);
+        }
+        // TODO: other logic, this feels stupid atm
+        else
+        {
+            players->formations[ai_id].moving[i] = false;
+            for (int j = 0; j < players->formations[ai_id].path_heads[i].size; j++)
+            {
+                if (players->formations[ai_id].path_heads[i].array[j] == -1)
+                {
+                    continue;
+                }
+                players->formations[ai_id].moving[i] = true;
+            }
+        }
     }
 }
 
@@ -32,7 +77,8 @@ void ai_init(ai_t *ai, int player_count, int human_player_id)
         }
         ai->active[i] = true;
         // TODO: make random
-        ai->objective[i] = GO_IN_CIRCLES;
+        ai->objective[i] = MOVE_RANDOMLY;
+        ai->cached_unit_count[i] = 0;
     }
 }
 
@@ -47,8 +93,8 @@ void ai_update(ai_t *ai, players_t *players)
 
         switch (ai->objective[i])
         {
-        case GO_IN_CIRCLES:
-            move_in_circle(ai, i, players);
+        case MOVE_RANDOMLY:
+            move_randomly(ai, i, players);
             break;
         default:
             break;

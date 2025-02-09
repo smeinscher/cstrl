@@ -13,6 +13,7 @@ typedef struct paths_t
     vec3 *start_positions;
     vec3 *end_positions;
     float *progress;
+    float *speed;
     bool *completed;
     bool *render;
     bool *in_queue;
@@ -22,7 +23,7 @@ typedef struct paths_t
 
 bool paths_init(paths_t *paths);
 
-int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev);
+int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev, float speed);
 
 void paths_remove(paths_t *paths, int path_id);
 

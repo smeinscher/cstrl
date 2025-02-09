@@ -34,6 +34,13 @@ bool units_init(units_t *units)
         units_free(units);
         return false;
     }
+    units->type = malloc(sizeof(int));
+    if (!units->type)
+    {
+        printf("Error allocating memory for unit type\n");
+        units_free(units);
+        return false;
+    }
 
     return true;
 }
@@ -62,13 +69,13 @@ int units_hit(units_t *units, vec3 position)
     return -1;
 }
 
-int units_add(units_t *units, vec3 position)
+int units_add(units_t *units, vec3 position, int type)
 {
-    int unit_hit_id = units_hit(units, position);
-    if (unit_hit_id != -1)
-    {
-        return -1;
-    }
+    // int unit_hit_id = units_hit(units, position);
+    // if (unit_hit_id != -1)
+    // {
+    //     return -1;
+    // }
     int new_id = 0;
     if (units->free_ids.size == 0)
     {
@@ -91,6 +98,11 @@ int units_add(units_t *units, vec3 position)
                 printf("Error allocating unit formation_ids\n");
                 return -1;
             }
+            if (!cstrl_realloc_int(&units->type, units->capacity))
+            {
+                printf("Error allocating unit type\n");
+                return -1;
+            }
         }
     }
     else
@@ -101,6 +113,7 @@ int units_add(units_t *units, vec3 position)
     units->position[new_id] = position;
     units->active[new_id] = true;
     units->formation_id[new_id] = -1;
+    units->type[new_id] = type;
 
     return new_id;
 }
@@ -118,5 +131,7 @@ void units_free(units_t *units)
     units->capacity = 0;
     free(units->position);
     free(units->active);
+    free(units->formation_id);
+    free(units->type);
     cstrl_da_int_free(&units->free_ids);
 }

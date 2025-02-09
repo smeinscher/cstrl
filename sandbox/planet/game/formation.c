@@ -19,6 +19,13 @@ bool formations_init(formations_t *formations)
         formations_free(formations);
         return false;
     }
+    formations->moving = malloc(sizeof(bool));
+    if (!formations->moving)
+    {
+        printf("Error allocating memory for formations moving\n");
+        formations_free(formations);
+        return false;
+    }
     formations->path_heads = malloc(sizeof(da_int));
     if (!formations->path_heads)
     {
@@ -50,6 +57,11 @@ int formations_add(formations_t *formations)
                 printf("Error allocating formation active\n");
                 return -1;
             }
+            if (!cstrl_realloc_bool(&formations->moving, formations->capacity))
+            {
+                printf("Error allocating formation moving\n");
+                return -1;
+            }
             if (!cstrl_realloc_da_int(&formations->path_heads, formations->capacity))
             {
                 printf("Error allocating formation path_heads\n");
@@ -67,6 +79,7 @@ int formations_add(formations_t *formations)
         new_id = cstrl_da_int_pop_back(&formations->free_ids);
     }
     formations->active[new_id] = true;
+    formations->moving[new_id] = false;
     cstrl_da_int_init(&formations->path_heads[new_id], 1);
     cstrl_da_int_init(&formations->unit_ids[new_id], 1);
     return new_id;

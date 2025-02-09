@@ -8,7 +8,7 @@
 
 typedef enum ai_objective
 {
-    GO_IN_CIRCLES
+    MOVE_RANDOMLY
 } ai_objective;
 
 typedef struct ai_t
@@ -16,6 +16,7 @@ typedef struct ai_t
     ai_objective objective[MAX_AI_COUNT];
     bool active[MAX_AI_COUNT];
     int player_id[MAX_AI_COUNT];
+    int cached_unit_count[MAX_AI_COUNT];
 } ai_t;
 
 void ai_init(ai_t *ai, int player_count, int human_player_id);
