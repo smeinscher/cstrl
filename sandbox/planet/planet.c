@@ -54,7 +54,7 @@ static const vec4 PATH_MARKER_COLOR = {0.8f, 0.8f, 0.8f, 0.9f};
 
 static const vec4 UNIT_TEAM_COLORS[] = {
     (vec4){0.6f, 0.0f, 0.0f, 0.8f}, (vec4){0.0f, 0.6f, 0.0f, 0.8f}, (vec4){0.0f, 0.2f, 0.6f, 0.8f},
-    (vec4){0.6f, 0.6f, 0.0f, 0.8f}, (vec4){0.9f, 0.9f, 0.9f, 0.8f}, (vec4){0.0f, 0.6f, 0.6f, 0.8f},
+    (vec4){0.6f, 0.6f, 0.0f, 0.8f}, (vec4){0.8f, 0.8f, 0.8f, 0.8f}, (vec4){0.0f, 0.6f, 0.6f, 0.8f},
     (vec4){0.6f, 0.0f, 0.6f, 0.8f}, (vec4){0.3f, 0.3f, 0.3f, 0.8f},
 };
 
@@ -627,7 +627,7 @@ int planet_game()
     units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, CITY);
     units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, CITY);
 
-    for (int i = 0; i < 200; i++)
+    for (int i = 0; i < 5; i++)
     {
         units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, HUMVEE);
         units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);

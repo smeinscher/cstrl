@@ -204,6 +204,15 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
             {
                 button = CSTRL_MOUSE_BUTTON_RIGHT;
             }
+            else if (event->button == Button4 || event->button == Button5)
+            {
+                if (state->state_common.callbacks.mouse_wheel != NULL)
+                {
+                    int move_y = event->button == Button4 ? 120 : -120;
+                    state->state_common.callbacks.mouse_wheel(platform_state, 0, move_y, 0);
+                }
+                break;
+            }
             else
             {
                 button = CSTRL_MOUSE_BUTTON_UNKNOWN;
