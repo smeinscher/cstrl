@@ -137,9 +137,13 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path);
 
 CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height);
 
+CSTRL_API cstrl_texture cstrl_texture_cube_map_generate_from_folder(const char *folder);
+
 CSTRL_API void cstrl_texture_hot_reload(cstrl_texture *texture);
 
 CSTRL_API void cstrl_texture_bind(cstrl_texture texture);
+
+CSTRL_API void cstrl_texture_cube_map_bind(cstrl_texture texture);
 
 CSTRL_API void cstrl_set_active_texture(unsigned int active_texture);
 

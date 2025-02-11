@@ -39,7 +39,7 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    glDepthFunc(GL_LEQUAL);
     glEnable(GL_LINE_SMOOTH);
     glLineWidth(1.0f);
 

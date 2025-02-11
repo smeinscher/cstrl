@@ -25,7 +25,7 @@ static void move_randomly(ai_t *ai, int ai_id, players_t *players)
                     ground_formation_id = -1;
                 }
             }
-            else if (players->units[ai_id].type[i] == JET)
+            else if (players->units[ai_id].type[i] == JET || players->units[ai_id].type[i] == PLANE)
             {
                 players->units[ai_id].formation_id[i] = formations_add(&players->formations[ai_id]);
                 formations_add_unit(&players->formations[ai_id], players->units[ai_id].formation_id[i], i);
@@ -40,7 +40,8 @@ static void move_randomly(ai_t *ai, int ai_id, players_t *players)
             int leader_unit_id = players->formations[ai_id].unit_ids[i].array[0];
             vec3 new_position = cstrl_vec3_add(players->units[ai_id].position[leader_unit_id],
                                                (vec3){cosf(rand()), sinf(rand()), cosf(rand())});
-            if (players->units[ai_id].type[leader_unit_id] != JET)
+            if (players->units[ai_id].type[leader_unit_id] != JET &&
+                players->units[ai_id].type[leader_unit_id] != PLANE)
             {
                 new_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_position), 1.0f + UNIT_SIZE.x * 0.5f);
             }

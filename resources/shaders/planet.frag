@@ -29,7 +29,7 @@ struct light_t
 
 uniform light_t light;
 
-uniform sampler2D texture0;
+uniform samplerCube texture0;
 
 void main()
 {
@@ -46,5 +46,5 @@ void main()
     vec3 specular = light.specular * (spec * material.specular);
 
     vec3 result = ambient + diffuse + specular;
-    frag_color = vec4(result, 1.0) * texture(texture0, uv);
+    frag_color = vec4(result, 1.0) * texture(texture0, frag_position);
 }

@@ -9,8 +9,8 @@
 typedef enum team_t
 {
     RED,
-    GREEN,
     BLUE,
+    GREEN,
     YELLOW,
     WHITE,
     CYAN,
@@ -23,6 +23,7 @@ typedef enum unit_type
     CITY,
     HUMVEE,
     JET,
+    PLANE,
     TANK,
     MAX_UNIT_TYPES
 } unit_type;

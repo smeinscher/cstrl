@@ -824,6 +824,15 @@ CSTRL_INLINE mat3 cstrl_mat4_upper_left(mat4 m)
 }
 
 // TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_view_remove_translation(mat4 m)
+{
+    return (mat4){m.xx, m.yx, m.zx, 0.0f,
+                  m.yx, m.yy, m.zy, 0.0f,
+                  m.xz, m.yz, m.zz, 0.0f,
+                  0.0f, 0.0f, 0.0f, 1.0f};
+}
+
+// TODO: add to unit tests
 // From glm compute_inverse function
 CSTRL_INLINE mat4 cstrl_mat4_inverse_glm(mat4 m)
 {
