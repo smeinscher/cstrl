@@ -1,15 +1,16 @@
 #include "players.h"
 #include "../helpers/helpers.h"
 #include "cstrl/cstrl_util.h"
+#include "units.h"
 
 static const float FORMATION_OFFSETS[] = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
 
 static void new_path(players_t *players, int player_id, vec3 start_position, vec3 end_position, bool in_queue,
                      int unit_id, int prev)
 {
-    float speed = players->units[player_id].type[unit_id] == JET || players->units[player_id].type[unit_id] == PLANE
-                      ? 0.005f
-                      : 0.0005f;
+    bool ground_units =
+        players->units[player_id].type[unit_id] == TANK || players->units[player_id].type[unit_id] == HUMVEE;
+    float speed = !ground_units ? 0.005f : 0.0005f;
     int new_path_id = paths_add(&players->paths[player_id], start_position, end_position, prev, speed);
     if (new_path_id != -1)
     {
@@ -17,6 +18,7 @@ static void new_path(players_t *players, int player_id, vec3 start_position, vec
             &players->formations[player_id].unit_ids[players->selected_formation[player_id]], unit_id);
         if (unit_index > 0)
         {
+            float mod = ground_units ? 0.5f : 5.0f;
             vec3 path_vector = cstrl_vec3_sub(
                 end_position,
                 players->units[player_id].position
@@ -28,8 +30,7 @@ static void new_path(players_t *players, int player_id, vec3 start_position, vec
                 end_position, cstrl_vec3_mult_scalar(formation_line, FORMATION_OFFSETS[unit_index % 5] * UNIT_SIZE.x));
             new_end_position = cstrl_vec3_sub(
                 new_end_position, cstrl_vec3_mult_scalar(path_vector, floorf(unit_index / 5.0f) * UNIT_SIZE.y * 1.5f));
-            new_end_position =
-                cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_end_position), 1.0f + UNIT_SIZE.x * 0.5f);
+            new_end_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_end_position), 1.0f + UNIT_SIZE.x * mod);
             players->paths[player_id].end_positions[new_path_id] = new_end_position;
         }
         if (players->formations[player_id].path_heads[players->selected_formation[player_id]].array[unit_index] != -1)
@@ -160,7 +161,7 @@ void players_move_units_path_mode(players_t *players, int player_id, vec3 end_po
 }
 
 void players_select_units(players_t *players, int player_id, int viewport_width, int viewport_height,
-                          vec2 selection_start, vec2 selection_end, cstrl_camera *camera)
+                          vec2 selection_start, vec2 selection_end, cstrl_camera *camera, int selection_type)
 {
     vec2 min = (vec2){cstrl_min(selection_start.x, selection_end.x), cstrl_min(selection_start.y, selection_end.y)};
     min.x /= viewport_width / 2.0f;
@@ -174,10 +175,27 @@ void players_select_units(players_t *players, int player_id, int viewport_width,
     cstrl_da_int_clear(&players->selected_units[player_id]);
     for (int i = 0; i < players->units[player_id].count; i++)
     {
-        if (players->units[player_id].type[i] == CITY || players->units[player_id].type[i] == JET ||
-            players->units[player_id].type[i] == PLANE)
+        // TODO: make enum (or not I don't give af)
+        switch (selection_type)
         {
-            continue;
+        case 0:
+            if (players->units[player_id].type[i] != CITY)
+            {
+                continue;
+            }
+            break;
+        case 1:
+            if (players->units[player_id].type[i] != TANK && players->units[player_id].type[i] != HUMVEE)
+            {
+                continue;
+            }
+            break;
+        case 2:
+            if (players->units[player_id].type[i] != JET && players->units[player_id].type[i] != PLANE)
+            {
+                continue;
+            }
+            break;
         }
         float dot = cstrl_vec3_dot(cstrl_vec3_normalize(players->units[player_id].position[i]),
                                    cstrl_vec3_normalize(camera->position));

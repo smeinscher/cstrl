@@ -1,5 +1,4 @@
 #include "ai.h"
-#include "cstrl/cstrl_util.h"
 #include "formation.h"
 #include "players.h"
 #include <math.h>

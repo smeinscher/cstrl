@@ -80,6 +80,93 @@ CSTRL_API cstrl_shader cstrl_load_shaders_from_source(const char *vertex_shader_
     return shader;
 }
 
+CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_files(const char *vertex_shader_path,
+                                                                  const char *fragment_shader_path,
+                                                                  const char *tessellation_control_shader_path,
+                                                                  const char *tessellation_evaluation_shader_path)
+{
+    long file_size;
+    char *vertex_shader_source = cstrl_read_file(vertex_shader_path, &file_size);
+    char *fragment_shader_source = cstrl_read_file(fragment_shader_path, &file_size);
+    char *tessellation_control_shader_source = cstrl_read_file(tessellation_control_shader_path, &file_size);
+    char *tessellation_evaluation_shader_source = cstrl_read_file(tessellation_evaluation_shader_path, &file_size);
+    cstrl_shader shader = cstrl_load_shaders_tessellation_from_source(vertex_shader_source, fragment_shader_source,
+                                                                      tessellation_control_shader_source,
+                                                                      tessellation_evaluation_shader_source);
+    shader.vertex_shader_path = vertex_shader_path;
+    shader.fragment_shader_path = fragment_shader_path;
+    shader.vertex_shader_last_modified_timestamp = cstrl_get_file_timestamp(vertex_shader_path);
+    shader.fragment_shader_last_modified_timestamp = cstrl_get_file_timestamp(fragment_shader_path);
+
+    free(vertex_shader_source);
+    free(fragment_shader_source);
+    free(tessellation_control_shader_source);
+    free(tessellation_evaluation_shader_source);
+
+    return shader;
+}
+
+CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_source(const char *vertex_shader_source,
+                                                                   const char *fragment_shader_source,
+                                                                   const char *tessellation_control_shader_source,
+                                                                   const char *tessellation_evaluation_shader_source)
+{
+    cstrl_shader shader = {0};
+    const unsigned int vertex_shader = compile_shader(vertex_shader_source, GL_VERTEX_SHADER);
+    if (vertex_shader == 0)
+    {
+        log_error("Vertex shader failed to compile");
+        return shader;
+    }
+    const unsigned int fragment_shader = compile_shader(fragment_shader_source, GL_FRAGMENT_SHADER);
+    if (fragment_shader == 0)
+    {
+        log_error("Fragment shader failed to compile");
+        return shader;
+    }
+    const unsigned int tessellation_control_shader =
+        compile_shader(tessellation_control_shader_source, GL_TESS_CONTROL_SHADER);
+    if (tessellation_control_shader == 0)
+    {
+        log_error("Tessellation Control shader failed to compile");
+        return shader;
+    }
+    const unsigned int tessellation_evaluation_shader =
+        compile_shader(tessellation_evaluation_shader_source, GL_TESS_EVALUATION_SHADER);
+    if (tessellation_evaluation_shader == 0)
+    {
+        log_error("Tessellation Evaluation shader failed to compile");
+        return shader;
+    }
+
+    unsigned int shader_program = glCreateProgram();
+
+    glAttachShader(shader_program, vertex_shader);
+    glAttachShader(shader_program, fragment_shader);
+    glAttachShader(shader_program, tessellation_control_shader);
+    glAttachShader(shader_program, tessellation_evaluation_shader);
+
+    int success;
+    glLinkProgram(shader_program);
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        char info_log[MAX_LOG_BUFFER_SIZE];
+        glGetProgramInfoLog(shader_program, MAX_LOG_BUFFER_SIZE, NULL, info_log);
+        log_error("Failed to link shader_program:\n\t%s", info_log);
+    }
+
+    glDeleteShader(vertex_shader);
+    glDeleteShader(fragment_shader);
+    glDeleteShader(tessellation_control_shader);
+    glDeleteShader(tessellation_evaluation_shader);
+
+    glUseProgram(shader_program);
+
+    shader.program = shader_program;
+    return shader;
+}
+
 unsigned int compile_shader(const char *shader_source, unsigned int type)
 {
     const unsigned int shader = glCreateShader(type);
@@ -107,7 +194,13 @@ CSTRL_API void cstrl_use_shader(cstrl_shader shader)
 CSTRL_API void cstrl_set_uniform_int(unsigned int program, const char *name, int d)
 {
     glUseProgram(program);
-    glUniform1d(glGetUniformLocation(program, name), d);
+    glUniform1i(glGetUniformLocation(program, name), d);
+}
+
+CSTRL_API void cstrl_set_uniform_int_array(unsigned int program, const char *name, int count, int *d)
+{
+    glUseProgram(program);
+    glUniform1iv(glGetUniformLocation(program, name), count, d);
 }
 
 CSTRL_API void cstrl_set_uniform_float(unsigned int program, const char *name, float f)

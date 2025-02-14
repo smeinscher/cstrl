@@ -1,5 +1,6 @@
 #include "sphere.h"
 #include "cstrl/cstrl_math.h"
+#include "cstrl/cstrl_util.h"
 
 void generate_sphere_lat_long(float *positions, int *indices, float *uvs, float *normals, int latitude_point_count,
                               int longitude_point_count)
@@ -92,6 +93,41 @@ static void generate_terrain_face_mesh(float *positions, int *indices, float *uv
                 indices[indices_index + 4] = i + 1;
                 indices[indices_index + 5] = i + resolution + 1;
                 indices_index += 6;
+            }
+        }
+    }
+}
+
+void generate_partial_terrain_face_mesh(da_float *positions, da_int *indices, int resolution, vec2 size, vec3 position)
+{
+    vec3 local_up = cstrl_vec3_normalize(position);
+    vec3 axis_a = {local_up.y, local_up.z, local_up.x};
+    vec3 axis_b = cstrl_vec3_cross(local_up, axis_a);
+
+    int vertex_offset = positions->size / 3;
+    for (int y = 0; y < resolution; y++)
+    {
+        for (int x = 0; x < resolution; x++)
+        {
+            int i = vertex_offset + x + y * resolution;
+            vec2 percent = cstrl_vec2_div_scalar((vec2){x, y}, resolution - 1);
+            // percent = cstrl_vec2_mult(percent, cstrl_vec2_mult_scalar(size, 1.0f / (float)(resolution - 1)));
+            vec3 point_on_unit_cube_a = cstrl_vec3_mult_scalar(axis_a, (percent.x - 0.5f) * size.x);
+            vec3 point_on_unit_cube_b = cstrl_vec3_mult_scalar(axis_b, (percent.y - 0.5f) * size.y);
+            vec3 point_on_unit_cube =
+                cstrl_vec3_add(local_up, cstrl_vec3_add(point_on_unit_cube_a, point_on_unit_cube_b));
+            vec3 point_on_unit_sphere = cstrl_vec3_normalize(point_on_unit_cube);
+            cstrl_da_float_push_back(positions, point_on_unit_sphere.x);
+            cstrl_da_float_push_back(positions, point_on_unit_sphere.y);
+            cstrl_da_float_push_back(positions, point_on_unit_sphere.z);
+            if (x != resolution - 1 && y != resolution - 1)
+            {
+                cstrl_da_int_push_back(indices, i);
+                cstrl_da_int_push_back(indices, i + resolution + 1);
+                cstrl_da_int_push_back(indices, i + resolution);
+                cstrl_da_int_push_back(indices, i);
+                cstrl_da_int_push_back(indices, i + 1);
+                cstrl_da_int_push_back(indices, i + resolution + 1);
             }
         }
     }

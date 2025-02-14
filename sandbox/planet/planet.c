@@ -15,6 +15,7 @@
 #include "helpers/helpers.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define INITIAL_WINDOW_WIDTH 1280
 #define INITIAL_WINDOW_HEIGHT 720
@@ -58,14 +59,21 @@ static const vec4 UNIT_TEAM_COLORS[] = {
     (vec4){0.6f, 0.0f, 0.6f, 0.8f}, (vec4){0.3f, 0.3f, 0.3f, 0.8f},
 };
 
+static const vec4 BORDER_COLORS[] = {
+    (vec4){0.6f, 0.0f, 0.0f, 0.2f}, (vec4){0.0f, 0.2f, 0.6f, 0.2f}, (vec4){0.0f, 0.6f, 0.0f, 0.2f},
+    (vec4){0.6f, 0.6f, 0.0f, 0.2f}, (vec4){0.8f, 0.8f, 0.8f, 0.2f}, (vec4){0.0f, 0.6f, 0.6f, 0.2f},
+    (vec4){0.6f, 0.0f, 0.6f, 0.2f}, (vec4){0.3f, 0.3f, 0.3f, 0.2f},
+};
+
 static bool g_render_path_markers = true;
 static bool g_render_path_lines = true;
 
-static bool g_making_selection = false;
+static bool g_making_ground_selection = false;
+static bool g_making_air_selection = false;
 static vec2 g_selection_start;
 static vec2 g_selection_end;
 
-static bool g_border_update = false;
+static bool g_border_update = true;
 
 static vec3 position_from_ray_cast(vec3 d, float t)
 {
@@ -90,9 +98,16 @@ static void move_units_to_cursor_position(bool path_mode)
     }
     vec3 d = mouse_cursor_ray_cast();
     float t;
-    if (hit_check(d, &t, g_main_camera->position, g_planet_position, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+    int type = g_players.units[g_human_player].type[g_players.selected_units[g_human_player].array[0]];
+    bool ground_units = type == TANK || type == HUMVEE;
+    if (hit_check(d, &t, g_main_camera->position, g_planet_position,
+                  (PLANET_SIZE.x + UNIT_SIZE.x * (ground_units ? 1.0 : 10.0f)) * 0.5f))
     {
         vec3 end_position = position_from_ray_cast(d, t);
+        if (!ground_units)
+        {
+            end_position = cstrl_vec3_mult_scalar(end_position, 1.0f + UNIT_SIZE.x * 5.0f);
+        }
         if (path_mode)
         {
             players_move_units_path_mode(&g_players, g_human_player, end_position);
@@ -248,7 +263,7 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     g_mouse_position_x = xpos;
     g_mouse_position_y = ypos;
 
-    if (g_making_selection)
+    if (g_making_ground_selection || g_making_air_selection)
     {
         g_selection_end = (vec2){g_mouse_position_x, g_mouse_position_y};
     }
@@ -289,7 +304,15 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
         {
             if (mods & CSTRL_KEY_MOD_CONTROL)
             {
-                g_making_selection = true;
+                g_making_ground_selection = true;
+                g_selection_start = (vec2){g_mouse_position_x, g_mouse_position_y};
+                g_selection_end = g_selection_start;
+                g_players.selected_formation[g_human_player] = -1;
+                cstrl_da_int_clear(&g_players.selected_units[g_human_player]);
+            }
+            else if (mods & CSTRL_KEY_MOD_SHIFT)
+            {
+                g_making_air_selection = true;
                 g_selection_start = (vec2){g_mouse_position_x, g_mouse_position_y};
                 g_selection_end = g_selection_start;
                 g_players.selected_formation[g_human_player] = -1;
@@ -299,16 +322,20 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
             {
                 vec2 mouse_position = {g_mouse_position_x, g_mouse_position_y};
                 players_select_units(&g_players, g_human_player, g_main_camera->viewport.x, g_main_camera->viewport.y,
-                                     mouse_position, mouse_position, g_main_camera);
+                                     mouse_position, mouse_position, g_main_camera, 0);
             }
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            if (g_making_selection)
+            if (g_making_ground_selection || g_making_air_selection)
             {
                 players_select_units(&g_players, g_human_player, g_main_camera->viewport.x, g_main_camera->viewport.y,
-                                     g_selection_start, g_selection_end, g_main_camera);
-                g_making_selection = false;
+                                     g_selection_start, g_selection_end, g_main_camera,
+                                     g_making_ground_selection ? 1
+                                     : g_making_air_selection  ? 2
+                                                               : 0);
+                g_making_ground_selection = false;
+                g_making_air_selection = false;
             }
         }
     }
@@ -538,187 +565,6 @@ static void update_ui_object(da_float *positions, da_int *indices, da_float *uvs
     }
 }
 
-bool inside_polygon(da_float *polygon, vec3 point)
-{
-    int count = 0;
-    for (int i = 0; i < polygon->size / 3 - 1; i++)
-    {
-        vec3 polygon_point0 = (vec3){polygon->array[i * 3], polygon->array[i * 3 + 1], polygon->array[i * 3 + 2]};
-        vec3 polygon_point1 = (vec3){polygon->array[i * 3 + 3], polygon->array[i * 3 + 4], polygon->array[i * 3 + 5]};
-        if (cstrl_vec3_is_equal(polygon_point1, (vec3){0.0f, 0.0f, 0.0f}))
-        {
-            i++;
-            continue;
-        }
-        if (point.y < polygon_point0.y != point.y < polygon_point1.y &&
-            point.x < polygon_point0.x + ((point.y - polygon_point0.y) / (polygon_point1.y - polygon_point0.y)) *
-                                             (polygon_point1.x - polygon_point0.x))
-        {
-            count++;
-        }
-    }
-    return count % 2 == 1;
-}
-
-void rectangle_intersection_points(da_float *result, da_float *rect0, da_float *rect1)
-{
-    vec3 p0 = {rect0->array[0], rect0->array[1], rect0->array[2]};
-    vec3 p1 = {rect0->array[3], rect0->array[4], rect0->array[5]};
-    vec3 p2 = {rect1->array[0], rect1->array[1], rect1->array[2]};
-    vec3 p3 = {rect1->array[3], rect1->array[4], rect1->array[5]};
-
-    vec3 result0 = {cstrl_max(p0.x, p2.x), cstrl_max(p0.y, p2.y), cstrl_max(p0.z, p2.z)};
-    vec3 result1 = {cstrl_min(p1.x, p3.x), cstrl_min(p1.y, p3.y), cstrl_min(p1.z, p3.z)};
-
-    cstrl_da_float_push_back(result, result0.x);
-    cstrl_da_float_push_back(result, result0.y);
-    cstrl_da_float_push_back(result, result0.z);
-    cstrl_da_float_push_back(result, result1.x);
-    cstrl_da_float_push_back(result, result1.y);
-    cstrl_da_float_push_back(result, result1.z);
-}
-
-void recalculate_border(da_float *positions, da_int *indices, da_float *colors, vec4 color, units_t *units)
-{
-    size_t initial_size = positions->size;
-    da_float border_points;
-    cstrl_da_float_init(&border_points, 12);
-    for (int i = 0; i < units->count; i++)
-    {
-        if (units->type[i] != CITY)
-        {
-            continue;
-        }
-        vec3 origin_point = units->position[i];
-        vec3 p0 = {0.0f, UNIT_SIZE.x * 4.0f, 0.0f};
-        vec3 p1 = {-UNIT_SIZE.x * 4.0f, 0.0f, 0.0f};
-        vec3 p2 = {0.0f, -UNIT_SIZE.x * 4.0f, 0.0f};
-        vec3 p3 = {UNIT_SIZE.x * 4.0f, 0.0f, 0.0f};
-        float angle = acosf(cstrl_vec3_dot((vec3){0.0f, 0.0f, 1.0f}, cstrl_vec3_normalize(origin_point)));
-        vec3 axis = cstrl_vec3_cross((vec3){0.0f, 0.0f, 1.0f}, origin_point);
-        if (!cstrl_vec3_is_equal(axis, (vec3){0.0f, 0.0f, 0.0f}))
-        {
-            p0 = cstrl_vec3_rotate_along_axis(p0, angle, axis);
-            p1 = cstrl_vec3_rotate_along_axis(p1, angle, axis);
-            p2 = cstrl_vec3_rotate_along_axis(p2, angle, axis);
-            p3 = cstrl_vec3_rotate_along_axis(p3, angle, axis);
-        }
-        p0 = cstrl_vec3_add(origin_point, p0);
-        p1 = cstrl_vec3_add(origin_point, p1);
-        p2 = cstrl_vec3_add(origin_point, p2);
-        p3 = cstrl_vec3_add(origin_point, p3);
-
-        p0 = cstrl_vec3_normalize(p0);
-        p1 = cstrl_vec3_normalize(p1);
-        p2 = cstrl_vec3_normalize(p2);
-        p3 = cstrl_vec3_normalize(p3);
-
-        da_float tmp_points;
-        cstrl_da_float_init(&tmp_points, 12);
-        cstrl_da_float_push_back(&tmp_points, p0.x);
-        cstrl_da_float_push_back(&tmp_points, p0.y);
-        cstrl_da_float_push_back(&tmp_points, p0.z);
-        cstrl_da_float_push_back(&tmp_points, p1.x);
-        cstrl_da_float_push_back(&tmp_points, p1.y);
-        cstrl_da_float_push_back(&tmp_points, p1.z);
-        cstrl_da_float_push_back(&tmp_points, p2.x);
-        cstrl_da_float_push_back(&tmp_points, p2.y);
-        cstrl_da_float_push_back(&tmp_points, p2.z);
-        cstrl_da_float_push_back(&tmp_points, p3.x);
-        cstrl_da_float_push_back(&tmp_points, p3.y);
-        cstrl_da_float_push_back(&tmp_points, p3.z);
-        for (int i = 0; i < tmp_points.size; i++)
-        {
-            cstrl_da_float_push_back(&border_points, tmp_points.array[i]);
-        }
-        if (tmp_points.size == 12)
-        {
-            cstrl_da_float_push_back(&border_points, 0.0f);
-            cstrl_da_float_push_back(&border_points, 0.0f);
-            cstrl_da_float_push_back(&border_points, 0.0f);
-        }
-        cstrl_da_float_free(&tmp_points);
-    }
-    vec3 first_point = {border_points.array[0], border_points.array[1], border_points.array[2]};
-    for (int i = 0; i < border_points.size / 3 - 1; i++)
-    {
-        vec3 p0 = {border_points.array[i * 3], border_points.array[i * 3 + 1], border_points.array[i * 3 + 2]};
-        vec3 p1 = {border_points.array[i * 3 + 3], border_points.array[i * 3 + 4], border_points.array[i * 3 + 5]};
-        if (cstrl_vec3_is_equal(p1, (vec3){0.0f, 0.0f, 0.0f}))
-        {
-            generate_line_segments(positions, p0, first_point, 0.05f);
-            i++;
-            first_point =
-                (vec3){border_points.array[i * 3 + 3], border_points.array[i * 3 + 4], border_points.array[i * 3 + 5]};
-            continue;
-        }
-        generate_line_segments(positions, p0, p1, 0.05f);
-    }
-    vec3 last_point = {border_points.array[border_points.size - 3], border_points.array[border_points.size - 2],
-                       border_points.array[border_points.size - 1]};
-    generate_line_segments(positions, last_point, first_point, 0.05f);
-    cstrl_da_float_free(&border_points);
-    for (int i = initial_size / 3; i < positions->size / 3; i++)
-    {
-        cstrl_da_float_push_back(colors, color.r);
-        cstrl_da_float_push_back(colors, color.g);
-        cstrl_da_float_push_back(colors, color.b);
-        cstrl_da_float_push_back(colors, color.a);
-    }
-}
-
-void old_update_border(da_float *positions, da_int *indices, da_float *colors, da_float *origin_points, vec4 color)
-{
-    for (int i = 0; i < origin_points->size / 3; i++)
-    {
-        vec3 origin_point = {origin_points->array[i * 3], origin_points->array[i * 3 + 1],
-                             origin_points->array[i * 3 + 2]};
-        vec3 p0 = cstrl_vec3_add(origin_point, (vec3){0.0f, UNIT_SIZE.x, 0.0f});
-        vec3 p1 = cstrl_vec3_add(origin_point, (vec3){-UNIT_SIZE.x, 0.0f, 0.0f});
-        vec3 p2 = cstrl_vec3_add(origin_point, (vec3){0.0f, -UNIT_SIZE.x, 0.0f});
-        vec3 p3 = cstrl_vec3_add(origin_point, (vec3){UNIT_SIZE.x, 0.0f, 0.0f});
-        float angle = acosf(cstrl_vec3_dot((vec3){0.0f, 0.0f, 1.0f}, origin_point));
-        vec3 axis = cstrl_vec3_cross(origin_point, (vec3){0.0f, 0.0f, 1.0f});
-        if (!cstrl_vec3_is_equal(axis, (vec3){0.0f, 0.0f, 0.0f}))
-        {
-            p0 = cstrl_vec3_rotate_along_axis(p0, angle, axis);
-            p1 = cstrl_vec3_rotate_along_axis(p1, angle, axis);
-            p2 = cstrl_vec3_rotate_along_axis(p2, angle, axis);
-            p3 = cstrl_vec3_rotate_along_axis(p3, angle, axis);
-        }
-
-        p0 = cstrl_vec3_normalize(p0);
-        p1 = cstrl_vec3_normalize(p1);
-        p2 = cstrl_vec3_normalize(p2);
-        p3 = cstrl_vec3_normalize(p3);
-
-        size_t initial_size = positions->size;
-
-        cstrl_da_float_push_back(positions, origin_point.x);
-        cstrl_da_float_push_back(positions, origin_point.y);
-        cstrl_da_float_push_back(positions, origin_point.z);
-
-        generate_line_segments(positions, p0, p1, 0.5f);
-        generate_line_segments(positions, p1, p2, 0.5f);
-        generate_line_segments(positions, p2, p3, 0.5f);
-        generate_line_segments(positions, p3, p0, 0.5f);
-        for (int j = initial_size / 3 + 1; j < (positions->size - initial_size) / 3 - 1; j++)
-        {
-            cstrl_da_int_push_back(indices, 0);
-            cstrl_da_int_push_back(indices, j);
-            cstrl_da_int_push_back(indices, j + 1);
-        }
-
-        for (int j = initial_size / 3; j < (positions->size - initial_size) / 3; j++)
-        {
-            cstrl_da_float_push_back(colors, color.r);
-            cstrl_da_float_push_back(colors, color.g);
-            cstrl_da_float_push_back(colors, color.b);
-            cstrl_da_float_push_back(colors, color.a);
-        }
-    }
-}
-
 void update_formation_state(int player_id)
 {
     for (int i = 0; i < g_players.formations[player_id].count; i++)
@@ -775,49 +621,15 @@ int planet_game()
 
     srand(cstrl_platform_get_absolute_time());
 
-    /*
-    cstrl_render_data *planet_render_data = cstrl_renderer_create_render_data();
-    float planet_positions[(PLANET_LATITUDE_POINTS + 1) * (PLANET_LONGITUDE_POINTS + 1) * 3];
-    float planet_normals[(PLANET_LATITUDE_POINTS + 1) * (PLANET_LONGITUDE_POINTS + 1) * 3];
-    float planet_uvs[(PLANET_LATITUDE_POINTS + 1) * (PLANET_LONGITUDE_POINTS + 1) * 2];
-    int planet_indices[(PLANET_LATITUDE_POINTS + 1) * PLANET_LONGITUDE_POINTS * 6];
-
-    generate_sphere_lat_long(planet_positions, planet_indices, planet_uvs, planet_normals, PLANET_LATITUDE_POINTS,
-                             PLANET_LONGITUDE_POINTS);
-    float planet_colors[PLANET_LATITUDE_POINTS * PLANET_LONGITUDE_POINTS * 4];
-    for (int i = 0; i < PLANET_LATITUDE_POINTS * PLANET_LONGITUDE_POINTS; i++)
-    {
-        planet_colors[i * 4] = 0.9f;
-        planet_colors[i * 4 + 1] = 0.2f;
-        planet_colors[i * 4 + 2] = 0.8f;
-        planet_colors[i * 4 + 3] = 1.0f;
-    }
-    cstrl_renderer_add_positions(planet_render_data, planet_positions, 3,
-                                 (PLANET_LATITUDE_POINTS + 1) * (PLANET_LONGITUDE_POINTS + 1));
-    cstrl_renderer_add_uvs(planet_render_data, planet_uvs);
-    cstrl_renderer_add_colors(planet_render_data, planet_colors);
-    cstrl_renderer_add_normals(planet_render_data, planet_normals);
-    cstrl_renderer_add_indices(planet_render_data, planet_indices,
-                               (PLANET_LATITUDE_POINTS - 1) * PLANET_LONGITUDE_POINTS * 6);
-    */
     cstrl_render_data *planet_render_data = cstrl_renderer_create_render_data();
     int resolution = 10;
     float planet_positions[resolution * resolution * 18];
     int planet_indices[(resolution - 1) * (resolution - 1) * 36];
     float planet_normals[resolution * resolution * 18];
     float planet_uvs[resolution * resolution * 12];
-    float planet_colors[resolution * resolution * 24];
     generate_sphere_cube(planet_positions, planet_indices, planet_uvs, planet_normals, resolution);
-    for (int i = 0; i < resolution * resolution * 6; i++)
-    {
-        planet_colors[i * 4] = 0.9f;
-        planet_colors[i * 4 + 1] = 0.2f;
-        planet_colors[i * 4 + 2] = 0.8f;
-        planet_colors[i * 4 + 3] = 1.0f;
-    }
     cstrl_renderer_add_positions(planet_render_data, planet_positions, 3, resolution * resolution * 6);
     cstrl_renderer_add_uvs(planet_render_data, planet_uvs);
-    cstrl_renderer_add_colors(planet_render_data, planet_colors);
     cstrl_renderer_add_normals(planet_render_data, planet_normals);
     cstrl_renderer_add_indices(planet_render_data, planet_indices, (resolution - 1) * (resolution - 1) * 36);
     cstrl_shader planet_shader =
@@ -828,17 +640,9 @@ int planet_game()
     players_init(&g_players, 6);
     units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, CITY);
     vec3 start_position = (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f};
-    start_position = cstrl_vec3_normalize(cstrl_vec3_add(start_position, cstrl_vec3_mult_scalar(UNIT_SIZE, 7.0f)));
+    start_position = cstrl_vec3_normalize(cstrl_vec3_add(start_position, cstrl_vec3_mult_scalar(UNIT_SIZE, 3.0f)));
     start_position = cstrl_vec3_mult_scalar(start_position, 1.0f + UNIT_SIZE.x * 0.5f);
-    units_add(&g_players.units[0], start_position, CITY);
-    units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
-    units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, CITY);
-    units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
-    units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, CITY);
-    units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, CITY);
-    /*
-    players_init(&g_players, 6);
-    units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, CITY);
+    // units_add(&g_players.units[0], start_position, CITY);
     units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
     units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, CITY);
     units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
@@ -870,32 +674,21 @@ int planet_game()
 
         units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 5.0f}, PLANE);
         units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, PLANE);
-        units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 5.0f * 1.5f}, PLANE);
+        units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 5.0f}, PLANE);
         units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, PLANE);
-        units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 5.0f * 1.5f, 0.0f}, PLANE);
+        units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 5.0f, 0.0f}, PLANE);
         units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 5.0f, 0.0f}, PLANE);
     }
-    */
 
-    cstrl_render_data *border_render_data = cstrl_renderer_create_render_data();
-    da_float border_positions;
-    cstrl_da_float_init(&border_positions, 12);
-    da_int border_indices;
-    cstrl_da_int_init(&border_indices, 6);
-    da_float border_colors;
-    cstrl_da_float_init(&border_colors, 16);
-    recalculate_border(&border_positions, &border_indices, &border_colors, UNIT_TEAM_COLORS[0], &g_players.units[0]);
-    recalculate_border(&border_positions, &border_indices, &border_colors, UNIT_TEAM_COLORS[1], &g_players.units[1]);
-    recalculate_border(&border_positions, &border_indices, &border_colors, UNIT_TEAM_COLORS[2], &g_players.units[2]);
-    recalculate_border(&border_positions, &border_indices, &border_colors, UNIT_TEAM_COLORS[3], &g_players.units[3]);
-    recalculate_border(&border_positions, &border_indices, &border_colors, UNIT_TEAM_COLORS[4], &g_players.units[4]);
-    recalculate_border(&border_positions, &border_indices, &border_colors, UNIT_TEAM_COLORS[5], &g_players.units[5]);
-    cstrl_renderer_add_positions(border_render_data, border_positions.array, 3, border_positions.size / 3);
-    // cstrl_renderer_add_indices(border_render_data, border_indices.array, border_indices.size);
-    cstrl_renderer_add_colors(border_render_data, border_colors.array);
+    cstrl_render_data *city_render_data = cstrl_renderer_create_render_data();
 
-    cstrl_shader border_shader = cstrl_load_shaders_from_files("resources/shaders/default3D_no_texture.vert",
-                                                               "resources/shaders/default3D_no_texture.frag");
+    cstrl_renderer_add_positions(city_render_data, planet_positions, 3, resolution * resolution * 6);
+    cstrl_renderer_add_indices(city_render_data, planet_indices, (resolution - 1) * (resolution - 1) * 36);
+
+    cstrl_shader city_shader =
+        cstrl_load_shaders_from_files("resources/shaders/city_borders.vert", "resources/shaders/city_borders.frag");
+    cstrl_texture city_noise_texture =
+        cstrl_texture_generate_from_path("resources/textures/planet_game/noise_texture.png");
 
     ai_t ai;
     ai_init(&ai, 6, g_human_player);
@@ -970,7 +763,16 @@ int planet_game()
     cstrl_render_data *skybox_render_data = cstrl_renderer_create_render_data();
     float positions[108];
     generate_cube_positions(positions);
+    float colors[144];
+    for (int i = 0; i < 36; i++)
+    {
+        colors[i * 4] = 0.8f;
+        colors[i * 4 + 1] = 0.6f;
+        colors[i * 4 + 2] = 0.8f;
+        colors[i * 4 + 3] = 1.0f;
+    }
     cstrl_renderer_add_positions(skybox_render_data, positions, 3, 36);
+    cstrl_renderer_add_colors(skybox_render_data, colors);
 
     cstrl_shader skybox_shader =
         cstrl_load_shaders_from_files("resources/shaders/skybox.vert", "resources/shaders/skybox.frag");
@@ -1006,7 +808,7 @@ int planet_game()
             cstrl_camera_update(g_ui_camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
             cstrl_camera_update(g_main_camera, g_movement, g_rotation);
             cstrl_renderer_clear_render_attributes(selection_box_render_data);
-            if (g_making_selection)
+            if (g_making_ground_selection || g_making_air_selection)
             {
                 update_ui_object(&selection_box_positions, &selection_box_indices, NULL, &selection_box_colors, 0,
                                  g_selection_start, g_selection_end, (vec4){1.0f, 0.0f, 0.0f, 0.1f});
@@ -1014,14 +816,6 @@ int planet_game()
                                                         selection_box_colors.array, selection_box_positions.size / 2);
                 cstrl_renderer_modify_indices(selection_box_render_data, selection_box_indices.array, 0,
                                               selection_box_indices.size);
-            }
-            if (g_border_update)
-            {
-                recalculate_border(&border_positions, &border_indices, &border_colors, UNIT_TEAM_COLORS[0],
-                                   &g_players.units[0]);
-                cstrl_renderer_modify_render_attributes(border_render_data, border_positions.array, NULL,
-                                                        border_colors.array, border_positions.size / 3);
-                g_border_update = false;
             }
             // TODO: consider not clearing data on each run
             cstrl_da_float_clear(&unit_positions);
@@ -1144,11 +938,47 @@ int planet_game()
         cstrl_texture_cube_map_bind(planet_texture);
         cstrl_renderer_draw_indices(planet_render_data);
 
-        cstrl_set_uniform_mat4(border_shader.program, "view", g_main_camera->view);
-        cstrl_set_uniform_mat4(border_shader.program, "projection", g_main_camera->projection);
-        cstrl_use_shader(border_shader);
-        cstrl_renderer_draw_lines(border_render_data);
+        cstrl_set_uniform_mat4(city_shader.program, "view", g_main_camera->view);
+        cstrl_set_uniform_mat4(city_shader.program, "projection", g_main_camera->projection);
 
+        if (g_border_update)
+        {
+            int city_index = 0;
+            for (int i = 0; i < MAX_PLAYER_COUNT; i++)
+            {
+                if (!g_players.active[i])
+                {
+                    continue;
+                }
+                for (int j = 0; j < g_players.units[i].count; j++)
+                {
+                    if (g_players.units[i].type[j] != CITY)
+                    {
+                        continue;
+                    }
+                    char buffer[20];
+                    sprintf(buffer, "city_centers[%d]", city_index);
+                    cstrl_set_uniform_3f(city_shader.program, buffer, g_players.units[i].position[j].x,
+                                         g_players.units[i].position[j].y, g_players.units[i].position[j].z);
+                    sprintf(buffer, "team[%d]", city_index);
+                    cstrl_set_uniform_int_array(city_shader.program, buffer, 1, &i);
+                    sprintf(buffer, "weights[%d]", city_index);
+                    cstrl_set_uniform_float(city_shader.program, buffer, 1.0f);
+                    sprintf(buffer, "influence_radius[%d]", city_index++);
+                    float influence = 0.2f;
+                    cstrl_set_uniform_float(city_shader.program, buffer, influence);
+                }
+            }
+            cstrl_set_uniform_int(city_shader.program, "cities_count", city_index);
+            g_border_update = false;
+        }
+        cstrl_use_shader(city_shader);
+        cstrl_set_active_texture(0);
+        cstrl_texture_bind(city_noise_texture);
+        cstrl_renderer_draw_indices(city_render_data);
+
+        cstrl_use_shader(path_line_shader);
+        cstrl_renderer_draw_lines(path_line_render_data);
         cstrl_set_uniform_mat4(path_marker_shader.program, "view", g_main_camera->view);
         cstrl_set_uniform_mat4(path_marker_shader.program, "projection", g_main_camera->projection);
         cstrl_use_shader(path_marker_shader);
@@ -1178,22 +1008,19 @@ int planet_game()
         cstrl_set_active_texture(0);
         cstrl_texture_cube_map_bind(skybox_texture);
         cstrl_renderer_draw(skybox_render_data);
-        /*
         cstrl_ui_begin(context);
-        if (cstrl_ui_container_begin(context, "Debug", 5, 10, 10, 200, 300, GEN_ID(0), false, 2))
+        if (cstrl_ui_container_begin(context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, 2))
         {
-            char buffer[64];
-            char title[64];
-            if (g_units.count > 0)
+            static double monies = 10666;
+            char buffer[30];
+            sprintf(buffer, "w$ %.2lf B", monies);
+            monies += (rand() % 90 + 10) * 0.01;
+            if (cstrl_ui_text(context, buffer, strlen(buffer), 0, 50, 300, 50, GEN_ID(0), CSTRL_UI_TEXT_ALIGN_LEFT))
             {
-                if (cstrl_ui_text(context, "Placeholder", 11, 0, 50, 300, 50, GEN_ID(0), CSTRL_UI_TEXT_ALIGN_LEFT))
-                {
-                }
             }
             cstrl_ui_container_end(context);
         }
         cstrl_ui_end(context);
-        */
         cstrl_renderer_swap_buffers(&g_platform_state);
     }
 

@@ -43,6 +43,8 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
     glEnable(GL_LINE_SMOOTH);
     glLineWidth(1.0f);
 
+    glPatchParameteri(GL_PATCH_VERTICES, 16);
+
     return true;
 }
 
@@ -335,6 +337,13 @@ CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data)
     internal_data *internal_data = data->internal_data;
     glBindVertexArray(internal_data->vao);
     glDrawArrays(GL_LINES, 0, internal_data->count);
+}
+
+CSTRL_API void cstrl_renderer_draw_patches(cstrl_render_data *data)
+{
+    internal_data *internal_data = data->internal_data;
+    glBindVertexArray(internal_data->vao);
+    glDrawArrays(GL_PATCHES, 0, internal_data->count);
 }
 
 CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state)

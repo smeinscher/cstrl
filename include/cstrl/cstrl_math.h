@@ -216,7 +216,7 @@ CSTRL_INLINE vec2 cstrl_vec2_normalize(const vec2 v)
 // TODO: add to unit tests
 CSTRL_INLINE bool cstrl_vec2_is_equal(const vec2 a, const vec2 b)
 {
-    return fabsf(a.x - b.x) > cstrl_epsilon && fabsf(a.y - b.y) > cstrl_epsilon;
+    return fabsf(a.x - b.x) < cstrl_epsilon && fabsf(a.y - b.y) < cstrl_epsilon;
 }
 
 CSTRL_INLINE vec2 cstrl_vec2_add(const vec2 a, const vec2 b)
@@ -260,6 +260,7 @@ CSTRL_INLINE vec2 cstrl_vec2_negate(const vec2 v)
     return (vec2){-v.x, -v.y};
 }
 
+// TODO: add to unit tests
 CSTRL_INLINE bool cstrl_vec2_point_inside_rect(const vec2 m, const vec2 a, const vec2 b, const vec2 d)
 {
     vec2 am = cstrl_vec2_mult(a, m);

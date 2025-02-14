@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_util.h"
 
 bool hit_check(vec3 d, float *t, vec3 origin, vec3 center, float radius)
@@ -64,6 +65,15 @@ vec2 world_to_screen(vec3 world_coords, vec2 screen_size, mat4 projection, mat4 
     window_space.x = (ndc_space.x + 1.0f) / 2.0f * screen_size.x;
     window_space.y = (1.0f - ndc_space.y) / 2.0f * screen_size.y;
     return window_space;
+}
+
+vec3 modify_point(vec3 point, transform transform)
+{
+    point = cstrl_vec3_mult(point, transform.scale);
+    point = cstrl_vec3_rotate_by_quat(point, transform.rotation);
+    point = cstrl_vec3_add(point, transform.position);
+
+    return point;
 }
 
 void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, transform transform)

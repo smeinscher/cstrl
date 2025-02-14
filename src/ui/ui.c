@@ -2,6 +2,7 @@
 // Created by sterling on 12/5/24.
 //
 
+#include "cstrl/cstrl_platform.h"
 #define _CRT_SECURE_NO_WARNINGS
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_ui.h"
@@ -142,7 +143,7 @@ const char *font_fragment_shader_source = "                     \
         frag_color = vec4(color.rgb, texture(texture0, uv).r);  \
     }";
 
-#define FONT_SIZE 32
+#define FONT_SIZE 16
 
 CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 {
@@ -163,9 +164,9 @@ CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     float colors[24];
     for (int i = 0; i < 6; i++)
     {
-        colors[i * 4] = 0.3f;
-        colors[i * 4 + 1] = 0.7f;
-        colors[i * 4 + 2] = 1.0f;
+        colors[i * 4] = 0.9f;
+        colors[i * 4 + 1] = 0.5f;
+        colors[i * 4 + 2] = 0.5f;
         colors[i * 4 + 3] = 0.8f;
     }
     cstrl_renderer_add_positions(ui_state->render_data, vertices, 2, 6);
@@ -175,7 +176,9 @@ CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     cstrl_renderer_add_uvs(ui_state->font_render_data, uvs);
     cstrl_renderer_add_colors(ui_state->font_render_data, colors);
 
-    mat4 projection = cstrl_mat4_ortho(0.0f, 800.0f, 600.0f, 0.0f, 0.1f, 100.0f);
+    int width, height;
+    cstrl_platform_get_window_size(platform_state, &width, &height);
+    mat4 projection = cstrl_mat4_ortho(0.0f, (float)width, (float)height, 0.0f, 0.1f, 100.0f);
     cstrl_set_uniform_mat4(ui_state->shader.program, "projection", projection);
     cstrl_set_uniform_mat4(ui_state->font_shader.program, "projection", projection);
     cstrl_da_float_init(&ui_state->positions, 12);
@@ -406,7 +409,7 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
         }
 
         int h = y1 - y0;
-        float font_h = h >= 30 ? 30.0f : (float)h;
+        float font_h = h >= 48.0f ? 48.0f : (float)h;
         float scale = (font_h / 2.0f) / (float)FONT_SIZE;
         float position[2] = {(float)x0, (float)y0 + font_h / 1.5f};
         // if (alignment == CSTRL_UI_TEXT_ALIGN_CENTER)
@@ -423,8 +426,6 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
         for (int c = 0; c < s.size; c++)
         {
             stbtt_packedchar packedchar = ui_state->char_data[s.array[c]];
-
-            // log_debug("%c", s.array[c]);
 
             float u0 = (float)packedchar.x0 / 512.0f;
             float v0 = (float)packedchar.y0 / 512.0f;
@@ -466,9 +467,9 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
 
             for (int j = 0; j < 6; j++)
             {
-                cstrl_da_float_push_back(&ui_state->font_colors, 0.0f);
-                cstrl_da_float_push_back(&ui_state->font_colors, 0.0f);
-                cstrl_da_float_push_back(&ui_state->font_colors, 0.0f);
+                cstrl_da_float_push_back(&ui_state->font_colors, 0.7f);
+                cstrl_da_float_push_back(&ui_state->font_colors, 0.7f);
+                cstrl_da_float_push_back(&ui_state->font_colors, 0.7f);
                 cstrl_da_float_push_back(&ui_state->font_colors, 1.0f);
             }
 
@@ -616,21 +617,24 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     {
         order_priority = original_order_priority;
     }
+
+    int width, height;
+    cstrl_platform_get_window_size(ui_state->platform_state, &width, &height);
     if (x < 0)
     {
         x = 0;
     }
-    else if (x > 800 - w)
+    else if (x > width - w)
     {
-        x = 800 - w;
+        x = width - w;
     }
     if (y < 0)
     {
         y = 0;
     }
-    else if (y > 600 - h)
+    else if (y > height - h)
     {
-        y = 600 - h;
+        y = height - h;
     }
 
     cstrl_da_int_push_back(&ui_state->elements.order_priority, order_priority);
@@ -658,9 +662,9 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     cstrl_da_int_push_back(&ui_state->elements.screen_coords, y + h);
 
     // TODO: get from config somewhere
-    cstrl_da_float_push_back(&ui_state->elements.colors, 0.1f);
+    cstrl_da_float_push_back(&ui_state->elements.colors, 0.8f);
     cstrl_da_float_push_back(&ui_state->elements.colors, 0.2f);
-    cstrl_da_float_push_back(&ui_state->elements.colors, 0.4f);
+    cstrl_da_float_push_back(&ui_state->elements.colors, 0.2f);
     cstrl_da_float_push_back(&ui_state->elements.colors, 0.9f);
 
     string s;

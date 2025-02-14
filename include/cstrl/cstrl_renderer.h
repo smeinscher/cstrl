@@ -97,6 +97,8 @@ CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data);
 
+CSTRL_API void cstrl_renderer_draw_patches(cstrl_render_data *data);
+
 CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state);
 
 CSTRL_API void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state);
@@ -113,9 +115,21 @@ CSTRL_API cstrl_shader cstrl_load_shaders_from_files(const char *vertex_shader_p
 
 CSTRL_API cstrl_shader cstrl_load_shaders_from_source(const char *vertex_shader_source, const char *fragment_shader_source);
 
+CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_files(const char *vertex_shader_path,
+                                                                  const char *fragment_shader_path,
+                                                                  const char *tessellation_control_shader_path,
+                                                                  const char *tessellation_evaluation_shader_path);
+
+CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_source(const char *vertex_shader_source,
+                                                                   const char *fragment_shader_source,
+                                                                   const char *tessellation_control_shader_source,
+                                                                   const char *tessellation_evaluation_shader_source);
+
 CSTRL_API void cstrl_use_shader(cstrl_shader shader);
 
 CSTRL_API void cstrl_set_uniform_int(unsigned int program, const char *name, int d);
+
+CSTRL_API void cstrl_set_uniform_int_array(unsigned int program, const char *name, int count, int *d);
 
 CSTRL_API void cstrl_set_uniform_float(unsigned int program, const char *name, float f);
 
