@@ -8,41 +8,44 @@ static const float FORMATION_OFFSETS[] = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
 static void new_path(players_t *players, int player_id, vec3 start_position, vec3 end_position, bool in_queue,
                      int unit_id, int prev)
 {
-    bool ground_units =
-        players->units[player_id].type[unit_id] == TANK || players->units[player_id].type[unit_id] == HUMVEE;
-    float speed = !ground_units ? 0.005f : 0.0005f;
+    bool ground_units = players->units[player_id].type[unit_id] == TANK ||
+                        players->units[player_id].type[unit_id] == HUMVEE ||
+                        players->units[player_id].type[unit_id] == ASTRONAUT ||
+                        players->units[player_id].type[unit_id] == ASTRONAUT_ARMED;
+    float speed = BASE_UNIT_SPEEDS[players->units[player_id].type[unit_id]] * 0.0005f;
     int new_path_id = paths_add(&players->paths[player_id], start_position, end_position, prev, speed);
-    if (new_path_id != -1)
+    if (new_path_id == -1)
     {
-        int unit_index = cstrl_da_int_find_first(
-            &players->formations[player_id].unit_ids[players->selected_formation[player_id]], unit_id);
-        if (unit_index > 0)
-        {
-            float mod = ground_units ? 0.5f : 5.0f;
-            vec3 path_vector = cstrl_vec3_sub(
-                end_position,
-                players->units[player_id].position
-                    [players->formations[player_id].unit_ids[players->selected_formation[player_id]].array[0]]);
-            path_vector = cstrl_vec3_normalize(path_vector);
-            vec3 formation_line =
-                cstrl_vec3_normalize(cstrl_vec3_cross(path_vector, cstrl_vec3_normalize(end_position)));
-            vec3 new_end_position = cstrl_vec3_add(
-                end_position, cstrl_vec3_mult_scalar(formation_line, FORMATION_OFFSETS[unit_index % 5] * UNIT_SIZE.x));
-            new_end_position = cstrl_vec3_sub(
-                new_end_position, cstrl_vec3_mult_scalar(path_vector, floorf(unit_index / 5.0f) * UNIT_SIZE.y * 1.5f));
-            new_end_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_end_position), 1.0f + UNIT_SIZE.x * mod);
-            players->paths[player_id].end_positions[new_path_id] = new_end_position;
-        }
-        if (players->formations[player_id].path_heads[players->selected_formation[player_id]].array[unit_index] != -1)
-        {
-            players->paths[player_id].in_queue[new_path_id] = true;
-        }
-        else
-        {
-            players->formations[player_id].path_heads[players->selected_formation[player_id]].array[unit_index] =
-                new_path_id;
-            players->paths[player_id].in_queue[new_path_id] = false;
-        }
+        printf("Error creating path\n");
+        return;
+    }
+    int unit_index = cstrl_da_int_find_first(
+        &players->formations[player_id].unit_ids[players->selected_formation[player_id]], unit_id);
+    if (unit_index > 0)
+    {
+        float mod = ground_units ? 0.5f : 5.0f;
+        vec3 path_vector = cstrl_vec3_sub(
+            end_position,
+            players->units[player_id]
+                .position[players->formations[player_id].unit_ids[players->selected_formation[player_id]].array[0]]);
+        path_vector = cstrl_vec3_normalize(path_vector);
+        vec3 formation_line = cstrl_vec3_normalize(cstrl_vec3_cross(path_vector, cstrl_vec3_normalize(end_position)));
+        vec3 new_end_position = cstrl_vec3_add(
+            end_position, cstrl_vec3_mult_scalar(formation_line, FORMATION_OFFSETS[unit_index % 5] * UNIT_SIZE.x));
+        new_end_position = cstrl_vec3_sub(
+            new_end_position, cstrl_vec3_mult_scalar(path_vector, floorf(unit_index / 5.0f) * UNIT_SIZE.y * 1.5f));
+        new_end_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(new_end_position), 1.0f + UNIT_SIZE.x * mod);
+        players->paths[player_id].end_positions[new_path_id] = new_end_position;
+    }
+    if (players->formations[player_id].path_heads[players->selected_formation[player_id]].array[unit_index] != -1)
+    {
+        players->paths[player_id].in_queue[new_path_id] = true;
+    }
+    else
+    {
+        players->formations[player_id].path_heads[players->selected_formation[player_id]].array[unit_index] =
+            new_path_id;
+        players->paths[player_id].in_queue[new_path_id] = false;
     }
 }
 
@@ -160,7 +163,7 @@ void players_move_units_path_mode(players_t *players, int player_id, vec3 end_po
     }
 }
 
-void players_select_units(players_t *players, int player_id, int viewport_width, int viewport_height,
+bool players_select_units(players_t *players, int player_id, int viewport_width, int viewport_height,
                           vec2 selection_start, vec2 selection_end, cstrl_camera *camera, int selection_type)
 {
     vec2 min = (vec2){cstrl_min(selection_start.x, selection_end.x), cstrl_min(selection_start.y, selection_end.y)};
@@ -185,7 +188,8 @@ void players_select_units(players_t *players, int player_id, int viewport_width,
             }
             break;
         case 1:
-            if (players->units[player_id].type[i] != TANK && players->units[player_id].type[i] != HUMVEE)
+            if (players->units[player_id].type[i] != TANK && players->units[player_id].type[i] != HUMVEE &&
+                players->units[player_id].type[i] != ASTRONAUT && players->units[player_id].type[i] != ASTRONAUT_ARMED)
             {
                 continue;
             }
@@ -229,4 +233,5 @@ void players_select_units(players_t *players, int player_id, int viewport_width,
     {
         players->selected_formation[player_id] = formation_state;
     }
+    return players->selected_units[player_id].size > 0;
 }

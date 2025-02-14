@@ -11,6 +11,7 @@
 
 typedef struct cstrl_ui_context
 {
+    bool mouse_locked;
     void *internal_ui_state;
 } cstrl_ui_context;
 
@@ -34,7 +35,7 @@ CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int obj
 CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale);
 
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
-                              int h, int id, bool is_static, int order_priority);
+                              int h, int id, bool is_static, bool can_minimize, int order_priority);
 
 CSTRL_API void cstrl_ui_container_end(cstrl_ui_context *context);
 

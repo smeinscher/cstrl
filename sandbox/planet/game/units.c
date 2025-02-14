@@ -3,6 +3,8 @@
 #include "cstrl/cstrl_util.h"
 #include <stdlib.h>
 
+const float BASE_UNIT_SPEEDS[MAX_UNIT_TYPES] = {0.25f, 0.25f, 0.0f, 2.0f, 10.0f, 10.0f, 1.0f};
+
 bool units_init(units_t *units)
 {
     units->count = 0;

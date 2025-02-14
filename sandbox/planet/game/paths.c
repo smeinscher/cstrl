@@ -2,8 +2,6 @@
 #include "cstrl/cstrl_util.h"
 #include <stdlib.h>
 
-#define TRAVEL_SPEED 0.0005f
-
 bool paths_init(paths_t *paths)
 {
     paths->count = 0;

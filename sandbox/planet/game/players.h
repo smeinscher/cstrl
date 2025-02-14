@@ -31,7 +31,7 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
 
 void players_move_units_path_mode(players_t *players, int player_id, vec3 end_position);
 
-void players_select_units(players_t *players, int player_id, int viewport_width, int viewport_height,
+bool players_select_units(players_t *players, int player_id, int viewport_width, int viewport_height,
                           vec2 selection_start, vec2 selection_end, cstrl_camera *camera, int selection_type);
 
 #endif

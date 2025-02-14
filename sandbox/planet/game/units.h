@@ -20,6 +20,8 @@ typedef enum team_t
 
 typedef enum unit_type
 {
+    ASTRONAUT,
+    ASTRONAUT_ARMED,
     CITY,
     HUMVEE,
     JET,
@@ -27,6 +29,8 @@ typedef enum unit_type
     TANK,
     MAX_UNIT_TYPES
 } unit_type;
+
+extern const float BASE_UNIT_SPEEDS[MAX_UNIT_TYPES];
 
 typedef struct units_t
 {

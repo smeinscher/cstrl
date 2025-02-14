@@ -75,6 +75,8 @@ static vec2 g_selection_end;
 
 static bool g_border_update = true;
 
+cstrl_ui_context *g_ui_context;
+
 static vec3 position_from_ray_cast(vec3 d, float t)
 {
     vec3 position = cstrl_vec3_add(g_main_camera->position, cstrl_vec3_mult_scalar(d, t));
@@ -96,10 +98,14 @@ static void move_units_to_cursor_position(bool path_mode)
     {
         return;
     }
+    int type = g_players.units[g_human_player].type[g_players.selected_units[g_human_player].array[0]];
+    if (type == CITY)
+    {
+        return;
+    }
     vec3 d = mouse_cursor_ray_cast();
     float t;
-    int type = g_players.units[g_human_player].type[g_players.selected_units[g_human_player].array[0]];
-    bool ground_units = type == TANK || type == HUMVEE;
+    bool ground_units = type == TANK || type == HUMVEE || type == ASTRONAUT || type == ASTRONAUT_ARMED;
     if (hit_check(d, &t, g_main_camera->position, g_planet_position,
                   (PLANET_SIZE.x + UNIT_SIZE.x * (ground_units ? 1.0 : 10.0f)) * 0.5f))
     {
@@ -263,6 +269,11 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     g_mouse_position_x = xpos;
     g_mouse_position_y = ypos;
 
+    if (g_ui_context->mouse_locked)
+    {
+        return;
+    }
+
     if (g_making_ground_selection || g_making_air_selection)
     {
         g_selection_end = (vec2){g_mouse_position_x, g_mouse_position_y};
@@ -298,6 +309,10 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
 
 static void mouse_button_callback(cstrl_platform_state *state, int button, int action, int mods)
 {
+    if (g_ui_context->mouse_locked)
+    {
+        return;
+    }
     if (button == CSTRL_MOUSE_BUTTON_LEFT)
     {
         if (action == CSTRL_ACTION_PRESS)
@@ -363,10 +378,14 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
 
 static void mouse_wheel_callback(cstrl_platform_state *state, int delta_x, int delta_y, int keys_down)
 {
-    g_main_camera->fov -= (float)delta_y / 6000.0f;
-    if (g_main_camera->fov <= 10.0f * cstrl_pi_180)
+    if (g_ui_context->mouse_locked)
     {
-        g_main_camera->fov = 10.0f * cstrl_pi_180;
+        return;
+    }
+    g_main_camera->fov -= (float)delta_y / 6000.0f;
+    if (g_main_camera->fov <= 20.0f * cstrl_pi_180)
+    {
+        g_main_camera->fov = 20.0f * cstrl_pi_180;
     }
     else if (g_main_camera->fov >= 60.0f * cstrl_pi_180)
     {
@@ -570,6 +589,16 @@ void update_formation_state(int player_id)
     for (int i = 0; i < g_players.formations[player_id].count; i++)
     {
         g_players.formations[player_id].moving[i] = false;
+        float min_speed = 1e9;
+        for (int j = 0; j < g_players.formations[player_id].path_heads[i].size; j++)
+        {
+            int path_id = g_players.formations[player_id].path_heads[i].array[j];
+            if (path_id == -1)
+            {
+                continue;
+            }
+            min_speed = cstrl_min(g_players.paths[player_id].speed[path_id], min_speed);
+        }
         for (int j = 0; j < g_players.formations[player_id].unit_ids[i].size; j++)
         {
             int path_id = g_players.formations[player_id].path_heads[i].array[j];
@@ -577,6 +606,7 @@ void update_formation_state(int player_id)
             {
                 continue;
             }
+            g_players.paths[player_id].speed[path_id] = min_speed;
             g_players.formations[player_id].moving[i] = true;
             int unit_id = g_players.formations[player_id].unit_ids[i].array[j];
             path_update(&g_players.paths[player_id], path_id);
@@ -639,10 +669,6 @@ int planet_game()
 
     players_init(&g_players, 6);
     units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, CITY);
-    vec3 start_position = (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f};
-    start_position = cstrl_vec3_normalize(cstrl_vec3_add(start_position, cstrl_vec3_mult_scalar(UNIT_SIZE, 3.0f)));
-    start_position = cstrl_vec3_mult_scalar(start_position, 1.0f + UNIT_SIZE.x * 0.5f);
-    // units_add(&g_players.units[0], start_position, CITY);
     units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
     units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, CITY);
     units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
@@ -651,33 +677,46 @@ int planet_game()
 
     for (int i = 0; i < 5; i++)
     {
-        units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, HUMVEE);
-        units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
-        units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, HUMVEE);
-        units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
-        units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
-        units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
+        units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f},
+                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
+        units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f},
+                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
+        units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f},
+                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
+        units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f},
+                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
+        units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f},
+                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
+        units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f},
+                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
 
-        units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, TANK);
-        units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, TANK);
-        units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, TANK);
-        units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, TANK);
-        units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, TANK);
-        units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, TANK);
+        // units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, HUMVEE);
+        // units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
+        // units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, HUMVEE);
+        // units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
+        // units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
+        // units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
+        //
+        // units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, TANK);
+        // units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, TANK);
+        // units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, TANK);
+        // units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, TANK);
+        // units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, TANK);
+        // units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, TANK);
 
-        units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 5.0f}, JET);
-        units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, JET);
-        units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 5.0f * 1.5f}, JET);
-        units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, JET);
-        units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 5.0f * 1.5f, 0.0f}, JET);
-        units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 5.0f, 0.0f}, JET);
-
-        units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 5.0f}, PLANE);
-        units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, PLANE);
-        units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 5.0f}, PLANE);
-        units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, PLANE);
-        units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 5.0f, 0.0f}, PLANE);
-        units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 5.0f, 0.0f}, PLANE);
+        // units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 5.0f}, JET);
+        // units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, JET);
+        // units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 5.0f * 1.5f}, JET);
+        // units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, JET);
+        // units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 5.0f * 1.5f, 0.0f}, JET);
+        // units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 5.0f, 0.0f}, JET);
+        //
+        // units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 5.0f}, PLANE);
+        // units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, PLANE);
+        // units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 5.0f}, PLANE);
+        // units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, PLANE);
+        // units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 5.0f, 0.0f}, PLANE);
+        // units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 5.0f, 0.0f}, PLANE);
     }
 
     cstrl_render_data *city_render_data = cstrl_renderer_create_render_data();
@@ -795,7 +834,7 @@ int planet_game()
     double lag = 0.0;
     float light_start_x = 0.0f;
     float light_start_z = 0.0f;
-    cstrl_ui_context *context = cstrl_ui_init(&g_platform_state);
+    g_ui_context = cstrl_ui_init(&g_platform_state);
     while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&g_platform_state);
@@ -852,10 +891,13 @@ int planet_game()
                     int type = g_players.units[i].type[j];
                     vec4 uv_positions = {(float)type / MAX_UNIT_TYPES, 0.0f, ((float)type + 1.0f) / MAX_UNIT_TYPES,
                                          1.0f};
-                    update_billboard_object(&unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
-                                            (transform){g_players.units[i].position[j], billboard_rotation,
-                                                        adjust_billboard_scale(UNIT_SIZE)},
-                                            uv_positions, color);
+                    vec3 size =
+                        (type != ASTRONAUT && type != ASTRONAUT_ARMED ? UNIT_SIZE
+                                                                      : cstrl_vec3_mult_scalar(UNIT_SIZE, 0.5f));
+                    update_billboard_object(
+                        &unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
+                        (transform){g_players.units[i].position[j], billboard_rotation, adjust_billboard_scale(size)},
+                        uv_positions, color);
                     unit_render_index++;
                 }
             }
@@ -965,7 +1007,7 @@ int planet_game()
                     sprintf(buffer, "weights[%d]", city_index);
                     cstrl_set_uniform_float(city_shader.program, buffer, 1.0f);
                     sprintf(buffer, "influence_radius[%d]", city_index++);
-                    float influence = 0.2f;
+                    float influence = 0.1f;
                     cstrl_set_uniform_float(city_shader.program, buffer, influence);
                 }
             }
@@ -1008,19 +1050,68 @@ int planet_game()
         cstrl_set_active_texture(0);
         cstrl_texture_cube_map_bind(skybox_texture);
         cstrl_renderer_draw(skybox_render_data);
-        cstrl_ui_begin(context);
-        if (cstrl_ui_container_begin(context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, 2))
+
+        cstrl_ui_begin(g_ui_context);
+        if (cstrl_ui_container_begin(g_ui_context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
         {
             static double monies = 10666;
             char buffer[30];
             sprintf(buffer, "w$ %.2lf B", monies);
             monies += (rand() % 90 + 10) * 0.01;
-            if (cstrl_ui_text(context, buffer, strlen(buffer), 0, 50, 300, 50, GEN_ID(0), CSTRL_UI_TEXT_ALIGN_LEFT))
+            if (cstrl_ui_text(g_ui_context, buffer, strlen(buffer), 0, 50, 300, 50, GEN_ID(0),
+                              CSTRL_UI_TEXT_ALIGN_LEFT))
             {
             }
-            cstrl_ui_container_end(context);
+            static double oil = 10.0;
+            sprintf(buffer, "Oil: %.2lf ", oil);
+            oil += (rand() % 100) / 1000.0;
+            if (cstrl_ui_text(g_ui_context, buffer, strlen(buffer), 0, 100, 300, 50, GEN_ID(0),
+                              CSTRL_UI_TEXT_ALIGN_LEFT))
+            {
+            }
+            static double oxygen = 10000.0;
+            sprintf(buffer, "O2: %.2lf ", oxygen);
+            oxygen += (rand() % 1000) / 1000.0;
+            if (cstrl_ui_text(g_ui_context, buffer, strlen(buffer), 0, 150, 300, 50, GEN_ID(0),
+                              CSTRL_UI_TEXT_ALIGN_LEFT))
+            {
+            }
+            static double carbon_dioxide = 10000.0;
+            sprintf(buffer, "CO2: %.2lf ", carbon_dioxide);
+            carbon_dioxide += (rand() % 1000) / 1000.0;
+            if (cstrl_ui_text(g_ui_context, buffer, strlen(buffer), 0, 200, 300, 50, GEN_ID(0),
+                              CSTRL_UI_TEXT_ALIGN_LEFT))
+            {
+            }
+            static double power = 30.0;
+            sprintf(buffer, "Power: %.2lf GW", power);
+            power += (rand() % 5 - 2) / 10.0;
+            if (cstrl_ui_text(g_ui_context, buffer, strlen(buffer), 0, 250, 300, 50, GEN_ID(0),
+                              CSTRL_UI_TEXT_ALIGN_LEFT))
+            {
+            }
+            cstrl_ui_container_end(g_ui_context);
         }
-        cstrl_ui_end(context);
+        if (g_players.selected_units[g_human_player].size > 0 &&
+            g_players.units[g_human_player].type[g_players.selected_units[g_human_player].array[0]] == CITY)
+        {
+            if (cstrl_ui_container_begin(g_ui_context, "City", 4, g_mouse_position_x, g_mouse_position_y, 100, 100,
+                                         GEN_ID(0), false, false, 1))
+            {
+                static double monies = -100;
+                char buffer[30];
+                sprintf(buffer, "w$ %.2lf M", monies);
+                monies += (rand() % 9 + 1) * 0.00005;
+                cstrl_ui_text(g_ui_context, buffer, strlen(buffer), 0, 40, 300, 25, GEN_ID(0),
+                              CSTRL_UI_TEXT_ALIGN_LEFT);
+                static int population = 1000;
+                sprintf(buffer, "Population: %d", population);
+                cstrl_ui_text(g_ui_context, buffer, strlen(buffer), 0, 50, 300, 25, GEN_ID(0),
+                              CSTRL_UI_TEXT_ALIGN_LEFT);
+                cstrl_ui_container_end(g_ui_context);
+            }
+        }
+        cstrl_ui_end(g_ui_context);
         cstrl_renderer_swap_buffers(&g_platform_state);
     }
 
@@ -1046,7 +1137,7 @@ int planet_game()
     cstrl_renderer_free_render_data(path_marker_render_data);
     cstrl_renderer_free_render_data(path_line_render_data);
     cstrl_renderer_free_render_data(selection_box_render_data);
-    cstrl_ui_shutdown(context);
+    cstrl_ui_shutdown(g_ui_context);
     cstrl_renderer_shutdown(&g_platform_state);
     cstrl_platform_shutdown(&g_platform_state);
 

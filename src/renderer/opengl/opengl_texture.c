@@ -42,15 +42,16 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glGenerateMipmap(GL_TEXTURE_2D);
 
     if (upload_opengl_texture(path))
     {
         return texture;
     }
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+
     texture.id = texture_id;
     texture.path = path;
     texture.last_modified_timestamp = cstrl_get_file_timestamp(path);
@@ -69,9 +70,9 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glGenerateMipmap(GL_TEXTURE_2D);
-
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
 
     texture.id = texture_id;
     texture.path = "";

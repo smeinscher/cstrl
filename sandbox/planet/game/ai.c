@@ -1,6 +1,7 @@
 #include "ai.h"
 #include "formation.h"
 #include "players.h"
+#include "units.h"
 #include <math.h>
 #include <stdlib.h>
 
@@ -8,23 +9,38 @@ static void move_randomly(ai_t *ai, int ai_id, players_t *players)
 {
     if (players->formations[ai_id].count == 0)
     {
-        int ground_formation_id = -1;
+        int humvee_formation_id = -1;
+        int tank_formation_id = -1;
         for (int i = 0; i < players->units[ai_id].count; i++)
         {
-            if (players->units[ai_id].type[i] == HUMVEE || players->units[ai_id].type[i] == TANK)
+            if (players->units[ai_id].type[i] == HUMVEE)
             {
-                if (ground_formation_id == -1)
+                if (humvee_formation_id == -1)
                 {
-                    ground_formation_id = formations_add(&players->formations[ai_id]);
+                    humvee_formation_id = formations_add(&players->formations[ai_id]);
                 }
-                formations_add_unit(&players->formations[ai_id], ground_formation_id, i);
-                players->units[ai_id].formation_id[i] = ground_formation_id;
-                if (players->formations[ai_id].unit_ids[ground_formation_id].size >= 5)
+                formations_add_unit(&players->formations[ai_id], humvee_formation_id, i);
+                players->units[ai_id].formation_id[i] = humvee_formation_id;
+                if (players->formations[ai_id].unit_ids[humvee_formation_id].size >= 5)
                 {
-                    ground_formation_id = -1;
+                    humvee_formation_id = -1;
                 }
             }
-            else if (players->units[ai_id].type[i] == JET || players->units[ai_id].type[i] == PLANE)
+            else if (players->units[ai_id].type[i] == TANK)
+            {
+                if (tank_formation_id == -1)
+                {
+                    tank_formation_id = formations_add(&players->formations[ai_id]);
+                }
+                formations_add_unit(&players->formations[ai_id], tank_formation_id, i);
+                players->units[ai_id].formation_id[i] = tank_formation_id;
+                if (players->formations[ai_id].unit_ids[tank_formation_id].size >= 5)
+                {
+                    tank_formation_id = -1;
+                }
+            }
+            else if (players->units[ai_id].type[i] == JET || players->units[ai_id].type[i] == PLANE ||
+                     players->units[ai_id].type[i] == ASTRONAUT || players->units[ai_id].type[i] == ASTRONAUT_ARMED)
             {
                 players->units[ai_id].formation_id[i] = formations_add(&players->formations[ai_id]);
                 formations_add_unit(&players->formations[ai_id], players->units[ai_id].formation_id[i], i);

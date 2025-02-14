@@ -232,6 +232,7 @@ CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
 
     cstrl_da_int_init(&ui_state->element_render_order, 1);
 
+    context->mouse_locked = false;
     ui_state->dragged_element_id = -1;
 
     ui_state->mouse_x = -1;
@@ -279,6 +280,7 @@ CSTRL_API void cstrl_ui_begin(cstrl_ui_context *context)
     {
         ui_state->left_mouse_button_pressed_x = -1;
         ui_state->left_mouse_button_pressed_y = -1;
+        context->mouse_locked = false;
         ui_state->dragged_element_id = -1;
     }
     else if (!previous_left_mouse_button_state)
@@ -560,7 +562,7 @@ CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text,
 }
 
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
-                                        int w, int h, int id, bool is_static, int order_priority)
+                                        int w, int h, int id, bool is_static, bool can_minimize, int order_priority)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
     if (ui_state->parent_stack.size != 0)
@@ -572,7 +574,8 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     int original_w = w;
     int original_h = h;
     int original_order_priority = order_priority;
-    if (ui_state->element_cache.element_count > 0)
+    if (ui_state->element_cache.element_count > 0 &&
+        ui_state->element_cache.element_count > ui_state->elements.element_count)
     {
         x = ui_state->element_cache.screen_coords.array[ui_state->elements.element_count * 4];
         y = ui_state->element_cache.screen_coords.array[ui_state->elements.element_count * 4 + 1];
@@ -581,9 +584,14 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
         order_priority = ui_state->element_cache.order_priority.array[ui_state->elements.element_count];
     }
 
-    if (!is_static && cstrl_ui_region_hit(ui_state->mouse_x, ui_state->mouse_y, x, y, 30, 30) &&
+    if (cstrl_ui_region_hit(ui_state->mouse_x, ui_state->mouse_y, x, y, w, h))
+    {
+        context->mouse_locked = true;
+    }
+    if (can_minimize && !is_static && cstrl_ui_region_hit(ui_state->mouse_x, ui_state->mouse_y, x, y, 30, 30) &&
         ui_state->left_mouse_button_down && !ui_state->left_mouse_button_processed)
     {
+
         if (w == original_w && h == original_h)
         {
             w = 50;
@@ -598,6 +606,7 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     if (!is_static && ui_state->dragged_element_id < 0 &&
         cstrl_ui_region_hit(ui_state->mouse_x, ui_state->mouse_y, x, y, w, h) && ui_state->left_mouse_button_down)
     {
+        context->mouse_locked = true;
         ui_state->dragged_element_id = id;
         ui_state->active_item = id;
     }

@@ -66,7 +66,7 @@ int basic_ui()
         cstrl_texture_bind(texture);
         cstrl_renderer_draw(render_data);
         cstrl_ui_begin(context);
-        if (cstrl_ui_container_begin(context, "Menu", 4, 0, 0, 800, 30, GEN_ID(0), true, 1))
+        if (cstrl_ui_container_begin(context, "Menu", 4, 0, 0, 800, 30, GEN_ID(0), true, true, 1))
         {
             if (cstrl_ui_button(context, "Quit", 4, 760, 5, 50, 20, GEN_ID(0)))
             {
@@ -74,7 +74,7 @@ int basic_ui()
             }
             cstrl_ui_container_end(context);
         }
-        if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 200, 300, GEN_ID(0), false, 2))
+        if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
         {
             char num_buffer[20];
             if (cstrl_ui_text_field(context, "PLACEHOLDER", 11, 10, 75, 180, 30, GEN_ID(0), num_buffer, 20))
@@ -87,7 +87,7 @@ int basic_ui()
             }
             cstrl_ui_container_end(context);
         }
-        if (cstrl_ui_container_begin(context, "Console", 7, 10, 390, 780, 200, GEN_ID(0), false, 1))
+        if (cstrl_ui_container_begin(context, "Console", 7, 10, 390, 780, 200, GEN_ID(0), false, false, 1))
         {
             cstrl_ui_container_end(context);
         }
