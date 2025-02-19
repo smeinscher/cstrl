@@ -212,7 +212,7 @@ CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state)
     free(pixels);
     free(font_buffer);
 
-    ui_state->texture = cstrl_texture_generate_from_path("resources/textures/background.jpg");
+    ui_state->texture = cstrl_texture_generate_from_path("resources/textures/background.png");
 
     ui_state->elements.element_count = 0;
     cstrl_da_int_init(&ui_state->elements.ids, 1);

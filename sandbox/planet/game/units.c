@@ -1,9 +1,38 @@
 #include "units.h"
+#include "../helpers/helpers.h"
 #include "cstrl/cstrl_math.h"
+#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_util.h"
+#include <stdio.h>
 #include <stdlib.h>
 
+#define UNIT_SPEED_MODIFIER 0.0005f
+#define UNIT_AVOIDANCE_FORCE 0.05f
+
 const float BASE_UNIT_SPEEDS[MAX_UNIT_TYPES] = {0.25f, 0.25f, 0.0f, 2.0f, 10.0f, 10.0f, 1.0f};
+
+const float BASE_UNIT_VIEW_DISTANCES[MAX_RAY_DIRECTIONS] = {UNIT_SIZE_X * 4.0f, UNIT_SIZE_X * 4.0f, UNIT_SIZE_X * 3.0f,
+                                                            UNIT_SIZE_X * 2.0f, UNIT_SIZE_X * 2.0f, UNIT_SIZE_X * 2.0f,
+                                                            UNIT_SIZE_X * 3.0f, UNIT_SIZE_X * 4.0f};
+
+aabb_tree_t g_aabb_tree;
+
+static void recalculate_ray_directions(units_t *units, int unit_id, vec3 direction)
+{
+    vec3 normalized_position = cstrl_vec3_normalize(units->position[unit_id]);
+    units->rays[unit_id].base_rays[FORWARD] = direction;
+    units->rays[unit_id].base_rays[BACK] = cstrl_vec3_negate(units->rays[unit_id].base_rays[FORWARD]);
+    units->rays[unit_id].base_rays[RIGHT] = cstrl_vec3_normalize(cstrl_vec3_cross(direction, normalized_position));
+    units->rays[unit_id].base_rays[LEFT] = cstrl_vec3_negate(units->rays[unit_id].base_rays[RIGHT]);
+    units->rays[unit_id].base_rays[FORWARD_RIGHT] = cstrl_vec3_normalize(
+        cstrl_vec3_add(units->rays[unit_id].base_rays[RIGHT], units->rays[unit_id].base_rays[FORWARD]));
+    units->rays[unit_id].base_rays[FORWARD_LEFT] = cstrl_vec3_normalize(
+        cstrl_vec3_add(units->rays[unit_id].base_rays[LEFT], units->rays[unit_id].base_rays[FORWARD]));
+    units->rays[unit_id].base_rays[BACK_RIGHT] = cstrl_vec3_normalize(
+        cstrl_vec3_add(units->rays[unit_id].base_rays[RIGHT], units->rays[unit_id].base_rays[BACK]));
+    units->rays[unit_id].base_rays[BACK_LEFT] = cstrl_vec3_normalize(
+        cstrl_vec3_add(units->rays[unit_id].base_rays[LEFT], units->rays[unit_id].base_rays[BACK]));
+}
 
 bool units_init(units_t *units)
 {
@@ -40,6 +69,41 @@ bool units_init(units_t *units)
     if (!units->type)
     {
         printf("Error allocating memory for unit type\n");
+        units_free(units);
+        return false;
+    }
+    units->aabb_min = malloc(sizeof(vec3));
+    if (!units->aabb_min)
+    {
+        printf("Error allocating memory for unit aabb min\n");
+        units_free(units);
+        return false;
+    }
+    units->aabb_max = malloc(sizeof(vec3));
+    if (!units->aabb_max)
+    {
+        printf("Error allocating memory for unit aabb max\n");
+        units_free(units);
+        return false;
+    }
+    units->collision_id = malloc(sizeof(int));
+    if (!units->collision_id)
+    {
+        printf("Error allocating memory for unit collision id\n");
+        units_free(units);
+        return false;
+    }
+    units->rays = malloc(sizeof(unit_rays_t));
+    if (!units->rays)
+    {
+        printf("Error allocating memory for unit rays\n");
+        units_free(units);
+        return false;
+    }
+    units->velocity = malloc(sizeof(vec3));
+    if (!units->velocity)
+    {
+        printf("Error allocating memory for unit velocity\n");
         units_free(units);
         return false;
     }
@@ -105,6 +169,35 @@ int units_add(units_t *units, vec3 position, int type)
                 printf("Error allocating unit type\n");
                 return -1;
             }
+            if (!cstrl_realloc_vec3(&units->aabb_min, units->capacity))
+            {
+                printf("Error allocating aabb min\n");
+                return -1;
+            }
+            if (!cstrl_realloc_vec3(&units->aabb_max, units->capacity))
+            {
+                printf("Error allocating aabb max\n");
+                return -1;
+            }
+            if (!cstrl_realloc_int(&units->collision_id, units->capacity))
+            {
+                printf("Error allocating unit collision id\n");
+                return -1;
+            }
+            {
+                unit_rays_t *temp = realloc(units->rays, units->capacity * sizeof(unit_rays_t));
+                if (!temp)
+                {
+                    printf("Error allocating ray directions\n");
+                    return -1;
+                }
+                units->rays = temp;
+            }
+            if (!cstrl_realloc_vec3(&units->velocity, units->capacity))
+            {
+                printf("Error allocating velocity\n");
+                return -1;
+            }
         }
     }
     else
@@ -116,8 +209,71 @@ int units_add(units_t *units, vec3 position, int type)
     units->active[new_id] = true;
     units->formation_id[new_id] = -1;
     units->type[new_id] = type;
-
+    units->aabb_min[new_id] =
+        cstrl_vec3_sub(position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
+    units->aabb_max[new_id] =
+        cstrl_vec3_add(position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
+    units->collision_id[new_id] = cstrl_collision_aabb_tree_insert(
+        &g_aabb_tree, &new_id, (vec3[]){units->aabb_min[new_id], units->aabb_max[new_id]});
+    recalculate_ray_directions(units, new_id, (vec3){0.0f, 1.0f, 0.0f});
+    units->velocity[new_id] = (vec3){0.0f, 0.0f, 0.0f};
     return new_id;
+}
+
+bool units_move(units_t *units, int unit_id, vec3 target_position)
+{
+    vec3 start_position = units->position[unit_id];
+    if (get_spherical_path_length(start_position, target_position) <
+        BASE_UNIT_SPEEDS[units->type[unit_id]] * UNIT_SPEED_MODIFIER * 1.5f)
+    {
+        units->velocity[unit_id] = (vec3){0.0f, 0.0f, 0.0f};
+        return true;
+    }
+    // vec3 desired_velocity = cstrl_vec3_normalize(cstrl_vec3_sub(target_position, start_position));
+
+    // vec3 ahead = cstrl_vec3_add(start_position,
+    // cstrl_vec3_mult_scalar(cstrl_vec3_normalize(units->velocity[unit_id]),
+    //                                                                    BASE_UNIT_VIEW_DISTANCES[0]));
+    // da_int excluded_nodes;
+    // cstrl_da_int_init(&excluded_nodes, 1);
+    // cstrl_da_int_push_back(&excluded_nodes, units->collision_id[unit_id]);
+    // ray_cast_result_t result = curved_ray_cast(&g_aabb_tree, (vec3){0.0f, 0.0f, 0.0f}, start_position,
+    //                                            cstrl_vec3_normalize(ahead), &excluded_nodes);
+    // if (result.hit)
+    // {
+    //     if (get_spherical_path_length(result.intersection, start_position) > UNIT_SIZE_X)
+    //     {
+    //         desired_velocity = cstrl_vec3_normalize(cstrl_vec3_add(desired_velocity, result.normal));
+    //     }
+    //     else
+    //     {
+    //         if (get_spherical_path_length(target_position, result.aabb_center) < UNIT_SIZE_X)
+    //         {
+    //             units->velocity[unit_id] = cstrl_vec3_negate(units->velocity[unit_id]);
+    //             return false;
+    //         }
+    //         desired_velocity = cstrl_vec3_normalize(cstrl_vec3_sub(result.normal, desired_velocity));
+    //     }
+    // }
+    // vec3 steer = cstrl_vec3_normalize(cstrl_vec3_sub(desired_velocity, units->velocity[unit_id]));
+    // steer = cstrl_vec3_mult_scalar(steer, UNIT_AVOIDANCE_FORCE);
+    // units->velocity[unit_id] = cstrl_vec3_normalize(cstrl_vec3_add(units->velocity[unit_id], steer));
+    vec3 new_position = cstrl_vec3_normalize(cstrl_vec3_add(
+        start_position, cstrl_vec3_mult_scalar(units->velocity[unit_id],
+                                               BASE_UNIT_SPEEDS[units->type[unit_id]] * UNIT_SPEED_MODIFIER)));
+    new_position = cstrl_vec3_mult_scalar(new_position, 1.0f + UNIT_SIZE_X * 0.5f);
+    units->position[unit_id] = new_position;
+
+    units->aabb_min[unit_id] =
+        cstrl_vec3_sub(new_position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
+    units->aabb_max[unit_id] =
+        cstrl_vec3_add(new_position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
+    cstrl_collision_aabb_tree_update_node(&g_aabb_tree, units->collision_id[unit_id],
+                                          (vec3[]){units->aabb_min[unit_id], units->aabb_max[unit_id]});
+    // recalculate_ray_directions(units, unit_id, cstrl_vec3_normalize(cstrl_vec3_sub(new_position, start_position)));
+
+    // cstrl_da_int_free(&excluded_nodes);
+    return false;
 }
 
 void units_remove(units_t *units, int unit_id)
@@ -136,4 +292,9 @@ void units_free(units_t *units)
     free(units->formation_id);
     free(units->type);
     cstrl_da_int_free(&units->free_ids);
+}
+
+aabb_tree_t *get_aabb_tree()
+{
+    return &g_aabb_tree;
 }

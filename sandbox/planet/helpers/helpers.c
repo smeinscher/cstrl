@@ -1,6 +1,8 @@
 #include "helpers.h"
 #include "cstrl/cstrl_math.h"
+#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_util.h"
+#include <stdio.h>
 
 bool hit_check(vec3 d, float *t, vec3 origin, vec3 center, float radius)
 {
@@ -52,7 +54,7 @@ vec3 screen_ray_cast(vec2 screen_coords, vec2 screen_size, mat4 projection, mat4
 
     vec4 ray_world = cstrl_vec4_mult_mat4(ray_eye, cstrl_mat4_transpose(cstrl_mat4_inverse(view)));
 
-    return cstrl_vec3_normalize((vec3){ray_world.x, ray_world.y, ray_world.z});
+    return cstrl_vec3_normalize(cstrl_vec4_to_vec3(ray_world));
 }
 
 vec2 world_to_screen(vec3 world_coords, vec2 screen_size, mat4 projection, mat4 view)
@@ -98,6 +100,76 @@ void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, transform transform)
     *p1 = cstrl_vec3_add(*p1, transform.position);
     *p2 = cstrl_vec3_add(*p2, transform.position);
     *p3 = cstrl_vec3_add(*p3, transform.position);
+}
+
+vec3 get_point_on_path(vec3 origin, vec3 start_position, vec3 end_position, float t)
+{
+    vec3 current = cstrl_vec3_normalize(cstrl_vec3_sub(start_position, origin));
+    vec3 desired = cstrl_vec3_normalize(cstrl_vec3_sub(end_position, origin));
+    float rotation_angle = acosf(cstrl_vec3_dot(current, desired));
+    vec3 rotation_axis = cstrl_vec3_normalize(cstrl_vec3_cross(current, desired));
+    if (cstrl_vec3_is_equal(rotation_axis, (vec3){0.0f, 0.0f, 0.0f}))
+    {
+        rotation_axis = (vec3){1.0f, 0.0f, 0.0f};
+    }
+    quat rotation = cstrl_quat_angle_axis(rotation_angle * t, rotation_axis);
+    float length = cstrl_vec3_length(cstrl_vec3_sub(end_position, origin));
+    vec3 position = cstrl_vec3_mult_scalar(cstrl_vec3_rotate_by_quat(current, rotation), length);
+    position = cstrl_vec3_add(position, origin);
+
+    return position;
+}
+
+ray_cast_result_t curved_ray_cast(aabb_tree_t *tree, vec3 origin, vec3 start_position, vec3 end_position,
+                                  da_int *excluded_nodes)
+{
+    da_float positions;
+    cstrl_da_float_init(&positions, 3);
+    generate_line_segments(&positions, start_position, end_position, 0.1f);
+    ray_cast_result_t result = {0};
+    if (positions.size == 0)
+    {
+        return result;
+    }
+    for (int i = 0; i < positions.size / 3 - 1; i++)
+    {
+        vec3 start = {positions.array[i * 3], positions.array[i * 3 + 1], positions.array[i * 3 + 2]};
+        vec3 end = {positions.array[i * 3 + 3], positions.array[i * 3 + 4], positions.array[i * 3 + 5]};
+        vec3 difference = cstrl_vec3_sub(end, start);
+        vec3 direction = cstrl_vec3_normalize(difference);
+        result = cstrl_collision_aabb_tree_ray_cast(tree, start_position, direction, 1.0f, excluded_nodes);
+        if (result.hit)
+        {
+            break;
+        }
+    }
+    return result;
+    // float t = get_spherical_path_length(start_position, current_position) /
+    //           get_spherical_path_length(start_position, end_position);
+    // float step = 0.005f / get_spherical_path_length(start_position, end_position);
+    // if (1.0f - t < step)
+    // {
+    //     ray_cast_result_t result = {0};
+    //     result.hit = false;
+    //     result.t = 0.0f;
+    //     result.node_index = -1;
+    //     return result;
+    // }
+    // vec3 next_position = get_point_on_path(origin, start_position, end_position, t + step);
+    // vec3 difference = cstrl_vec3_sub(next_position, current_position);
+    // vec3 direction = cstrl_vec3_normalize(difference);
+    // ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(tree, current_position, direction,
+    //                                                               cstrl_vec3_length(difference), excluded_nodes);
+    // if (result.hit)
+    // {
+    //     return result;
+    // }
+    // return curved_ray_cast(tree, origin, start_position, end_position, next_position, excluded_nodes);
+}
+
+float get_spherical_path_length(vec3 start_position, vec3 end_position)
+{
+    return acos(cstrl_vec3_dot(cstrl_vec3_normalize(start_position), cstrl_vec3_normalize(end_position)));
 }
 
 void generate_cube_positions(float *positions)

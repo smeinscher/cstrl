@@ -58,7 +58,7 @@ void generate_sphere_lat_long(float *positions, int *indices, float *uvs, float 
     }
 }
 
-static void generate_terrain_face_mesh(float *positions, int *indices, float *uvs, float *normals, int vertex_offset,
+static void generate_terrain_face_mesh(float *positions, int *indices, float *normals, int vertex_offset,
                                        int indices_offset, int uvs_offset, int resolution, vec3 local_up)
 {
     vec3 axis_a = {local_up.y, local_up.z, local_up.x};
@@ -82,8 +82,6 @@ static void generate_terrain_face_mesh(float *positions, int *indices, float *uv
             normals[i * 3] = point_on_unit_sphere.x;
             normals[i * 3 + 1] = point_on_unit_sphere.y;
             normals[i * 3 + 2] = point_on_unit_sphere.z;
-            uvs[i * 2] = ((float)(uvs_offset + 1) / 6.0f) * ((float)x / resolution);
-            uvs[i * 2 + 1] = (float)y / resolution;
             if (x != resolution - 1 && y != resolution - 1)
             {
                 indices[indices_index] = i;
@@ -133,27 +131,27 @@ void generate_partial_terrain_face_mesh(da_float *positions, da_int *indices, in
     }
 }
 
-void generate_sphere_cube(float *positions, int *indices, float *uvs, float *normals, int resolution)
+void generate_sphere_cube(float *positions, int *indices, float *normals, int resolution)
 {
-    generate_terrain_face_mesh(positions, indices, uvs, normals, 0, 0, 0, resolution, (vec3){1.0f, 0.0f, 0.0f});
+    generate_terrain_face_mesh(positions, indices, normals, 0, 0, 0, resolution, (vec3){1.0f, 0.0f, 0.0f});
     int position_offset = resolution * resolution;
     int indices_offset = (resolution - 1) * (resolution - 1) * 6;
-    generate_terrain_face_mesh(positions, indices, uvs, normals, position_offset, indices_offset, 1, resolution,
+    generate_terrain_face_mesh(positions, indices, normals, position_offset, indices_offset, 1, resolution,
                                (vec3){-1.0f, 0.0f, 0.0f});
     position_offset += resolution * resolution;
     indices_offset += (resolution - 1) * (resolution - 1) * 6;
-    generate_terrain_face_mesh(positions, indices, uvs, normals, position_offset, indices_offset, 2, resolution,
+    generate_terrain_face_mesh(positions, indices, normals, position_offset, indices_offset, 2, resolution,
                                (vec3){0.0f, 1.0f, 0.0f});
     position_offset += resolution * resolution;
     indices_offset += (resolution - 1) * (resolution - 1) * 6;
-    generate_terrain_face_mesh(positions, indices, uvs, normals, position_offset, indices_offset, 3, resolution,
+    generate_terrain_face_mesh(positions, indices, normals, position_offset, indices_offset, 3, resolution,
                                (vec3){0.0f, -1.0f, 0.0f});
     position_offset += resolution * resolution;
     indices_offset += (resolution - 1) * (resolution - 1) * 6;
-    generate_terrain_face_mesh(positions, indices, uvs, normals, position_offset, indices_offset, 4, resolution,
+    generate_terrain_face_mesh(positions, indices, normals, position_offset, indices_offset, 4, resolution,
                                (vec3){0.0f, 0.0f, 1.0f});
     position_offset += resolution * resolution;
     indices_offset += (resolution - 1) * (resolution - 1) * 6;
-    generate_terrain_face_mesh(positions, indices, uvs, normals, position_offset, indices_offset, 5, resolution,
+    generate_terrain_face_mesh(positions, indices, normals, position_offset, indices_offset, 5, resolution,
                                (vec3){0.0f, 0.0f, -1.0f});
 }

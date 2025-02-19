@@ -1,9 +1,69 @@
 #include "players.h"
 #include "../helpers/helpers.h"
+#include "cstrl/cstrl_math.h"
+#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_util.h"
 #include "units.h"
+#include <stdio.h>
+
+#define SEPARATION_RADIUS (UNIT_SIZE_X * 0.5f)
+#define SEPARATION_WEIGHT 0.0f
+#define COHESION_WEIGHT 0.0f
+#define AVOIDANCE_WEIGHT 0.0f
+#define SEEK_WEIGHT 1.0f
 
 static const float FORMATION_OFFSETS[] = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
+
+static void optimize_formation_positions(players_t *players, int player_id, int formation_id)
+{
+    int leader_unit_id = players->formations[player_id].unit_ids[formation_id].array[0];
+    bool ground_units = players->units[player_id].type[leader_unit_id] == TANK ||
+                        players->units[player_id].type[leader_unit_id] == HUMVEE ||
+                        players->units[player_id].type[leader_unit_id] == ASTRONAUT ||
+                        players->units[player_id].type[leader_unit_id] == ASTRONAUT_ARMED;
+
+    da_float distance;
+    cstrl_da_float_init(&distance, powf(players->formations[player_id].unit_ids[formation_id].size, 2.0f));
+    for (int i = 0; i < players->formations[player_id].unit_ids[formation_id].size; i++)
+    {
+        int unit_id = players->formations[player_id].unit_ids[formation_id].array[i];
+        for (int j = 0; j < players->formations[player_id].path_heads[formation_id].size; j++)
+        {
+            int path_id = players->formations[player_id].path_heads[formation_id].array[j];
+            cstrl_da_float_push_back(&distance,
+                                     cstrl_vec3_length(cstrl_vec3_sub(players->paths[player_id].end_positions[path_id],
+                                                                      players->units[player_id].position[unit_id])));
+        }
+    }
+    da_int taken_paths;
+    cstrl_da_int_init(&taken_paths, players->formations[player_id].path_heads[formation_id].size);
+    for (int i = 0; i < players->formations[player_id].path_heads[formation_id].size; i++)
+    {
+        int unit_id = players->formations[player_id].unit_ids[formation_id].array[i];
+        float min_distance = cstrl_infinity;
+        int min_index = 0;
+        for (int j = 0; j < players->formations[player_id].unit_ids[formation_id].size; j++)
+        {
+            int path_id = players->formations[player_id].path_heads[formation_id].array[j];
+            if (cstrl_da_int_find_first(&taken_paths, path_id) != -1)
+            {
+                continue;
+            }
+            if (distance.array[i * players->formations[player_id].path_heads[formation_id].size + j] < min_distance)
+            {
+                min_distance = distance.array[i * players->formations[player_id].unit_ids[formation_id].size + j];
+                min_index = path_id;
+            }
+        }
+        cstrl_da_int_push_back(&taken_paths, min_index);
+    }
+    for (int i = 0; i < taken_paths.size; i++)
+    {
+        players->formations[player_id].path_heads[formation_id].array[i] = taken_paths.array[i];
+    }
+    cstrl_da_float_free(&distance);
+    cstrl_da_int_free(&taken_paths);
+}
 
 static void new_path(players_t *players, int player_id, vec3 start_position, vec3 end_position, bool in_queue,
                      int unit_id, int prev)
@@ -46,6 +106,7 @@ static void new_path(players_t *players, int player_id, vec3 start_position, vec
         players->formations[player_id].path_heads[players->selected_formation[player_id]].array[unit_index] =
             new_path_id;
         players->paths[player_id].in_queue[new_path_id] = false;
+        players->units[player_id].velocity[unit_id] = (vec3){0.0f, 0.0f, 0.0f};
     }
 }
 
@@ -111,6 +172,175 @@ void players_init(players_t *players, int count)
         cstrl_da_int_init(&players->selected_units[i], 1);
     }
 }
+static vec3 compute_alignment(players_t *players, int player_id, int unit_id)
+{
+    int formation_id = players->units[player_id].formation_id[unit_id];
+    if (players->formations[player_id].unit_ids[formation_id].size < 2)
+    {
+        return (vec3){0.0f, 0.0f, 0.0f};
+    }
+
+    vec3 average_velocity = {0.0f, 0.0f, 0.0f};
+    for (int i = 0; i < players->formations[player_id].unit_ids[formation_id].size; i++)
+    {
+        int id = players->formations[player_id].unit_ids[formation_id].array[i];
+        if (id == unit_id)
+        {
+            continue;
+        }
+        average_velocity = cstrl_vec3_add(average_velocity, players->units[player_id].velocity[id]);
+    }
+    average_velocity =
+        cstrl_vec3_div_scalar(average_velocity, players->formations[player_id].unit_ids[formation_id].size - 1);
+
+    return cstrl_vec3_normalize(cstrl_vec3_sub(average_velocity, players->units[player_id].velocity[unit_id]));
+}
+
+static vec3 compute_separation(players_t *players, int player_id, int unit_id)
+{
+    int formation_id = players->units[player_id].formation_id[unit_id];
+    if (players->formations[player_id].unit_ids[formation_id].size < 2)
+    {
+        return (vec3){0.0f, 0.0f, 0.0f};
+    }
+
+    vec3 separation_force = {0.0f, 0.0f, 0.0f};
+    for (int i = 0; i < players->formations[player_id].unit_ids[formation_id].size; i++)
+    {
+        int id = players->formations[player_id].unit_ids[formation_id].array[i];
+        if (id == unit_id)
+        {
+            continue;
+        }
+        vec3 difference =
+            cstrl_vec3_sub(players->units[player_id].position[unit_id], players->units[player_id].position[id]);
+        float distance = cstrl_vec3_length(difference);
+        if (distance > cstrl_epsilon && distance < SEPARATION_RADIUS)
+        {
+            separation_force =
+                cstrl_vec3_add(separation_force, cstrl_vec3_div_scalar(cstrl_vec3_normalize(difference), distance));
+        }
+    }
+
+    return cstrl_vec3_mult_scalar(cstrl_vec3_normalize(separation_force), SEPARATION_WEIGHT);
+}
+
+static vec3 compute_cohesion(players_t *players, int player_id, int unit_id)
+{
+    int formation_id = players->units[player_id].formation_id[unit_id];
+    if (players->formations[player_id].unit_ids[formation_id].size < 2)
+    {
+        return (vec3){0.0f, 0.0f, 0.0f};
+    }
+
+    vec3 center = {0.0f, 0.0f, 0.0f};
+    for (int i = 0; i < players->formations[player_id].unit_ids[formation_id].size; i++)
+    {
+        int id = players->formations[player_id].unit_ids[formation_id].array[i];
+        if (id == unit_id)
+        {
+            continue;
+        }
+        cstrl_vec3_add(center, players->units[player_id].position[id]);
+    }
+
+    return cstrl_vec3_mult_scalar(
+        cstrl_vec3_normalize(cstrl_vec3_sub(center, players->units[player_id].position[unit_id])), COHESION_WEIGHT);
+}
+
+static vec3 compute_flocking_force(players_t *players, int player_id, int unit_id)
+{
+    vec3 alignment = compute_alignment(players, player_id, unit_id);
+    vec3 separation = compute_separation(players, player_id, unit_id);
+    vec3 cohesion = compute_cohesion(players, player_id, unit_id);
+
+    return cstrl_vec3_add(alignment, cstrl_vec3_add(separation, cohesion));
+}
+
+static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
+{
+    float ray_side_offset = UNIT_SIZE_X * 0.5f;
+
+    vec3 forward = cstrl_vec3_normalize(players->units[player_id].velocity[unit_id]);
+    vec3 left = cstrl_vec3_normalize(
+        cstrl_vec3_cross(forward, cstrl_vec3_normalize(players->units[player_id].position[unit_id])));
+    left = cstrl_vec3_normalize(cstrl_vec3_mult_scalar(left, ray_side_offset));
+    vec3 right = cstrl_vec3_negate(left);
+
+    vec3 avoidance_force = {0.0f, 0.0f, 0.0f};
+    vec3 ahead = cstrl_vec3_add(players->units[player_id].position[unit_id],
+                                cstrl_vec3_mult_scalar(forward, BASE_UNIT_VIEW_DISTANCES[0]));
+    da_int excluded_nodes;
+    cstrl_da_int_init(&excluded_nodes, 1);
+    cstrl_da_int_push_back(&excluded_nodes, players->units[player_id].collision_id[unit_id]);
+    ray_cast_result_t result =
+        curved_ray_cast(get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
+                        cstrl_vec3_normalize(ahead), &excluded_nodes);
+    if (result.hit)
+    {
+        avoidance_force = cstrl_vec3_cross(cstrl_vec3_normalize(cstrl_vec3_sub(ahead, result.aabb_center)),
+                                           cstrl_vec3_normalize(result.aabb_center));
+    }
+    ahead = cstrl_vec3_add(
+        players->units[player_id].position[unit_id],
+        cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, left)), BASE_UNIT_VIEW_DISTANCES[0]));
+    result = curved_ray_cast(get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
+                             cstrl_vec3_normalize(ahead), &excluded_nodes);
+    if (result.hit)
+    {
+        avoidance_force = cstrl_vec3_sub(avoidance_force, left);
+    }
+    ahead = cstrl_vec3_add(
+        players->units[player_id].position[unit_id],
+        cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, right)), BASE_UNIT_VIEW_DISTANCES[0]));
+    result = curved_ray_cast(get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
+                             cstrl_vec3_normalize(ahead), &excluded_nodes);
+    if (result.hit)
+    {
+        avoidance_force = cstrl_vec3_sub(avoidance_force, right);
+    }
+    return cstrl_vec3_mult_scalar(cstrl_vec3_normalize(avoidance_force), AVOIDANCE_WEIGHT);
+}
+
+static vec3 compute_seek(players_t *players, int player_id, int unit_id, vec3 target_position)
+{
+    vec3 end_position = get_point_on_path(
+        (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id], target_position,
+        0.1f / get_spherical_path_length(players->units[player_id].position[unit_id], target_position));
+    vec3 seek_force = cstrl_vec3_sub(end_position, players->units[player_id].position[unit_id]);
+
+    return cstrl_vec3_mult_scalar(cstrl_vec3_normalize(seek_force), SEEK_WEIGHT);
+}
+
+void players_update(players_t *players, int player_id)
+{
+    for (int i = 0; i < players->formations[player_id].count; i++)
+    {
+        for (int j = 0; j < players->formations[player_id].unit_ids[i].size; j++)
+        {
+            int unit_id = players->formations[player_id].unit_ids[i].array[j];
+            int index = cstrl_da_int_find_first(&players->formations[player_id].unit_ids[i], unit_id);
+            int path_id = players->formations[player_id].path_heads[i].array[index];
+            if (path_id == -1)
+            {
+                continue;
+            }
+            vec3 end_position = players->paths[player_id].end_positions[path_id];
+            vec3 steering_force = cstrl_vec3_add(compute_flocking_force(players, player_id, unit_id),
+                                                 compute_avoidance(players, player_id, unit_id));
+            steering_force = cstrl_vec3_add(steering_force, compute_seek(players, player_id, unit_id, end_position));
+            steering_force = cstrl_vec3_normalize(steering_force);
+
+            players->units[player_id].velocity[unit_id] =
+                cstrl_vec3_normalize(cstrl_vec3_add(players->units[player_id].velocity[unit_id], steering_force));
+            if (units_move(&players->units[player_id], unit_id, end_position))
+            {
+                players->paths[player_id].completed[path_id] = true;
+                players->formations[player_id].path_heads[i].array[index] = -1;
+            }
+        }
+    }
+}
 
 void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_position)
 {
@@ -130,10 +360,13 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
         }
         new_path(players, player_id, start_position, end_position, false, unit_id, -1);
     }
+    optimize_formation_positions(players, player_id, players->selected_formation[player_id]);
 }
 
 void players_move_units_path_mode(players_t *players, int player_id, vec3 end_position)
 {
+    printf("Disabling for now\n");
+    return;
     if (players->selected_formation[player_id] == -1)
     {
         players_add_selected_units_to_formation(players, player_id);

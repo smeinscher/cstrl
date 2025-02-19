@@ -1,6 +1,7 @@
 #include "planet.h"
 #include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_math.h"
+#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
@@ -27,6 +28,8 @@
 
 #define ACTIVE_PLAYERS 6
 
+#define SPHERE_RESOLUTION 10
+
 static int g_current_window_width = INITIAL_WINDOW_WIDTH;
 static int g_current_window_height = INITIAL_WINDOW_HEIGHT;
 
@@ -52,9 +55,10 @@ static const vec3 PLANET_SIZE = {2.0f, 2.0f, 2.0f};
 static const vec3 PATH_MARKER_SIZE = {0.01f, 0.01f, 0.0f};
 
 static const vec4 PATH_MARKER_COLOR = {0.8f, 0.8f, 0.8f, 0.9f};
+static const vec4 PATH_MARKER_COLOR_ATTACK = {0.8f, 0.2f, 0.2f, 0.9f};
 
 static const vec4 UNIT_TEAM_COLORS[] = {
-    (vec4){0.6f, 0.0f, 0.0f, 0.8f}, (vec4){0.0f, 0.2f, 0.6f, 0.8f}, (vec4){0.0f, 0.6f, 0.0f, 0.8f},
+    (vec4){0.6f, 0.0f, 0.0f, 0.8f}, (vec4){0.0f, 0.2f, 0.8f, 0.8f}, (vec4){0.0f, 0.6f, 0.0f, 0.8f},
     (vec4){0.6f, 0.6f, 0.0f, 0.8f}, (vec4){0.8f, 0.8f, 0.8f, 0.8f}, (vec4){0.0f, 0.6f, 0.6f, 0.8f},
     (vec4){0.6f, 0.0f, 0.6f, 0.8f}, (vec4){0.3f, 0.3f, 0.3f, 0.8f},
 };
@@ -65,8 +69,8 @@ static const vec4 BORDER_COLORS[] = {
     (vec4){0.6f, 0.0f, 0.6f, 0.2f}, (vec4){0.3f, 0.3f, 0.3f, 0.2f},
 };
 
-static bool g_render_path_markers = true;
-static bool g_render_path_lines = true;
+static bool g_render_path_markers = false;
+static bool g_render_path_lines = false;
 
 static bool g_making_ground_selection = false;
 static bool g_making_air_selection = false;
@@ -75,7 +79,10 @@ static vec2 g_selection_end;
 
 static bool g_border_update = true;
 
-cstrl_ui_context *g_ui_context;
+static cstrl_ui_context *g_ui_context;
+
+static da_float g_physics_ray_positions;
+static bool g_physics_debug_draw_enabled = false;
 
 static vec3 position_from_ray_cast(vec3 d, float t)
 {
@@ -123,24 +130,6 @@ static void move_units_to_cursor_position(bool path_mode)
             players_move_units_normal_mode(&g_players, g_human_player, end_position);
         }
     }
-}
-
-static vec3 get_point_on_path(vec3 start_position, vec3 end_position, float t)
-{
-    vec3 current = cstrl_vec3_normalize(cstrl_vec3_sub(start_position, g_planet_position));
-    vec3 desired = cstrl_vec3_normalize(cstrl_vec3_sub(end_position, g_planet_position));
-    float rotation_angle = acosf(cstrl_vec3_dot(current, desired));
-    vec3 rotation_axis = cstrl_vec3_normalize(cstrl_vec3_cross(current, desired));
-    if (cstrl_vec3_is_equal(rotation_axis, (vec3){0.0f, 0.0f, 0.0f}))
-    {
-        rotation_axis = (vec3){1.0f, 0.0f, 0.0f};
-    }
-    quat rotation = cstrl_quat_angle_axis(rotation_angle * t, rotation_axis);
-    float length = cstrl_vec3_length(cstrl_vec3_sub(end_position, g_planet_position));
-    vec3 position = cstrl_vec3_mult_scalar(cstrl_vec3_rotate_by_quat(current, rotation), length);
-    position = cstrl_vec3_add(position, g_planet_position);
-
-    return position;
 }
 
 static void framebuffer_callback(cstrl_platform_state *state, int width, int height)
@@ -208,8 +197,8 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             if (hit_check(d, &t, g_main_camera->position, g_planet_position, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
             {
                 vec3 position = position_from_ray_cast(d, t);
-                units_add(&g_players.units[g_human_player], position, CITY);
-                g_border_update = true;
+                units_add(&g_players.units[g_human_player], position, HUMVEE);
+                // g_border_update = true;
             }
         }
         break;
@@ -257,6 +246,12 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
         if (action == CSTRL_ACTION_PRESS)
         {
             players_add_selected_units_to_formation(&g_players, g_human_player);
+        }
+        break;
+    case CSTRL_KEY_D:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            g_physics_debug_draw_enabled = !g_physics_debug_draw_enabled;
         }
         break;
     default:
@@ -317,6 +312,29 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
     {
         if (action == CSTRL_ACTION_PRESS)
         {
+            if (mods & CSTRL_KEY_MOD_ALT)
+            {
+                vec3 mouse_ray_direction = mouse_cursor_ray_cast();
+                vec3 position = g_main_camera->position;
+                ray_cast_result_t result =
+                    cstrl_collision_aabb_tree_ray_cast(get_aabb_tree(),
+
+                                                       position, mouse_ray_direction, 5.0f, NULL);
+                printf("position: %f, %f, %f\n", position.x, position.y, position.z);
+                printf("direction: %f, %f, %f\n", mouse_cursor_ray_cast().x, mouse_cursor_ray_cast().y,
+                       mouse_cursor_ray_cast().z);
+                cstrl_da_float_push_back(&g_physics_ray_positions, position.x);
+                cstrl_da_float_push_back(&g_physics_ray_positions, position.y);
+                cstrl_da_float_push_back(&g_physics_ray_positions, position.z);
+                vec3 end_position = cstrl_vec3_add(position, cstrl_vec3_mult_scalar(mouse_ray_direction, 5.0f));
+                cstrl_da_float_push_back(&g_physics_ray_positions, end_position.x);
+                cstrl_da_float_push_back(&g_physics_ray_positions, end_position.y);
+                cstrl_da_float_push_back(&g_physics_ray_positions, end_position.z);
+                if (result.hit)
+                {
+                    printf("cool\n");
+                }
+            }
             if (mods & CSTRL_KEY_MOD_CONTROL)
             {
                 g_making_ground_selection = true;
@@ -589,7 +607,7 @@ void update_formation_state(int player_id)
     for (int i = 0; i < g_players.formations[player_id].count; i++)
     {
         g_players.formations[player_id].moving[i] = false;
-        float min_speed = 1e9;
+        float min_speed = cstrl_infinity;
         for (int j = 0; j < g_players.formations[player_id].path_heads[i].size; j++)
         {
             int path_id = g_players.formations[player_id].path_heads[i].array[j];
@@ -601,6 +619,7 @@ void update_formation_state(int player_id)
         }
         for (int j = 0; j < g_players.formations[player_id].unit_ids[i].size; j++)
         {
+            int unit_id = g_players.formations[player_id].unit_ids[i].array[j];
             int path_id = g_players.formations[player_id].path_heads[i].array[j];
             if (path_id == -1)
             {
@@ -608,8 +627,7 @@ void update_formation_state(int player_id)
             }
             g_players.paths[player_id].speed[path_id] = min_speed;
             g_players.formations[player_id].moving[i] = true;
-            int unit_id = g_players.formations[player_id].unit_ids[i].array[j];
-            path_update(&g_players.paths[player_id], path_id);
+            // path_update(&g_players.paths[player_id], path_id);
             if (fabsf(cstrl_vec3_length(cstrl_vec3_sub(g_players.paths[player_id].end_positions[path_id],
                                                        g_players.units[player_id].position[unit_id]))) <
                 UNIT_SIZE.x * 0.5f)
@@ -626,11 +644,139 @@ void update_formation_state(int player_id)
                 paths_remove(&g_players.paths[player_id], path_id);
                 continue;
             }
-            vec3 start_position = g_players.paths[player_id].start_positions[path_id];
+            // vec3 start_position = g_players.paths[player_id].start_positions[path_id];
             vec3 end_position = g_players.paths[player_id].end_positions[path_id];
-            g_players.units[player_id].position[unit_id] =
-                get_point_on_path(start_position, end_position, g_players.paths[player_id].progress[path_id]);
+            // vec3 target_position = get_point_on_path(g_planet_position, start_position, end_position,
+            //                                          g_players.paths[player_id].progress[path_id]);
+            if (units_move(&g_players.units[player_id], unit_id, end_position))
+            {
+                g_players.paths[player_id].completed[path_id] = true;
+            }
         }
+    }
+}
+
+static void update_physics_debug(da_float *positions)
+{
+    aabb_tree_t *tree = get_aabb_tree();
+    for (int i = 0; i < tree->node_count; i++)
+    {
+        vec3 aabb[2];
+        aabb[0] = tree->nodes[i].aabb[0];
+        aabb[1] = tree->nodes[i].aabb[1];
+
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[0].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[0].x);
+        cstrl_da_float_push_back(positions, aabb[1].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+        cstrl_da_float_push_back(positions, aabb[1].x);
+        cstrl_da_float_push_back(positions, aabb[0].y);
+        cstrl_da_float_push_back(positions, aabb[1].z);
+    }
+    for (int i = 0; i < g_physics_ray_positions.size; i++)
+    {
+        cstrl_da_float_push_back(positions, g_physics_ray_positions.array[i]);
     }
 }
 
@@ -652,16 +798,14 @@ int planet_game()
     srand(cstrl_platform_get_absolute_time());
 
     cstrl_render_data *planet_render_data = cstrl_renderer_create_render_data();
-    int resolution = 10;
-    float planet_positions[resolution * resolution * 18];
-    int planet_indices[(resolution - 1) * (resolution - 1) * 36];
-    float planet_normals[resolution * resolution * 18];
-    float planet_uvs[resolution * resolution * 12];
-    generate_sphere_cube(planet_positions, planet_indices, planet_uvs, planet_normals, resolution);
-    cstrl_renderer_add_positions(planet_render_data, planet_positions, 3, resolution * resolution * 6);
-    cstrl_renderer_add_uvs(planet_render_data, planet_uvs);
+    float planet_positions[SPHERE_RESOLUTION * SPHERE_RESOLUTION * 18];
+    int planet_indices[(SPHERE_RESOLUTION - 1) * (SPHERE_RESOLUTION - 1) * 36];
+    float planet_normals[SPHERE_RESOLUTION * SPHERE_RESOLUTION * 18];
+    generate_sphere_cube(planet_positions, planet_indices, planet_normals, SPHERE_RESOLUTION);
+    cstrl_renderer_add_positions(planet_render_data, planet_positions, 3, SPHERE_RESOLUTION * SPHERE_RESOLUTION * 6);
     cstrl_renderer_add_normals(planet_render_data, planet_normals);
-    cstrl_renderer_add_indices(planet_render_data, planet_indices, (resolution - 1) * (resolution - 1) * 36);
+    cstrl_renderer_add_indices(planet_render_data, planet_indices,
+                               (SPHERE_RESOLUTION - 1) * (SPHERE_RESOLUTION - 1) * 36);
     cstrl_shader planet_shader =
         cstrl_load_shaders_from_files("resources/shaders/planet.vert", "resources/shaders/planet.frag");
 
@@ -674,6 +818,13 @@ int planet_game()
     units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
     units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, CITY);
     units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, CITY);
+
+    units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, HUMVEE);
+    units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
+    units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, HUMVEE);
+    units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
+    units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
+    units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
 
     for (int i = 0; i < 5; i++)
     {
@@ -721,8 +872,9 @@ int planet_game()
 
     cstrl_render_data *city_render_data = cstrl_renderer_create_render_data();
 
-    cstrl_renderer_add_positions(city_render_data, planet_positions, 3, resolution * resolution * 6);
-    cstrl_renderer_add_indices(city_render_data, planet_indices, (resolution - 1) * (resolution - 1) * 36);
+    cstrl_renderer_add_positions(city_render_data, planet_positions, 3, SPHERE_RESOLUTION * SPHERE_RESOLUTION * 6);
+    cstrl_renderer_add_indices(city_render_data, planet_indices,
+                               (SPHERE_RESOLUTION - 1) * (SPHERE_RESOLUTION - 1) * 36);
 
     cstrl_shader city_shader =
         cstrl_load_shaders_from_files("resources/shaders/city_borders.vert", "resources/shaders/city_borders.frag");
@@ -817,6 +969,17 @@ int planet_game()
         cstrl_load_shaders_from_files("resources/shaders/skybox.vert", "resources/shaders/skybox.frag");
     cstrl_texture skybox_texture = cstrl_texture_cube_map_generate_from_folder("resources/textures/planet_game/stars/");
 
+    cstrl_da_float_init(&g_physics_ray_positions, 3);
+    cstrl_render_data *physics_debug_render_data = cstrl_renderer_create_render_data();
+    da_float physics_debug_positions;
+    cstrl_da_float_init(&physics_debug_positions, 36);
+    update_physics_debug(&physics_debug_positions);
+    cstrl_renderer_add_positions(physics_debug_render_data, physics_debug_positions.array, 3,
+                                 physics_debug_positions.size / 3);
+
+    cstrl_shader physics_debug_shader =
+        cstrl_load_shaders_from_files("resources/shaders/line3D.vert", "resources/shaders/line3D.frag");
+
     g_main_camera = cstrl_camera_create(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, false);
     g_main_camera->position.z = 3.0f;
 
@@ -873,7 +1036,8 @@ int planet_game()
             int unit_render_index = 0;
             for (int i = 0; i < MAX_PLAYER_COUNT; i++)
             {
-                update_formation_state(i);
+                players_update(&g_players, i);
+                // update_formation_state(i);
                 for (int j = 0; j < g_players.units[i].count; j++)
                 {
                     if (!g_players.units[i].active[j])
@@ -893,7 +1057,7 @@ int planet_game()
                                          1.0f};
                     vec3 size =
                         (type != ASTRONAUT && type != ASTRONAUT_ARMED ? UNIT_SIZE
-                                                                      : cstrl_vec3_mult_scalar(UNIT_SIZE, 0.5f));
+                                                                      : cstrl_vec3_mult_scalar(UNIT_SIZE, 0.65f));
                     update_billboard_object(
                         &unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
                         (transform){g_players.units[i].position[j], billboard_rotation, adjust_billboard_scale(size)},
@@ -1019,18 +1183,24 @@ int planet_game()
         cstrl_texture_bind(city_noise_texture);
         cstrl_renderer_draw_indices(city_render_data);
 
-        cstrl_use_shader(path_line_shader);
-        cstrl_renderer_draw_lines(path_line_render_data);
-        cstrl_set_uniform_mat4(path_marker_shader.program, "view", g_main_camera->view);
-        cstrl_set_uniform_mat4(path_marker_shader.program, "projection", g_main_camera->projection);
-        cstrl_use_shader(path_marker_shader);
-        cstrl_renderer_draw_indices(path_marker_render_data);
-        cstrl_set_uniform_mat4(path_line_shader.program, "view", g_main_camera->view);
-        cstrl_set_uniform_mat4(path_line_shader.program, "projection", g_main_camera->projection);
-        cstrl_set_uniform_4f(path_line_shader.program, "color", PATH_MARKER_COLOR.r, PATH_MARKER_COLOR.g,
-                             PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
-        cstrl_use_shader(path_line_shader);
-        cstrl_renderer_draw_lines(path_line_render_data);
+        if (g_render_path_markers)
+        {
+            cstrl_use_shader(path_marker_shader);
+            cstrl_renderer_draw_lines(path_line_render_data);
+            cstrl_set_uniform_mat4(path_marker_shader.program, "view", g_main_camera->view);
+            cstrl_set_uniform_mat4(path_marker_shader.program, "projection", g_main_camera->projection);
+            cstrl_renderer_draw_indices(path_marker_render_data);
+        }
+        if (g_render_path_lines)
+        {
+            cstrl_use_shader(path_line_shader);
+            cstrl_set_uniform_mat4(path_line_shader.program, "view", g_main_camera->view);
+            cstrl_set_uniform_mat4(path_line_shader.program, "projection", g_main_camera->projection);
+            cstrl_set_uniform_4f(path_line_shader.program, "color", PATH_MARKER_COLOR.r, PATH_MARKER_COLOR.g,
+                                 PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
+            cstrl_use_shader(path_line_shader);
+            cstrl_renderer_draw_lines(path_line_render_data);
+        }
 
         cstrl_set_uniform_mat4(unit_shader.program, "view", g_main_camera->view);
         cstrl_set_uniform_mat4(unit_shader.program, "projection", g_main_camera->projection);
@@ -1044,7 +1214,24 @@ int planet_game()
         cstrl_use_shader(selection_box_shader);
         cstrl_renderer_draw_indices(selection_box_render_data);
 
-        cstrl_set_uniform_mat4(skybox_shader.program, "view", cstrl_mat4_view_remove_translation(g_main_camera->view));
+        if (g_physics_debug_draw_enabled)
+        {
+            cstrl_da_float_clear(&physics_debug_positions);
+            update_physics_debug(&physics_debug_positions);
+            cstrl_renderer_modify_render_attributes(physics_debug_render_data, physics_debug_positions.array, NULL,
+                                                    NULL, physics_debug_positions.size / 3);
+            cstrl_set_uniform_mat4(physics_debug_shader.program, "view", g_main_camera->view);
+            cstrl_set_uniform_mat4(physics_debug_shader.program, "projection", g_main_camera->projection);
+            cstrl_set_uniform_4f(physics_debug_shader.program, "color", PATH_MARKER_COLOR.r, PATH_MARKER_COLOR.g,
+                                 PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
+            cstrl_use_shader(physics_debug_shader);
+            cstrl_renderer_draw_lines(physics_debug_render_data);
+        }
+
+        mat4 skybox_view =
+            cstrl_mat4_rotate(g_main_camera->view, (float)fmod(cstrl_platform_get_absolute_time() / 64.0, 360),
+                              cstrl_vec3_normalize((vec3){1.0f, 1.0f, 0.0f}));
+        cstrl_set_uniform_mat4(skybox_shader.program, "view", cstrl_mat4_view_remove_translation(skybox_view));
         cstrl_set_uniform_mat4(skybox_shader.program, "projection", g_main_camera->projection);
         cstrl_use_shader(skybox_shader);
         cstrl_set_active_texture(0);
@@ -1125,6 +1312,9 @@ int planet_game()
     cstrl_da_float_free(&path_marker_colors);
 
     cstrl_da_float_free(&path_line_positions);
+
+    cstrl_da_float_free(&g_physics_ray_positions);
+    cstrl_da_float_free(&physics_debug_positions);
 
     cstrl_da_float_free(&selection_box_positions);
     cstrl_da_int_free(&selection_box_indices);

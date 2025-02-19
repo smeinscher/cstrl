@@ -81,6 +81,8 @@ add_library(cstrl SHARED
         src/renderer/vulkan/vulkan_platform.h
         src/renderer/vulkan/vulkan_platform_win32.c
         src/renderer/vulkan/vulkan_platform_linux.c
+        include/cstrl/cstrl_physics.h
+        src/physics/collision.c
 )
 
 add_executable(cstrl-test
@@ -112,6 +114,8 @@ add_executable(cstrl-test
         test/unit_tests/cstrl_math/test_mat4.h
         test/unit_tests/cstrl_math/test_mat3.c
         test/unit_tests/cstrl_math/test_mat3.h
+        test/unit_tests/cstrl_physics/test_collision.c
+        test/unit_tests/cstrl_physics/test_collision.h
 )
 
 add_executable(cstrl-sandbox

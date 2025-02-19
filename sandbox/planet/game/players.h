@@ -27,6 +27,8 @@ void players_add_selected_units_to_formation(players_t *players, int player_id);
 
 void players_init(players_t *players, int count);
 
+void players_update(players_t *players, int player_id);
+
 void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_position);
 
 void players_move_units_path_mode(players_t *players, int player_id, vec3 end_position);

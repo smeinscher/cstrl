@@ -9,7 +9,6 @@
 
 #include <math.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #define cstrl_pi 3.14159265359f
 #define cstrl_pi_2 1.57079632679f
@@ -19,6 +18,8 @@
 
 #define cstrl_epsilon 1.19e-7
 #define cstrl_epsilon_double 2.22e-16
+
+#define cstrl_infinity 1e+300
 
 typedef struct vec2
 {
@@ -289,7 +290,7 @@ CSTRL_INLINE float cstrl_vec3_length(const vec3 v)
 CSTRL_INLINE vec3 cstrl_vec3_normalize(const vec3 v)
 {
     float len = cstrl_vec3_length(v);
-    if (len > 0.0f)
+    if (len > cstrl_epsilon)
     {
         return (vec3){v.x / len, v.y / len, v.z / len};
     }

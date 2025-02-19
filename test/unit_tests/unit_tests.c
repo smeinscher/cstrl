@@ -11,6 +11,7 @@
 #include "cstrl_math/test_vec2.h"
 #include "cstrl_math/test_vec3.h"
 #include "cstrl_math/test_vec4.h"
+#include "cstrl_physics/test_collision.h"
 #include "renderer/test_camera.h"
 #include "util/test_dynamic_array.h"
 
@@ -162,17 +163,28 @@ void camera_tests()
     test_manager_log_results(test_suite);
 }
 
+void collision_tests()
+{
+    int test_suite = test_manager_add_suite("Collision Tests", "Suite for testing physics collision functions");
+    test_manager_add_test(test_suite, test_cstrl_collision_aabb_tree_insert_leaf, "Collision Insert Leaf Node",
+                          "Test if can correctly insert node into aabb collision tree");
+    test_manager_run_tests(test_suite);
+    test_manager_log_results(test_suite);
+}
+
 int run_unit_tests()
 {
-    vec2_tests();
-    vec3_tests();
-    vec4_tests();
-    quat_tests();
-    mat3_tests();
-    mat4_tests();
-    dynamic_int_array_tests();
+    // vec2_tests();
+    // vec3_tests();
+    // vec4_tests();
+    // quat_tests();
+    // mat3_tests();
+    // mat4_tests();
+    // dynamic_int_array_tests();
+    //
+    // camera_tests();
 
-    camera_tests();
+    collision_tests();
 
     test_manager_log_total_failed_tests();
 

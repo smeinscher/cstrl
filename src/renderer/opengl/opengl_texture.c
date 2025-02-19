@@ -87,8 +87,8 @@ CSTRL_API cstrl_texture cstrl_texture_cube_map_generate_from_folder(const char *
     glGenTextures(1, &texture_id);
     glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
 
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -103,6 +103,7 @@ CSTRL_API cstrl_texture cstrl_texture_cube_map_generate_from_folder(const char *
         int width, height, nr_channels;
         unsigned char *data = stbi_load(path, &width, &height, &nr_channels, STBI_rgb_alpha);
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
         free(path);
         stbi_image_free(data);
     }

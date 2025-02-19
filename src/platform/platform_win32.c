@@ -168,7 +168,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
             {
                 mods |= CSTRL_KEY_MOD_CONTROL;
             }
-            if (wparam & MK_ALT)
+            if (HIBYTE(GetKeyState(VK_MENU)) & 0x80)
             {
                 mods |= CSTRL_KEY_MOD_ALT;
             }

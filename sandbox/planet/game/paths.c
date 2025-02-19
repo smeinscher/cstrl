@@ -1,5 +1,7 @@
 #include "paths.h"
+#include "../helpers/helpers.h"
 #include "cstrl/cstrl_util.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 bool paths_init(paths_t *paths)
@@ -214,9 +216,9 @@ void path_update(paths_t *paths, int path_id)
     {
         return;
     }
-    paths->progress[path_id] +=
-        paths->speed[path_id] /
-        cstrl_vec3_length(cstrl_vec3_sub(paths->end_positions[path_id], paths->start_positions[path_id]));
+    // TODO: this might be incorrect
+    paths->progress[path_id] += paths->speed[path_id] / get_spherical_path_length(paths->end_positions[path_id],
+                                                                                  paths->start_positions[path_id]);
     if (paths->progress[path_id] >= 1.0f)
     {
         paths->completed[path_id] = true;

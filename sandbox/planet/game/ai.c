@@ -3,6 +3,7 @@
 #include "players.h"
 #include "units.h"
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 static void move_randomly(ai_t *ai, int ai_id, players_t *players)
@@ -52,6 +53,7 @@ static void move_randomly(ai_t *ai, int ai_id, players_t *players)
         players->selected_formation[ai_id] = i;
         if (!players->formations[ai_id].moving[i])
         {
+            players->formations[ai_id].moving[i] = true;
             int leader_unit_id = players->formations[ai_id].unit_ids[i].array[0];
             vec3 new_position = cstrl_vec3_add(players->units[ai_id].position[leader_unit_id],
                                                (vec3){cosf(rand()), sinf(rand()), cosf(rand())});

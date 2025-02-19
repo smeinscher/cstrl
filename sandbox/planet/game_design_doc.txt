@@ -6,6 +6,15 @@ Countries
 5. Yellow -> China
 6. White -> Japan
 
+Original Pitch
 The year is 1999 - 30 years after the US landed on the moon, the world is in chaos. 6 space agencies took to the skies, to escape the turmoil on Earth.
 The goal of each agency is to create a colony on the moon - and no one is to be trusted, even former allies.
 Nuclear war is imminent on Earth. Will humanity find peace and prosperity on the Moon, or will the chaos come there as well?
+
+Random Mechanics
+Dynamic world events impact gameplay
+Examples:
+    . Communist/Fascist revolutions
+        - Communist revolution boosts happiness or production or something
+        - Fascist revolution boosts military stuff
+Basic economic simulation
