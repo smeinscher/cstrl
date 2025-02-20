@@ -3,6 +3,7 @@
 
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_types.h"
+#include "units.h"
 #include <stdbool.h>
 
 typedef struct formations_t
@@ -11,6 +12,7 @@ typedef struct formations_t
     size_t capacity;
     bool *active;
     bool *moving;
+    bool *following_enemy;
     da_int *path_heads;
     da_int *unit_ids;
     da_int free_ids;

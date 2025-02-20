@@ -6,7 +6,7 @@
 #include "cstrl/cstrl_types.h"
 #include <stdbool.h>
 
-bool hit_check(vec3 d, float *t, vec3 origin, vec3 center, float radius);
+bool planet_hit_check(vec3 d, float *t, vec3 origin, vec3 center, float radius);
 
 void generate_line_segments(da_float *positions, vec3 origin, vec3 destination, float granularity);
 

@@ -56,6 +56,18 @@ typedef struct unit_rays_t
     float view_distances[MAX_RAY_DIRECTIONS];
 } unit_rays_t;
 
+typedef struct unit_stats_t
+{
+    float max_health;
+    float current_health;
+} unit_stats_t;
+
+typedef struct unit_collision_data_t
+{
+    int player_id;
+    int unit_id;
+} unit_data_t;
+
 typedef struct units_t
 {
     size_t count;
@@ -69,6 +81,9 @@ typedef struct units_t
     int *collision_id;
     unit_rays_t *rays;
     vec3 *velocity;
+    unit_stats_t *stats;
+    bool *attacking;
+    double *last_attack_time;
     da_int free_ids;
 } units_t;
 
@@ -76,7 +91,7 @@ bool units_init(units_t *units);
 
 int units_hit(units_t *units, vec3 position);
 
-int units_add(units_t *units, vec3 positions, int type);
+int units_add(units_t *units, int player_id, vec3 positions, int type);
 
 bool units_move(units_t *units, int unit_id, vec3 target_position);
 
@@ -84,6 +99,8 @@ void units_remove(units_t *units, int unit_id);
 
 void units_free(units_t *units);
 
-aabb_tree_t *get_aabb_tree();
+aabb_tree_t *units_get_aabb_tree();
+
+void units_update_aabb(units_t *units, int unit_id);
 
 #endif // UNITS_H

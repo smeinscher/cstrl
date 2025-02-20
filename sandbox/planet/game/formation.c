@@ -8,8 +8,10 @@ bool formations_init(formations_t *formations)
     formations->count = 0;
     formations->capacity = 1;
     formations->active = NULL;
-    formations->unit_ids = NULL;
+    formations->moving = NULL;
+    formations->following_enemy = NULL;
     formations->path_heads = NULL;
+    formations->unit_ids = NULL;
 
     cstrl_da_int_init(&formations->free_ids, 1);
     formations->active = malloc(sizeof(bool));
@@ -23,6 +25,13 @@ bool formations_init(formations_t *formations)
     if (!formations->moving)
     {
         printf("Error allocating memory for formations moving\n");
+        formations_free(formations);
+        return false;
+    }
+    formations->following_enemy = malloc(sizeof(bool));
+    if (!formations->following_enemy)
+    {
+        printf("Error allocating memory for formations attacking\n");
         formations_free(formations);
         return false;
     }
@@ -62,6 +71,11 @@ int formations_add(formations_t *formations)
                 printf("Error allocating formation moving\n");
                 return -1;
             }
+            if (!cstrl_realloc_bool(&formations->following_enemy, formations->capacity))
+            {
+                printf("Error allocating formation attacking\n");
+                return -1;
+            }
             if (!cstrl_realloc_da_int(&formations->path_heads, formations->capacity))
             {
                 printf("Error allocating formation path_heads\n");
@@ -80,6 +94,7 @@ int formations_add(formations_t *formations)
     }
     formations->active[new_id] = true;
     formations->moving[new_id] = false;
+    formations->following_enemy[new_id] = false;
     cstrl_da_int_init(&formations->path_heads[new_id], 1);
     cstrl_da_int_init(&formations->unit_ids[new_id], 1);
     return new_id;
@@ -106,6 +121,8 @@ void formations_free(formations_t *formations)
     formations->count = 0;
     formations->capacity = 0;
     free(formations->active);
+    free(formations->moving);
+    free(formations->following_enemy);
     free(formations->path_heads);
     free(formations->unit_ids);
     cstrl_da_int_free(&formations->free_ids);

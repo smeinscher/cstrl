@@ -43,6 +43,18 @@ CSTRL_API bool cstrl_realloc_float(float **float_ptr, size_t size)
     return true;
 }
 
+CSTRL_API bool cstrl_realloc_double(double **double_ptr, size_t size)
+{
+    double *temp_double_ptr = realloc(*double_ptr, size * sizeof(double));
+    if (temp_double_ptr == NULL)
+    {
+        log_error("Error reallocating memory for double_ptr");
+        return false;
+    }
+    *double_ptr = temp_double_ptr;
+    return true;
+}
+
 CSTRL_API bool cstrl_realloc_string(string **str_ptr, size_t size)
 {
     string *temp_str_ptr = realloc(*str_ptr, size * sizeof(string));

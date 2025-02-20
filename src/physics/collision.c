@@ -35,6 +35,7 @@ static int allocate_node(aabb_tree_t *tree)
     tree->nodes[tree->node_count].aabb[1] = (vec3){0.0f, 0.0f, 0.0f};
     tree->nodes[tree->node_count].fat_aabb[0] = (vec3){0.0f, 0.0f, 0.0f};
     tree->nodes[tree->node_count].fat_aabb[1] = (vec3){0.0f, 0.0f, 0.0f};
+    tree->nodes[tree->node_count].active = true;
     tree->nodes[tree->node_count].user_data = NULL;
     tree->nodes[tree->node_count].parent_index = -1;
     tree->nodes[tree->node_count].child0 = -1;
@@ -361,7 +362,10 @@ CSTRL_API void cstrl_collision_aabb_tree_remove(aabb_tree_t *tree, int node_inde
     else
     {
         tree->root_index = -1;
+        tree->node_count = 0;
     }
+    free(tree->nodes[node_index].user_data);
+    tree->nodes[node_index].active = false;
 }
 
 CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree, vec3 ray_origin, vec3 ray_direction,

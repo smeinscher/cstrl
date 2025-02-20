@@ -3,6 +3,7 @@
 
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_types.h"
+#include "units.h"
 
 typedef struct paths_t
 {
@@ -18,12 +19,13 @@ typedef struct paths_t
     bool *render;
     bool *in_queue;
     bool *active;
+    unit_data_t *tracked_unit;
     da_int free_ids;
 } paths_t;
 
 bool paths_init(paths_t *paths);
 
-int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev, float speed);
+int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev, float speed, unit_data_t tracked_unit);
 
 void paths_remove(paths_t *paths, int path_id);
 

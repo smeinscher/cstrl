@@ -14,6 +14,7 @@
 #include "game/sphere.h"
 #include "game/units.h"
 #include "helpers/helpers.h"
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -69,8 +70,8 @@ static const vec4 BORDER_COLORS[] = {
     (vec4){0.6f, 0.0f, 0.6f, 0.2f}, (vec4){0.3f, 0.3f, 0.3f, 0.2f},
 };
 
-static bool g_render_path_markers = false;
-static bool g_render_path_lines = false;
+static bool g_render_path_markers = true;
+static bool g_render_path_lines = true;
 
 static bool g_making_ground_selection = false;
 static bool g_making_air_selection = false;
@@ -113,8 +114,8 @@ static void move_units_to_cursor_position(bool path_mode)
     vec3 d = mouse_cursor_ray_cast();
     float t;
     bool ground_units = type == TANK || type == HUMVEE || type == ASTRONAUT || type == ASTRONAUT_ARMED;
-    if (hit_check(d, &t, g_main_camera->position, g_planet_position,
-                  (PLANET_SIZE.x + UNIT_SIZE.x * (ground_units ? 1.0 : 10.0f)) * 0.5f))
+    if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
+                         (PLANET_SIZE.x + UNIT_SIZE.x * (ground_units ? 1.0 : 10.0f)) * 0.5f))
     {
         vec3 end_position = position_from_ray_cast(d, t);
         if (!ground_units)
@@ -149,37 +150,93 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             cstrl_platform_set_should_exit(true);
         }
         break;
-    case CSTRL_KEY_1:
     case CSTRL_KEY_R:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_main_camera->position = (vec3){0.0f, 0.0f, 3.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
+            g_main_camera->forward =
+                cstrl_vec3_normalize(cstrl_vec3_negate(g_players.units[g_human_player].position[0]));
             g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            g_main_camera->position = cstrl_vec3_mult_scalar(g_main_camera->forward, -3.0f);
+        }
+        break;
+    case CSTRL_KEY_1:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            vec3 d = mouse_cursor_ray_cast();
+            float t;
+            if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
+                                 (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            {
+                ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
+
+                                                                              g_main_camera->position, d, 5.0f, NULL);
+                if (!result.hit)
+                {
+                    vec3 position = position_from_ray_cast(d, t);
+                    units_add(&g_players.units[g_human_player], g_human_player, position, ASTRONAUT);
+                    g_border_update = true;
+                }
+            }
         }
         break;
     case CSTRL_KEY_2:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_main_camera->position = (vec3){-3.0f, 0.0f, 0.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
-            g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            vec3 d = mouse_cursor_ray_cast();
+            float t;
+            if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
+                                 (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            {
+                ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
+
+                                                                              g_main_camera->position, d, 5.0f, NULL);
+                if (!result.hit)
+                {
+                    vec3 position = position_from_ray_cast(d, t);
+                    units_add(&g_players.units[g_human_player], g_human_player, position, ASTRONAUT_ARMED);
+                    g_border_update = true;
+                }
+            }
         }
         break;
     case CSTRL_KEY_3:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_main_camera->position = (vec3){0.0f, 0.0f, -3.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
-            g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            vec3 d = mouse_cursor_ray_cast();
+            float t;
+            if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
+                                 (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            {
+                ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
+
+                                                                              g_main_camera->position, d, 5.0f, NULL);
+                if (!result.hit)
+                {
+                    vec3 position = position_from_ray_cast(d, t);
+                    units_add(&g_players.units[g_human_player], g_human_player, position, HUMVEE);
+                    g_border_update = true;
+                }
+            }
         }
         break;
     case CSTRL_KEY_4:
         if (action == CSTRL_ACTION_PRESS)
         {
-            g_main_camera->position = (vec3){3.0f, 0.0f, 0.0f};
-            g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(g_main_camera->position));
-            g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            vec3 d = mouse_cursor_ray_cast();
+            float t;
+            if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
+                                 (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            {
+                ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
+
+                                                                              g_main_camera->position, d, 5.0f, NULL);
+                if (!result.hit)
+                {
+                    vec3 position = position_from_ray_cast(d, t);
+                    units_add(&g_players.units[g_human_player], g_human_player, position, TANK);
+                    g_border_update = true;
+                }
+            }
         }
         break;
     case CSTRL_KEY_5:
@@ -189,25 +246,13 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_render_path_lines = g_render_path_markers;
         }
         break;
-    case CSTRL_KEY_F:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            vec3 d = mouse_cursor_ray_cast();
-            float t;
-            if (hit_check(d, &t, g_main_camera->position, g_planet_position, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
-            {
-                vec3 position = position_from_ray_cast(d, t);
-                units_add(&g_players.units[g_human_player], position, HUMVEE);
-                // g_border_update = true;
-            }
-        }
-        break;
     case CSTRL_KEY_C:
         if (action == CSTRL_ACTION_PRESS)
         {
             vec3 d = mouse_cursor_ray_cast();
             float t;
-            if (hit_check(d, &t, g_main_camera->position, g_planet_position, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
+                                 (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
             {
                 vec3 position = position_from_ray_cast(d, t);
                 int unit_id = -1;
@@ -231,9 +276,10 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
                     {
                         player_id = 0;
                     }
-                    units_add(&g_players.units[player_id], old_position, old_type);
+                    units_add(&g_players.units[player_id], g_human_player, old_position, old_type);
                 }
             }
+            g_border_update = true;
         }
         break;
     case CSTRL_KEY_T:
@@ -252,6 +298,18 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
         if (action == CSTRL_ACTION_PRESS)
         {
             g_physics_debug_draw_enabled = !g_physics_debug_draw_enabled;
+        }
+        break;
+    case CSTRL_KEY_S:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            g_players.selected_formation[g_human_player] = -1;
+            g_human_player = (g_human_player + 1) % 6;
+            g_players.selected_formation[g_human_player] = -1;
+            g_main_camera->forward =
+                cstrl_vec3_normalize(cstrl_vec3_negate(g_players.units[g_human_player].position[0]));
+            g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+            g_main_camera->position = cstrl_vec3_mult_scalar(g_main_camera->forward, -3.0f);
         }
         break;
     default:
@@ -317,7 +375,7 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
                 vec3 mouse_ray_direction = mouse_cursor_ray_cast();
                 vec3 position = g_main_camera->position;
                 ray_cast_result_t result =
-                    cstrl_collision_aabb_tree_ray_cast(get_aabb_tree(),
+                    cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
 
                                                        position, mouse_ray_direction, 5.0f, NULL);
                 printf("position: %f, %f, %f\n", position.x, position.y, position.z);
@@ -658,7 +716,7 @@ void update_formation_state(int player_id)
 
 static void update_physics_debug(da_float *positions)
 {
-    aabb_tree_t *tree = get_aabb_tree();
+    aabb_tree_t *tree = units_get_aabb_tree();
     for (int i = 0; i < tree->node_count; i++)
     {
         vec3 aabb[2];
@@ -780,6 +838,108 @@ static void update_physics_debug(da_float *positions)
     }
 }
 
+static vec3 generate_random_planet_position()
+{
+    vec3 random_position;
+    bool position_valid = false;
+    while (!position_valid)
+    {
+        random_position = (vec3){(float)(rand() % 1000 - 500) / 500.0f, (float)(rand() % 500 - 250) / 500.0f,
+                                 (float)(rand() % 1000 - 500) / 500.0f};
+        random_position = cstrl_vec3_normalize(random_position);
+        random_position = cstrl_vec3_mult_scalar(random_position, 1.0f + UNIT_SIZE_X * 0.5f);
+        position_valid = true;
+        for (int i = 0; i < MAX_PLAYER_COUNT; i++)
+        {
+            if (!g_players.active[i] || cstrl_vec3_is_equal(g_players.units[i].position[0], (vec3){0.0f, 0.0f, 0.0f}))
+            {
+                continue;
+            }
+            if (get_spherical_path_length(random_position, g_players.units[i].position[0]) < 1.0f)
+            {
+                position_valid = false;
+            }
+        }
+    }
+    return random_position;
+}
+
+static void create_and_place_unit(vec3 city_origin, int player_id, unit_type type)
+{
+    while (true)
+    {
+        int randx = rand() % 2 - 1;
+        int randy = rand() % 2 - 1;
+        int randz = randx != 0 && randy != 0 ? rand() % 2 - 1 : 1;
+        vec3 unit_position =
+            cstrl_vec3_add(city_origin, (vec3){(float)(randx)*UNIT_SIZE_X * 2.0f, (float)(randy)*UNIT_SIZE_Y * 2.0f,
+                                               (float)(randz)*UNIT_SIZE_X * 2.0f});
+        unit_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(unit_position), 1.0f + UNIT_SIZE_X * 0.5f);
+        ray_cast_result_t result =
+            cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
+
+                                               unit_position, cstrl_vec3_normalize(unit_position), 1.0f, NULL);
+        if (!result.hit)
+        {
+            units_add(&g_players.units[player_id], player_id, unit_position, type);
+            break;
+        }
+    }
+}
+
+static void fire_lazer(da_float *render_positions, da_float *start_positions, vec3 start_position, vec3 direction)
+{
+    vec3 end_position =
+        cstrl_vec3_normalize(cstrl_vec3_add(start_position, cstrl_vec3_mult_scalar(direction, UNIT_SIZE_X * 0.1f)));
+    end_position = cstrl_vec3_mult_scalar(end_position, 1.0f + UNIT_SIZE_X * 0.5f);
+    cstrl_da_float_push_back(render_positions, start_position.x);
+    cstrl_da_float_push_back(render_positions, start_position.y);
+    cstrl_da_float_push_back(render_positions, start_position.z);
+    cstrl_da_float_push_back(render_positions, end_position.x);
+    cstrl_da_float_push_back(render_positions, end_position.y);
+    cstrl_da_float_push_back(render_positions, end_position.z);
+
+    cstrl_da_float_push_back(start_positions, start_position.x);
+    cstrl_da_float_push_back(start_positions, start_position.y);
+    cstrl_da_float_push_back(start_positions, start_position.z);
+}
+
+static void update_lazer(da_float *positions, da_float *start_positions)
+{
+    for (int i = 0; i < start_positions->size / 3; i++)
+    {
+        vec3 old_start_position = {positions->array[i * 6], positions->array[i * 6 + 1], positions->array[i * 6 + 2]};
+        vec3 old_end_position = {positions->array[i * 6 + 3], positions->array[i * 6 + 4], positions->array[i * 6 + 5]};
+        vec3 direction = cstrl_vec3_normalize(cstrl_vec3_sub(old_end_position, old_start_position));
+        vec3 start_position = old_end_position;
+        vec3 original_start_position = {start_positions->array[i * 3], start_positions->array[i * 3 + 1],
+                                        start_positions->array[i * 3 + 2]};
+        vec3 end_position =
+            cstrl_vec3_normalize(cstrl_vec3_add(old_end_position, cstrl_vec3_mult_scalar(direction, 0.005f)));
+        end_position = cstrl_vec3_mult_scalar(end_position, 1.0f + UNIT_SIZE_X * 0.5f);
+        if (get_spherical_path_length(original_start_position, end_position) > 0.2f)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                cstrl_da_float_remove(start_positions, i * 3);
+            }
+            for (int j = 0; j < 6; j++)
+            {
+                cstrl_da_float_remove(positions, i * 6);
+            }
+            i--;
+            continue;
+        }
+
+        positions->array[i * 6] = start_position.x;
+        positions->array[i * 6 + 1] = start_position.y;
+        positions->array[i * 6 + 2] = start_position.z;
+        positions->array[i * 6 + 3] = end_position.x;
+        positions->array[i * 6 + 4] = end_position.y;
+        positions->array[i * 6 + 5] = end_position.z;
+    }
+}
+
 int planet_game()
 {
     if (!cstrl_platform_init(&g_platform_state, "Planet", (1920 - INITIAL_WINDOW_WIDTH) / 2,
@@ -812,63 +972,50 @@ int planet_game()
     cstrl_texture planet_texture = cstrl_texture_cube_map_generate_from_folder("resources/textures/planet_game/moon/");
 
     players_init(&g_players, 6);
-    units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, CITY);
-    units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
-    units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, CITY);
-    units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, CITY);
-    units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, CITY);
-    units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, CITY);
+    units_add(&g_players.units[0], 0, (vec3){0.0f, 0.0f, 0.0f}, CITY);
+    units_add(&g_players.units[1], 1, (vec3){0.0f, 0.0f, 0.0f}, CITY);
+    units_add(&g_players.units[2], 2, (vec3){0.0f, 0.0f, 0.0f}, CITY);
+    units_add(&g_players.units[3], 3, (vec3){0.0f, 0.0f, 0.0f}, CITY);
+    units_add(&g_players.units[4], 4, (vec3){0.0f, 0.0f, 0.0f}, CITY);
+    units_add(&g_players.units[5], 5, (vec3){0.0f, 0.0f, 0.0f}, CITY);
 
-    units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, HUMVEE);
-    units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
-    units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, HUMVEE);
-    units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
-    units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
-    units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
+    vec3 player1_origin = generate_random_planet_position();
+    g_players.units[0].position[0] = player1_origin;
+    units_update_aabb(&g_players.units[0], 0);
+    vec3 player2_origin = generate_random_planet_position();
+    g_players.units[1].position[0] = player2_origin;
+    units_update_aabb(&g_players.units[1], 0);
+    vec3 player3_origin = generate_random_planet_position();
+    g_players.units[2].position[0] = player3_origin;
+    units_update_aabb(&g_players.units[2], 0);
+    vec3 player4_origin = generate_random_planet_position();
+    g_players.units[3].position[0] = player4_origin;
+    units_update_aabb(&g_players.units[3], 0);
+    vec3 player5_origin = generate_random_planet_position();
+    g_players.units[4].position[0] = player5_origin;
+    units_update_aabb(&g_players.units[4], 0);
+    vec3 player6_origin = generate_random_planet_position();
+    g_players.units[5].position[0] = player6_origin;
+    units_update_aabb(&g_players.units[5], 0);
 
-    for (int i = 0; i < 5; i++)
-    {
-        units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f},
-                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
-        units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f},
-                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
-        units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f},
-                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
-        units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f},
-                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
-        units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f},
-                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
-        units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f},
-                  i != 0 ? ASTRONAUT_ARMED : ASTRONAUT);
-
-        // units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, HUMVEE);
-        // units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
-        // units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, HUMVEE);
-        // units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, HUMVEE);
-        // units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
-        // units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, HUMVEE);
-        //
-        // units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 0.5f}, TANK);
-        // units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, TANK);
-        // units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 0.5f}, TANK);
-        // units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 0.5f, 0.0f, 0.0f}, TANK);
-        // units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 0.5f, 0.0f}, TANK);
-        // units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 0.5f, 0.0f}, TANK);
-
-        // units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 5.0f}, JET);
-        // units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, JET);
-        // units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 5.0f * 1.5f}, JET);
-        // units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, JET);
-        // units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 5.0f * 1.5f, 0.0f}, JET);
-        // units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 5.0f, 0.0f}, JET);
-        //
-        // units_add(&g_players.units[0], (vec3){0.0f, 0.0f, 1.0f + UNIT_SIZE.x * 5.0f}, PLANE);
-        // units_add(&g_players.units[1], (vec3){1.0f + UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, PLANE);
-        // units_add(&g_players.units[2], (vec3){0.0f, 0.0f, -1.0f - UNIT_SIZE.x * 5.0f}, PLANE);
-        // units_add(&g_players.units[3], (vec3){-1.0f - UNIT_SIZE.x * 5.0f, 0.0f, 0.0f}, PLANE);
-        // units_add(&g_players.units[4], (vec3){0.0f, 1.0f + UNIT_SIZE.x * 5.0f, 0.0f}, PLANE);
-        // units_add(&g_players.units[5], (vec3){0.0f, -1.0f - UNIT_SIZE.x * 5.0f, 0.0f}, PLANE);
-    }
+    create_and_place_unit(player1_origin, 0, HUMVEE);
+    create_and_place_unit(player1_origin, 0, ASTRONAUT);
+    create_and_place_unit(player1_origin, 0, TANK);
+    create_and_place_unit(player2_origin, 1, HUMVEE);
+    create_and_place_unit(player2_origin, 1, ASTRONAUT);
+    create_and_place_unit(player2_origin, 1, TANK);
+    create_and_place_unit(player3_origin, 2, HUMVEE);
+    create_and_place_unit(player3_origin, 2, ASTRONAUT);
+    create_and_place_unit(player3_origin, 2, TANK);
+    create_and_place_unit(player4_origin, 3, HUMVEE);
+    create_and_place_unit(player4_origin, 3, ASTRONAUT);
+    create_and_place_unit(player4_origin, 3, TANK);
+    create_and_place_unit(player5_origin, 4, HUMVEE);
+    create_and_place_unit(player5_origin, 4, ASTRONAUT);
+    create_and_place_unit(player5_origin, 4, TANK);
+    create_and_place_unit(player6_origin, 5, HUMVEE);
+    create_and_place_unit(player6_origin, 5, ASTRONAUT);
+    create_and_place_unit(player6_origin, 5, TANK);
 
     cstrl_render_data *city_render_data = cstrl_renderer_create_render_data();
 
@@ -980,8 +1127,32 @@ int planet_game()
     cstrl_shader physics_debug_shader =
         cstrl_load_shaders_from_files("resources/shaders/line3D.vert", "resources/shaders/line3D.frag");
 
+    cstrl_render_data *unit_lazer_render_data = cstrl_renderer_create_render_data();
+    da_float unit_lazer_positions;
+    cstrl_da_float_init(&unit_lazer_positions, 6);
+    da_float unit_lazer_start_positions;
+    cstrl_da_float_init(&unit_lazer_start_positions, 3);
+    cstrl_renderer_add_positions(unit_lazer_render_data, unit_lazer_positions.array, 3, unit_lazer_positions.size / 3);
+
+    cstrl_shader unit_lazer_shader =
+        cstrl_load_shaders_from_files("resources/shaders/line3D.vert", "resources/shaders/line3D.frag");
+
+    cstrl_render_data *bullet_render_data = cstrl_renderer_create_render_data();
+    da_float bullet_positions;
+    cstrl_da_float_init(&bullet_positions, 18);
+    da_float bullet_uvs;
+    cstrl_da_float_init(&bullet_uvs, 12);
+    cstrl_renderer_add_positions(bullet_render_data, bullet_positions.array, 3, bullet_positions.size / 3);
+    cstrl_renderer_add_uvs(bullet_render_data, bullet_uvs.array);
+
+    cstrl_shader bullet_shader = cstrl_load_shaders_from_files("resources/shaders/default3D_no_color.vert",
+                                                               "resources/shaders/default3D_no_color.frag");
+
     g_main_camera = cstrl_camera_create(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, false);
-    g_main_camera->position.z = 3.0f;
+    g_main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(player1_origin));
+    g_main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(g_main_camera->forward, g_main_camera->up));
+    g_main_camera->position = cstrl_vec3_mult_scalar(g_main_camera->forward, -3.0f);
+    cstrl_camera_update(g_main_camera, g_movement, g_rotation);
 
     g_ui_camera = cstrl_camera_create(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, true);
 
@@ -1028,11 +1199,13 @@ int planet_game()
 
             cstrl_da_float_clear(&path_line_positions);
             cstrl_da_float_clear(&path_marker_positions);
+            cstrl_da_float_clear(&path_marker_colors);
             cstrl_renderer_clear_render_attributes(path_line_render_data);
             cstrl_renderer_clear_render_attributes(path_marker_render_data);
+
             quat billboard_rotation =
                 cstrl_quat_inverse(cstrl_mat3_orthogonal_to_quat(cstrl_mat4_upper_left(g_main_camera->view)));
-            ai_update(&ai, &g_players);
+            ai_update(&ai, &g_players, g_human_player);
             int unit_render_index = 0;
             for (int i = 0; i < MAX_PLAYER_COUNT; i++)
             {
@@ -1043,6 +1216,23 @@ int planet_game()
                     if (!g_players.units[i].active[j])
                     {
                         continue;
+                    }
+                    if (g_players.units[i].attacking[j])
+                    {
+                        if (cstrl_platform_get_absolute_time() > g_players.units[i].last_attack_time[j] + 0.2)
+                        {
+                            g_players.units[i].last_attack_time[j] = cstrl_platform_get_absolute_time();
+                            printf("fire!\n");
+                            int index = cstrl_da_int_find_first(
+                                &g_players.formations[i].unit_ids[g_players.units[i].formation_id[j]], j);
+                            int path_id =
+                                g_players.formations[i].path_heads[g_players.units[i].formation_id[j]].array[index];
+                            fire_lazer(&unit_lazer_positions, &unit_lazer_start_positions,
+                                       g_players.units[i].position[j],
+                                       cstrl_vec3_normalize(
+                                           get_point_on_path((vec3){0.0f, 0.0f, 0.0f}, g_players.units[i].position[j],
+                                                             g_players.paths[i].end_positions[path_id], 0.1f)));
+                        }
                     }
                     vec4 color = UNIT_TEAM_COLORS[i];
                     if (i == g_human_player && cstrl_da_int_find_first(&g_players.selected_units[i], j) != -1)
@@ -1065,6 +1255,16 @@ int planet_game()
                     unit_render_index++;
                 }
             }
+            update_lazer(&unit_lazer_positions, &unit_lazer_start_positions);
+            if (unit_lazer_positions.size > 0)
+            {
+                cstrl_renderer_modify_positions(unit_lazer_render_data, unit_lazer_positions.array, 0,
+                                                unit_lazer_positions.size);
+            }
+            else
+            {
+                cstrl_renderer_modify_positions(unit_lazer_render_data, (float[6]){0.0f}, 0, 6);
+            }
             if (unit_positions.size > 0)
             {
                 cstrl_renderer_modify_render_attributes(unit_render_data, unit_positions.array, unit_uvs.array,
@@ -1072,14 +1272,13 @@ int planet_game()
                 cstrl_renderer_modify_indices(unit_render_data, unit_indices.array, 0, unit_indices.size);
             }
 
-            if ((g_render_path_lines || g_render_path_markers) && g_players.selected_formation[g_human_player] != -1)
+            int human_selected_formation = g_players.selected_formation[g_human_player];
+            if ((g_render_path_lines || g_render_path_markers) && human_selected_formation != -1)
             {
                 int render_index = 0;
-                int g_human_selected_formation = g_players.selected_formation[g_human_player];
-                for (int i = 0; i < g_players.formations[g_human_player].path_heads[g_human_selected_formation].size;
-                     i++)
+                for (int i = 0; i < g_players.formations[g_human_player].path_heads[human_selected_formation].size; i++)
                 {
-                    int path_id = g_players.formations[g_human_player].path_heads[g_human_selected_formation].array[i];
+                    int path_id = g_players.formations[g_human_player].path_heads[human_selected_formation].array[i];
                     while (path_id != -1)
                     {
                         if (g_render_path_markers)
@@ -1095,7 +1294,11 @@ int planet_game()
                                 &path_marker_positions, &path_marker_indices, NULL, &path_marker_colors, render_index,
                                 (transform){g_players.paths[g_human_player].end_positions[path_id], billboard_rotation,
                                             adjust_billboard_scale(PATH_MARKER_SIZE)},
-                                (vec4){}, PATH_MARKER_COLOR);
+                                (vec4){},
+                                !g_players.formations[g_human_player]
+                                        .following_enemy[g_players.selected_formation[g_human_player]]
+                                    ? PATH_MARKER_COLOR
+                                    : PATH_MARKER_COLOR_ATTACK);
                             render_index++;
                         }
                         if (g_render_path_lines)
@@ -1103,10 +1306,9 @@ int planet_game()
                             vec3 start = g_players.paths[g_human_player].start_positions[path_id];
                             if (!g_players.paths[g_human_player].in_queue[path_id])
                             {
-                                start =
-                                    g_players.units[g_human_player].position[g_players.formations[g_human_player]
-                                                                                 .unit_ids[g_human_selected_formation]
-                                                                                 .array[i]];
+                                start = g_players.units[g_human_player].position[g_players.formations[g_human_player]
+                                                                                     .unit_ids[human_selected_formation]
+                                                                                     .array[i]];
                             }
                             generate_line_segments(&path_line_positions, start,
                                                    g_players.paths[g_human_player].end_positions[path_id], 0.1f);
@@ -1162,7 +1364,7 @@ int planet_game()
                     {
                         continue;
                     }
-                    char buffer[20];
+                    char buffer[30];
                     sprintf(buffer, "city_centers[%d]", city_index);
                     cstrl_set_uniform_3f(city_shader.program, buffer, g_players.units[i].position[j].x,
                                          g_players.units[i].position[j].y, g_players.units[i].position[j].z);
@@ -1170,9 +1372,10 @@ int planet_game()
                     cstrl_set_uniform_int_array(city_shader.program, buffer, 1, &i);
                     sprintf(buffer, "weights[%d]", city_index);
                     cstrl_set_uniform_float(city_shader.program, buffer, 1.0f);
+                    sprintf(buffer, "influence_strength[%d]", city_index);
+                    cstrl_set_uniform_float(city_shader.program, buffer, 1.0f);
                     sprintf(buffer, "influence_radius[%d]", city_index++);
-                    float influence = 0.1f;
-                    cstrl_set_uniform_float(city_shader.program, buffer, influence);
+                    cstrl_set_uniform_float(city_shader.program, buffer, 0.4f);
                 }
             }
             cstrl_set_uniform_int(city_shader.program, "cities_count", city_index);
@@ -1185,19 +1388,26 @@ int planet_game()
 
         if (g_render_path_markers)
         {
-            cstrl_use_shader(path_marker_shader);
-            cstrl_renderer_draw_lines(path_line_render_data);
             cstrl_set_uniform_mat4(path_marker_shader.program, "view", g_main_camera->view);
             cstrl_set_uniform_mat4(path_marker_shader.program, "projection", g_main_camera->projection);
+            cstrl_use_shader(path_marker_shader);
             cstrl_renderer_draw_indices(path_marker_render_data);
         }
         if (g_render_path_lines)
         {
-            cstrl_use_shader(path_line_shader);
             cstrl_set_uniform_mat4(path_line_shader.program, "view", g_main_camera->view);
             cstrl_set_uniform_mat4(path_line_shader.program, "projection", g_main_camera->projection);
-            cstrl_set_uniform_4f(path_line_shader.program, "color", PATH_MARKER_COLOR.r, PATH_MARKER_COLOR.g,
-                                 PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
+            if (!g_players.formations[g_human_player].following_enemy[g_players.selected_formation[g_human_player]])
+            {
+                cstrl_set_uniform_4f(path_line_shader.program, "color", PATH_MARKER_COLOR.r, PATH_MARKER_COLOR.g,
+                                     PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
+            }
+            else
+            {
+                cstrl_set_uniform_4f(path_line_shader.program, "color", PATH_MARKER_COLOR_ATTACK.r,
+                                     PATH_MARKER_COLOR_ATTACK.g, PATH_MARKER_COLOR_ATTACK.b,
+                                     PATH_MARKER_COLOR_ATTACK.a);
+            }
             cstrl_use_shader(path_line_shader);
             cstrl_renderer_draw_lines(path_line_render_data);
         }
@@ -1227,6 +1437,12 @@ int planet_game()
             cstrl_use_shader(physics_debug_shader);
             cstrl_renderer_draw_lines(physics_debug_render_data);
         }
+
+        cstrl_set_uniform_mat4(unit_lazer_shader.program, "view", g_main_camera->view);
+        cstrl_set_uniform_mat4(unit_lazer_shader.program, "projection", g_main_camera->projection);
+        cstrl_set_uniform_4f(unit_lazer_shader.program, "color", 3.0f, 1.0f, 0.4f, 1.0f);
+        cstrl_use_shader(unit_lazer_shader);
+        cstrl_renderer_draw_lines(unit_lazer_render_data);
 
         mat4 skybox_view =
             cstrl_mat4_rotate(g_main_camera->view, (float)fmod(cstrl_platform_get_absolute_time() / 64.0, 360),

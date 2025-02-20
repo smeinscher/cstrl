@@ -12,6 +12,7 @@ typedef struct aabb_tree_node_t
     int parent_index;
     int child0;
     int child1;
+    bool active;
     void *user_data;
 } aabb_tree_node_t;
 

@@ -3,7 +3,6 @@
 #include "players.h"
 #include "units.h"
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 static void move_randomly(ai_t *ai, int ai_id, players_t *players)
@@ -88,7 +87,7 @@ void ai_init(ai_t *ai, int player_count, int human_player_id)
 {
     for (int i = 0; i < MAX_AI_COUNT; i++)
     {
-        if (i >= player_count || i == human_player_id)
+        if (i >= player_count)
         {
             ai->active[i] = false;
             continue;
@@ -100,11 +99,11 @@ void ai_init(ai_t *ai, int player_count, int human_player_id)
     }
 }
 
-void ai_update(ai_t *ai, players_t *players)
+void ai_update(ai_t *ai, players_t *players, int human_player_id)
 {
     for (int i = 0; i < MAX_AI_COUNT; i++)
     {
-        if (!ai->active[i])
+        if (!ai->active[i] || i == human_player_id)
         {
             continue;
         }

@@ -41,6 +41,15 @@ bool units_init(units_t *units)
     units->position = NULL;
     units->active = NULL;
     units->formation_id = NULL;
+    units->type = NULL;
+    units->aabb_min = NULL;
+    units->aabb_max = NULL;
+    units->collision_id = NULL;
+    units->rays = NULL;
+    units->velocity = NULL;
+    units->stats = NULL;
+    units->attacking = NULL;
+    units->last_attack_time = NULL;
 
     cstrl_da_int_init(&units->free_ids, 1);
 
@@ -100,10 +109,31 @@ bool units_init(units_t *units)
         units_free(units);
         return false;
     }
+    units->stats = malloc(sizeof(unit_stats_t));
+    if (!units->stats)
+    {
+        printf("Error allocating memory for unit stats\n");
+        units_free(units);
+        return false;
+    }
     units->velocity = malloc(sizeof(vec3));
     if (!units->velocity)
     {
         printf("Error allocating memory for unit velocity\n");
+        units_free(units);
+        return false;
+    }
+    units->attacking = malloc(sizeof(bool));
+    if (!units->attacking)
+    {
+        printf("Error allocating memory for unit attacking\n");
+        units_free(units);
+        return false;
+    }
+    units->last_attack_time = malloc(sizeof(double));
+    if (!units->last_attack_time)
+    {
+        printf("Error allocating memory for unit last attack time\n");
         units_free(units);
         return false;
     }
@@ -135,13 +165,8 @@ int units_hit(units_t *units, vec3 position)
     return -1;
 }
 
-int units_add(units_t *units, vec3 position, int type)
+int units_add(units_t *units, int player_id, vec3 position, int type)
 {
-    // int unit_hit_id = units_hit(units, position);
-    // if (unit_hit_id != -1)
-    // {
-    //     return -1;
-    // }
     int new_id = 0;
     if (units->free_ids.size == 0)
     {
@@ -171,12 +196,12 @@ int units_add(units_t *units, vec3 position, int type)
             }
             if (!cstrl_realloc_vec3(&units->aabb_min, units->capacity))
             {
-                printf("Error allocating aabb min\n");
+                printf("Error allocating unit aabb min\n");
                 return -1;
             }
             if (!cstrl_realloc_vec3(&units->aabb_max, units->capacity))
             {
-                printf("Error allocating aabb max\n");
+                printf("Error allocating unit aabb max\n");
                 return -1;
             }
             if (!cstrl_realloc_int(&units->collision_id, units->capacity))
@@ -188,14 +213,33 @@ int units_add(units_t *units, vec3 position, int type)
                 unit_rays_t *temp = realloc(units->rays, units->capacity * sizeof(unit_rays_t));
                 if (!temp)
                 {
-                    printf("Error allocating ray directions\n");
+                    printf("Error allocating unit ray directions\n");
                     return -1;
                 }
                 units->rays = temp;
             }
+            {
+                unit_stats_t *temp = realloc(units->stats, units->capacity * sizeof(unit_stats_t));
+                if (!temp)
+                {
+                    printf("Error allocating unit stats\n");
+                    return -1;
+                }
+                units->stats = temp;
+            }
             if (!cstrl_realloc_vec3(&units->velocity, units->capacity))
             {
-                printf("Error allocating velocity\n");
+                printf("Error allocating unit velocity\n");
+                return -1;
+            }
+            if (!cstrl_realloc_bool(&units->attacking, units->capacity))
+            {
+                printf("Error allocating unit attacking\n");
+                return -1;
+            }
+            if (!cstrl_realloc_double(&units->last_attack_time, units->capacity))
+            {
+                printf("Error allocating unit last attack time\n");
                 return -1;
             }
         }
@@ -213,10 +257,15 @@ int units_add(units_t *units, vec3 position, int type)
         cstrl_vec3_sub(position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
     units->aabb_max[new_id] =
         cstrl_vec3_add(position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
+    unit_data_t *data = malloc(sizeof(unit_data_t));
+    data->player_id = player_id;
+    data->unit_id = new_id;
     units->collision_id[new_id] = cstrl_collision_aabb_tree_insert(
-        &g_aabb_tree, &new_id, (vec3[]){units->aabb_min[new_id], units->aabb_max[new_id]});
+        &g_aabb_tree, data, (vec3[]){units->aabb_min[new_id], units->aabb_max[new_id]});
     recalculate_ray_directions(units, new_id, (vec3){0.0f, 1.0f, 0.0f});
     units->velocity[new_id] = (vec3){0.0f, 0.0f, 0.0f};
+    units->attacking[new_id] = false;
+    units->last_attack_time[new_id] = 0.0;
     return new_id;
 }
 
@@ -229,50 +278,13 @@ bool units_move(units_t *units, int unit_id, vec3 target_position)
         units->velocity[unit_id] = (vec3){0.0f, 0.0f, 0.0f};
         return true;
     }
-    // vec3 desired_velocity = cstrl_vec3_normalize(cstrl_vec3_sub(target_position, start_position));
-
-    // vec3 ahead = cstrl_vec3_add(start_position,
-    // cstrl_vec3_mult_scalar(cstrl_vec3_normalize(units->velocity[unit_id]),
-    //                                                                    BASE_UNIT_VIEW_DISTANCES[0]));
-    // da_int excluded_nodes;
-    // cstrl_da_int_init(&excluded_nodes, 1);
-    // cstrl_da_int_push_back(&excluded_nodes, units->collision_id[unit_id]);
-    // ray_cast_result_t result = curved_ray_cast(&g_aabb_tree, (vec3){0.0f, 0.0f, 0.0f}, start_position,
-    //                                            cstrl_vec3_normalize(ahead), &excluded_nodes);
-    // if (result.hit)
-    // {
-    //     if (get_spherical_path_length(result.intersection, start_position) > UNIT_SIZE_X)
-    //     {
-    //         desired_velocity = cstrl_vec3_normalize(cstrl_vec3_add(desired_velocity, result.normal));
-    //     }
-    //     else
-    //     {
-    //         if (get_spherical_path_length(target_position, result.aabb_center) < UNIT_SIZE_X)
-    //         {
-    //             units->velocity[unit_id] = cstrl_vec3_negate(units->velocity[unit_id]);
-    //             return false;
-    //         }
-    //         desired_velocity = cstrl_vec3_normalize(cstrl_vec3_sub(result.normal, desired_velocity));
-    //     }
-    // }
-    // vec3 steer = cstrl_vec3_normalize(cstrl_vec3_sub(desired_velocity, units->velocity[unit_id]));
-    // steer = cstrl_vec3_mult_scalar(steer, UNIT_AVOIDANCE_FORCE);
-    // units->velocity[unit_id] = cstrl_vec3_normalize(cstrl_vec3_add(units->velocity[unit_id], steer));
     vec3 new_position = cstrl_vec3_normalize(cstrl_vec3_add(
         start_position, cstrl_vec3_mult_scalar(units->velocity[unit_id],
                                                BASE_UNIT_SPEEDS[units->type[unit_id]] * UNIT_SPEED_MODIFIER)));
     new_position = cstrl_vec3_mult_scalar(new_position, 1.0f + UNIT_SIZE_X * 0.5f);
     units->position[unit_id] = new_position;
 
-    units->aabb_min[unit_id] =
-        cstrl_vec3_sub(new_position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
-    units->aabb_max[unit_id] =
-        cstrl_vec3_add(new_position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
-    cstrl_collision_aabb_tree_update_node(&g_aabb_tree, units->collision_id[unit_id],
-                                          (vec3[]){units->aabb_min[unit_id], units->aabb_max[unit_id]});
-    // recalculate_ray_directions(units, unit_id, cstrl_vec3_normalize(cstrl_vec3_sub(new_position, start_position)));
-
-    // cstrl_da_int_free(&excluded_nodes);
+    units_update_aabb(units, unit_id);
     return false;
 }
 
@@ -291,10 +303,29 @@ void units_free(units_t *units)
     free(units->active);
     free(units->formation_id);
     free(units->type);
+    free(units->aabb_min);
+    free(units->aabb_max);
+    free(units->collision_id);
+    free(units->rays);
+    free(units->velocity);
+    free(units->stats);
+    free(units->attacking);
+    free(units->last_attack_time);
     cstrl_da_int_free(&units->free_ids);
 }
 
-aabb_tree_t *get_aabb_tree()
+aabb_tree_t *units_get_aabb_tree()
 {
     return &g_aabb_tree;
+}
+
+void units_update_aabb(units_t *units, int unit_id)
+{
+
+    units->aabb_min[unit_id] =
+        cstrl_vec3_sub(units->position[unit_id], (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
+    units->aabb_max[unit_id] =
+        cstrl_vec3_add(units->position[unit_id], (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
+    cstrl_collision_aabb_tree_update_node(&g_aabb_tree, units->collision_id[unit_id],
+                                          (vec3[]){units->aabb_min[unit_id], units->aabb_max[unit_id]});
 }

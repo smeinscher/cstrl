@@ -150,6 +150,8 @@ add_executable(cstrl-sandbox
         sandbox/planet/helpers/helpers.h
         sandbox/planet/game/ai.c
         sandbox/planet/game/ai.h
+        sandbox/planet/game/projectile.c
+        sandbox/planet/game/projectile.h
 )
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)

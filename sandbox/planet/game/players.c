@@ -2,6 +2,7 @@
 #include "../helpers/helpers.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_physics.h"
+#include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_util.h"
 #include "units.h"
 #include <stdio.h>
@@ -66,14 +67,14 @@ static void optimize_formation_positions(players_t *players, int player_id, int 
 }
 
 static void new_path(players_t *players, int player_id, vec3 start_position, vec3 end_position, bool in_queue,
-                     int unit_id, int prev)
+                     int unit_id, int prev, unit_data_t tracked_unit)
 {
     bool ground_units = players->units[player_id].type[unit_id] == TANK ||
                         players->units[player_id].type[unit_id] == HUMVEE ||
                         players->units[player_id].type[unit_id] == ASTRONAUT ||
                         players->units[player_id].type[unit_id] == ASTRONAUT_ARMED;
     float speed = BASE_UNIT_SPEEDS[players->units[player_id].type[unit_id]] * 0.0005f;
-    int new_path_id = paths_add(&players->paths[player_id], start_position, end_position, prev, speed);
+    int new_path_id = paths_add(&players->paths[player_id], start_position, end_position, prev, speed, tracked_unit);
     if (new_path_id == -1)
     {
         printf("Error creating path\n");
@@ -274,7 +275,7 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     cstrl_da_int_init(&excluded_nodes, 1);
     cstrl_da_int_push_back(&excluded_nodes, players->units[player_id].collision_id[unit_id]);
     ray_cast_result_t result =
-        curved_ray_cast(get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
+        curved_ray_cast(units_get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
                         cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
@@ -284,8 +285,8 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     ahead = cstrl_vec3_add(
         players->units[player_id].position[unit_id],
         cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, left)), BASE_UNIT_VIEW_DISTANCES[0]));
-    result = curved_ray_cast(get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
-                             cstrl_vec3_normalize(ahead), &excluded_nodes);
+    result = curved_ray_cast(units_get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f},
+                             players->units[player_id].position[unit_id], cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
         avoidance_force = cstrl_vec3_sub(avoidance_force, left);
@@ -293,8 +294,8 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     ahead = cstrl_vec3_add(
         players->units[player_id].position[unit_id],
         cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, right)), BASE_UNIT_VIEW_DISTANCES[0]));
-    result = curved_ray_cast(get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
-                             cstrl_vec3_normalize(ahead), &excluded_nodes);
+    result = curved_ray_cast(units_get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f},
+                             players->units[player_id].position[unit_id], cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
         avoidance_force = cstrl_vec3_sub(avoidance_force, right);
@@ -325,6 +326,19 @@ void players_update(players_t *players, int player_id)
             {
                 continue;
             }
+            players->units[player_id].attacking[unit_id] = false;
+            unit_data_t tracked_unit = players->paths[player_id].tracked_unit[path_id];
+            if (tracked_unit.player_id != -1)
+            {
+                players->paths[player_id].end_positions[path_id] =
+                    players->units[tracked_unit.player_id].position[tracked_unit.unit_id];
+                if (get_spherical_path_length(players->units[player_id].position[unit_id],
+                                              players->paths[player_id].end_positions[path_id]) < 0.1f)
+                {
+                    players->units[player_id].attacking[unit_id] = true;
+                    continue;
+                }
+            }
             vec3 end_position = players->paths[player_id].end_positions[path_id];
             vec3 steering_force = cstrl_vec3_add(compute_flocking_force(players, player_id, unit_id),
                                                  compute_avoidance(players, player_id, unit_id));
@@ -348,6 +362,19 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
     {
         players_add_selected_units_to_formation(players, player_id);
     }
+    unit_data_t tracked_unit = {-1, -1};
+    ray_cast_result_t result =
+        cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(), end_position, cstrl_vec3_normalize(end_position),
+                                           1.0f, &players->selected_units[player_id]);
+    if (result.hit)
+    {
+        players->formations[player_id].following_enemy[players->selected_formation[player_id]] = true;
+        tracked_unit = *(unit_data_t *)units_get_aabb_tree()->nodes[result.node_index].user_data;
+    }
+    else
+    {
+        players->formations[player_id].following_enemy[players->selected_formation[player_id]] = false;
+    }
     for (int i = 0; i < players->formations[player_id].unit_ids[players->selected_formation[player_id]].size; i++)
     {
         int unit_id = players->formations[player_id].unit_ids[players->selected_formation[player_id]].array[i];
@@ -358,7 +385,7 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
             paths_recursive_remove(&players->paths[player_id], head_path_id);
             players->formations[player_id].path_heads[players->selected_formation[player_id]].array[i] = -1;
         }
-        new_path(players, player_id, start_position, end_position, false, unit_id, -1);
+        new_path(players, player_id, start_position, end_position, false, unit_id, -1, tracked_unit);
     }
     optimize_formation_positions(players, player_id, players->selected_formation[player_id]);
 }
@@ -392,7 +419,8 @@ void players_move_units_path_mode(players_t *players, int player_id, vec3 end_po
             start_position = players->paths[player_id].end_positions[path_id];
             path_in_queue = true;
         }
-        new_path(players, player_id, start_position, end_position, path_in_queue, unit_id, prev_path);
+        new_path(players, player_id, start_position, end_position, path_in_queue, unit_id, prev_path,
+                 (unit_data_t){-1, -1});
     }
 }
 

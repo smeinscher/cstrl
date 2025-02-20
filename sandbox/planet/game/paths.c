@@ -1,6 +1,7 @@
 #include "paths.h"
 #include "../helpers/helpers.h"
 #include "cstrl/cstrl_util.h"
+#include "units.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -89,11 +90,18 @@ bool paths_init(paths_t *paths)
         paths_free(paths);
         return false;
     }
+    paths->tracked_unit = malloc(sizeof(unit_data_t));
+    if (!paths->tracked_unit)
+    {
+        printf("Error allocating memory for path tracked unit\n");
+        paths_free(paths);
+        return false;
+    }
 
     return true;
 }
 
-int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev, float speed)
+int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev, float speed, unit_data_t tracked_unit)
 {
     int new_id = 0;
     if (paths->free_ids.size == 0)
@@ -152,6 +160,15 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev, 
                 printf("Error allocating paths active\n");
                 return -1;
             }
+            {
+                unit_data_t *temp = realloc(paths->tracked_unit, paths->capacity * sizeof(unit_data_t));
+                if (!temp)
+                {
+                    printf("Error allocating path tracked unit\n");
+                    return -1;
+                }
+                paths->tracked_unit = temp;
+            }
         }
     }
     else
@@ -173,6 +190,7 @@ int paths_add(paths_t *paths, vec3 start_position, vec3 end_position, int prev, 
     paths->render[new_id] = true;
     paths->in_queue[new_id] = false;
     paths->active[new_id] = true;
+    paths->tracked_unit[new_id] = tracked_unit;
 
     return new_id;
 }
@@ -202,11 +220,17 @@ void paths_free(paths_t *paths)
 {
     paths->count = 0;
     paths->capacity = 0;
+    free(paths->prev);
+    free(paths->next);
     free(paths->start_positions);
     free(paths->end_positions);
     free(paths->progress);
+    free(paths->speed);
     free(paths->completed);
+    free(paths->render);
+    free(paths->in_queue);
     free(paths->active);
+    free(paths->tracked_unit);
     cstrl_da_int_free(&paths->free_ids);
 }
 

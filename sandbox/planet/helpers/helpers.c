@@ -4,7 +4,7 @@
 #include "cstrl/cstrl_util.h"
 #include <stdio.h>
 
-bool hit_check(vec3 d, float *t, vec3 origin, vec3 center, float radius)
+bool planet_hit_check(vec3 d, float *t, vec3 origin, vec3 center, float radius)
 {
     vec3 l = cstrl_vec3_sub(origin, center);
     float b = cstrl_vec3_dot(d, l);

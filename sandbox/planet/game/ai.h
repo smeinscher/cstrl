@@ -21,6 +21,6 @@ typedef struct ai_t
 
 void ai_init(ai_t *ai, int player_count, int human_player_id);
 
-void ai_update(ai_t *ai, players_t *players);
+void ai_update(ai_t *ai, players_t *players, int human_player_id);
 
 #endif

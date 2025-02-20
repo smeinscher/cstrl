@@ -18,3 +18,23 @@ Examples:
         - Communist revolution boosts happiness or production or something
         - Fascist revolution boosts military stuff
 Basic economic simulation
+    . Socialist economics?
+    . Local economic/social policies
+        - World events can impact consequences of adopting certain policies
+
+Bare minimum design for prototype:
+    . Very basic economics (currency based approach)
+    . No expansion of new cities
+    . No city upgrades
+    . Cities produce units when the user selects to build them, unit build cost based on currency
+    . Currency naturally increases over time, capturing new cities increases currency influx
+    . No air units
+    . Unit types:
+        - Astronaut - weak, cheap
+        - Humvee - average strength, moderate cost
+        - Tank - powerful, expensive
+    . Basic, stupid AI
+        - AI does not simulate an economy - produces units based on a weighted random, determined by elapsed time and size of empire
+    . Still needs intuitive and (relatively) good looking user interface
+
+
