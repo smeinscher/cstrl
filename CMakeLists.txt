@@ -152,6 +152,8 @@ add_executable(cstrl-sandbox
         sandbox/planet/game/ai.h
         sandbox/planet/game/projectile.c
         sandbox/planet/game/projectile.h
+        sandbox/planet/game/physics_wrapper.c
+        sandbox/planet/game/physics_wrapper.h
 )
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)

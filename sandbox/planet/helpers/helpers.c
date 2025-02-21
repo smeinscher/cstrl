@@ -120,53 +120,6 @@ vec3 get_point_on_path(vec3 origin, vec3 start_position, vec3 end_position, floa
     return position;
 }
 
-ray_cast_result_t curved_ray_cast(aabb_tree_t *tree, vec3 origin, vec3 start_position, vec3 end_position,
-                                  da_int *excluded_nodes)
-{
-    da_float positions;
-    cstrl_da_float_init(&positions, 3);
-    generate_line_segments(&positions, start_position, end_position, 0.1f);
-    ray_cast_result_t result = {0};
-    if (positions.size == 0)
-    {
-        return result;
-    }
-    for (int i = 0; i < positions.size / 3 - 1; i++)
-    {
-        vec3 start = {positions.array[i * 3], positions.array[i * 3 + 1], positions.array[i * 3 + 2]};
-        vec3 end = {positions.array[i * 3 + 3], positions.array[i * 3 + 4], positions.array[i * 3 + 5]};
-        vec3 difference = cstrl_vec3_sub(end, start);
-        vec3 direction = cstrl_vec3_normalize(difference);
-        result = cstrl_collision_aabb_tree_ray_cast(tree, start_position, direction, 1.0f, excluded_nodes);
-        if (result.hit)
-        {
-            break;
-        }
-    }
-    return result;
-    // float t = get_spherical_path_length(start_position, current_position) /
-    //           get_spherical_path_length(start_position, end_position);
-    // float step = 0.005f / get_spherical_path_length(start_position, end_position);
-    // if (1.0f - t < step)
-    // {
-    //     ray_cast_result_t result = {0};
-    //     result.hit = false;
-    //     result.t = 0.0f;
-    //     result.node_index = -1;
-    //     return result;
-    // }
-    // vec3 next_position = get_point_on_path(origin, start_position, end_position, t + step);
-    // vec3 difference = cstrl_vec3_sub(next_position, current_position);
-    // vec3 direction = cstrl_vec3_normalize(difference);
-    // ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(tree, current_position, direction,
-    //                                                               cstrl_vec3_length(difference), excluded_nodes);
-    // if (result.hit)
-    // {
-    //     return result;
-    // }
-    // return curved_ray_cast(tree, origin, start_position, end_position, next_position, excluded_nodes);
-}
-
 float get_spherical_path_length(vec3 start_position, vec3 end_position)
 {
     return acos(cstrl_vec3_dot(cstrl_vec3_normalize(start_position), cstrl_vec3_normalize(end_position)));

@@ -10,7 +10,9 @@
 #include "game/ai.h"
 #include "game/formation.h"
 #include "game/paths.h"
+#include "game/physics_wrapper.h"
 #include "game/players.h"
+#include "game/projectile.h"
 #include "game/sphere.h"
 #include "game/units.h"
 #include "helpers/helpers.h"
@@ -167,9 +169,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
                                  (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
             {
-                ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
-
-                                                                              g_main_camera->position, d, 5.0f, NULL);
+                ray_cast_result_t result = regular_ray_cast(g_main_camera->position, d, 5.0f, NULL);
                 if (!result.hit)
                 {
                     vec3 position = position_from_ray_cast(d, t);
@@ -187,9 +187,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
                                  (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
             {
-                ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
-
-                                                                              g_main_camera->position, d, 5.0f, NULL);
+                ray_cast_result_t result = regular_ray_cast(g_main_camera->position, d, 5.0f, NULL);
                 if (!result.hit)
                 {
                     vec3 position = position_from_ray_cast(d, t);
@@ -207,9 +205,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
                                  (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
             {
-                ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
-
-                                                                              g_main_camera->position, d, 5.0f, NULL);
+                ray_cast_result_t result = regular_ray_cast(g_main_camera->position, d, 5.0f, NULL);
                 if (!result.hit)
                 {
                     vec3 position = position_from_ray_cast(d, t);
@@ -227,9 +223,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             if (planet_hit_check(d, &t, g_main_camera->position, g_planet_position,
                                  (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
             {
-                ray_cast_result_t result = cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
-
-                                                                              g_main_camera->position, d, 5.0f, NULL);
+                ray_cast_result_t result = regular_ray_cast(g_main_camera->position, d, 5.0f, NULL);
                 if (!result.hit)
                 {
                     vec3 position = position_from_ray_cast(d, t);
@@ -374,10 +368,7 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
             {
                 vec3 mouse_ray_direction = mouse_cursor_ray_cast();
                 vec3 position = g_main_camera->position;
-                ray_cast_result_t result =
-                    cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
-
-                                                       position, mouse_ray_direction, 5.0f, NULL);
+                ray_cast_result_t result = regular_ray_cast(position, mouse_ray_direction, 5.0f, NULL);
                 printf("position: %f, %f, %f\n", position.x, position.y, position.z);
                 printf("direction: %f, %f, %f\n", mouse_cursor_ray_cast().x, mouse_cursor_ray_cast().y,
                        mouse_cursor_ray_cast().z);
@@ -508,12 +499,15 @@ static void add_billboard_object(da_float *positions, da_int *indices, da_float 
         cstrl_da_float_push_back(uvs, uv_positions.v1);
     }
 
-    for (int i = 0; i < 4; i++)
+    if (colors != NULL)
     {
-        cstrl_da_float_push_back(colors, color.r);
-        cstrl_da_float_push_back(colors, color.g);
-        cstrl_da_float_push_back(colors, color.b);
-        cstrl_da_float_push_back(colors, color.a);
+        for (int i = 0; i < 4; i++)
+        {
+            cstrl_da_float_push_back(colors, color.r);
+            cstrl_da_float_push_back(colors, color.g);
+            cstrl_da_float_push_back(colors, color.b);
+            cstrl_da_float_push_back(colors, color.a);
+        }
     }
 }
 
@@ -549,22 +543,25 @@ static void update_billboard_object(da_float *positions, da_int *indices, da_flo
             uvs->array[index * 8 + 7] = new_uv_positions.v1;
         }
 
-        colors->array[index * 16] = new_color.r;
-        colors->array[index * 16 + 1] = new_color.g;
-        colors->array[index * 16 + 2] = new_color.b;
-        colors->array[index * 16 + 3] = new_color.a;
-        colors->array[index * 16 + 4] = new_color.r;
-        colors->array[index * 16 + 5] = new_color.g;
-        colors->array[index * 16 + 6] = new_color.b;
-        colors->array[index * 16 + 7] = new_color.a;
-        colors->array[index * 16 + 8] = new_color.r;
-        colors->array[index * 16 + 9] = new_color.g;
-        colors->array[index * 16 + 10] = new_color.b;
-        colors->array[index * 16 + 11] = new_color.a;
-        colors->array[index * 16 + 12] = new_color.r;
-        colors->array[index * 16 + 13] = new_color.g;
-        colors->array[index * 16 + 14] = new_color.b;
-        colors->array[index * 16 + 15] = new_color.a;
+        if (colors != NULL)
+        {
+            colors->array[index * 16] = new_color.r;
+            colors->array[index * 16 + 1] = new_color.g;
+            colors->array[index * 16 + 2] = new_color.b;
+            colors->array[index * 16 + 3] = new_color.a;
+            colors->array[index * 16 + 4] = new_color.r;
+            colors->array[index * 16 + 5] = new_color.g;
+            colors->array[index * 16 + 6] = new_color.b;
+            colors->array[index * 16 + 7] = new_color.a;
+            colors->array[index * 16 + 8] = new_color.r;
+            colors->array[index * 16 + 9] = new_color.g;
+            colors->array[index * 16 + 10] = new_color.b;
+            colors->array[index * 16 + 11] = new_color.a;
+            colors->array[index * 16 + 12] = new_color.r;
+            colors->array[index * 16 + 13] = new_color.g;
+            colors->array[index * 16 + 14] = new_color.b;
+            colors->array[index * 16 + 15] = new_color.a;
+        }
     }
     else
     {
@@ -714,130 +711,6 @@ void update_formation_state(int player_id)
     }
 }
 
-static void update_physics_debug(da_float *positions)
-{
-    aabb_tree_t *tree = units_get_aabb_tree();
-    for (int i = 0; i < tree->node_count; i++)
-    {
-        vec3 aabb[2];
-        aabb[0] = tree->nodes[i].aabb[0];
-        aabb[1] = tree->nodes[i].aabb[1];
-
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[0].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[0].x);
-        cstrl_da_float_push_back(positions, aabb[1].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-        cstrl_da_float_push_back(positions, aabb[1].x);
-        cstrl_da_float_push_back(positions, aabb[0].y);
-        cstrl_da_float_push_back(positions, aabb[1].z);
-    }
-    for (int i = 0; i < g_physics_ray_positions.size; i++)
-    {
-        cstrl_da_float_push_back(positions, g_physics_ray_positions.array[i]);
-    }
-}
-
 static vec3 generate_random_planet_position()
 {
     vec3 random_position;
@@ -876,67 +749,12 @@ static void create_and_place_unit(vec3 city_origin, int player_id, unit_type typ
                                                (float)(randz)*UNIT_SIZE_X * 2.0f});
         unit_position = cstrl_vec3_mult_scalar(cstrl_vec3_normalize(unit_position), 1.0f + UNIT_SIZE_X * 0.5f);
         ray_cast_result_t result =
-            cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(),
-
-                                               unit_position, cstrl_vec3_normalize(unit_position), 1.0f, NULL);
+            regular_ray_cast(unit_position, cstrl_vec3_normalize(unit_position), 1.0f, NULL);
         if (!result.hit)
         {
             units_add(&g_players.units[player_id], player_id, unit_position, type);
             break;
         }
-    }
-}
-
-static void fire_lazer(da_float *render_positions, da_float *start_positions, vec3 start_position, vec3 direction)
-{
-    vec3 end_position =
-        cstrl_vec3_normalize(cstrl_vec3_add(start_position, cstrl_vec3_mult_scalar(direction, UNIT_SIZE_X * 0.1f)));
-    end_position = cstrl_vec3_mult_scalar(end_position, 1.0f + UNIT_SIZE_X * 0.5f);
-    cstrl_da_float_push_back(render_positions, start_position.x);
-    cstrl_da_float_push_back(render_positions, start_position.y);
-    cstrl_da_float_push_back(render_positions, start_position.z);
-    cstrl_da_float_push_back(render_positions, end_position.x);
-    cstrl_da_float_push_back(render_positions, end_position.y);
-    cstrl_da_float_push_back(render_positions, end_position.z);
-
-    cstrl_da_float_push_back(start_positions, start_position.x);
-    cstrl_da_float_push_back(start_positions, start_position.y);
-    cstrl_da_float_push_back(start_positions, start_position.z);
-}
-
-static void update_lazer(da_float *positions, da_float *start_positions)
-{
-    for (int i = 0; i < start_positions->size / 3; i++)
-    {
-        vec3 old_start_position = {positions->array[i * 6], positions->array[i * 6 + 1], positions->array[i * 6 + 2]};
-        vec3 old_end_position = {positions->array[i * 6 + 3], positions->array[i * 6 + 4], positions->array[i * 6 + 5]};
-        vec3 direction = cstrl_vec3_normalize(cstrl_vec3_sub(old_end_position, old_start_position));
-        vec3 start_position = old_end_position;
-        vec3 original_start_position = {start_positions->array[i * 3], start_positions->array[i * 3 + 1],
-                                        start_positions->array[i * 3 + 2]};
-        vec3 end_position =
-            cstrl_vec3_normalize(cstrl_vec3_add(old_end_position, cstrl_vec3_mult_scalar(direction, 0.005f)));
-        end_position = cstrl_vec3_mult_scalar(end_position, 1.0f + UNIT_SIZE_X * 0.5f);
-        if (get_spherical_path_length(original_start_position, end_position) > 0.2f)
-        {
-            for (int j = 0; j < 3; j++)
-            {
-                cstrl_da_float_remove(start_positions, i * 3);
-            }
-            for (int j = 0; j < 6; j++)
-            {
-                cstrl_da_float_remove(positions, i * 6);
-            }
-            i--;
-            continue;
-        }
-
-        positions->array[i * 6] = start_position.x;
-        positions->array[i * 6 + 1] = start_position.y;
-        positions->array[i * 6 + 2] = start_position.z;
-        positions->array[i * 6 + 3] = end_position.x;
-        positions->array[i * 6 + 4] = end_position.y;
-        positions->array[i * 6 + 5] = end_position.z;
     }
 }
 
@@ -971,7 +789,11 @@ int planet_game()
 
     cstrl_texture planet_texture = cstrl_texture_cube_map_generate_from_folder("resources/textures/planet_game/moon/");
 
-    players_init(&g_players, 6);
+    if (!players_init(&g_players, 6))
+    {
+        printf("Error initializing players\n");
+        return 2;
+    }
     units_add(&g_players.units[0], 0, (vec3){0.0f, 0.0f, 0.0f}, CITY);
     units_add(&g_players.units[1], 1, (vec3){0.0f, 0.0f, 0.0f}, CITY);
     units_add(&g_players.units[2], 2, (vec3){0.0f, 0.0f, 0.0f}, CITY);
@@ -1120,7 +942,7 @@ int planet_game()
     cstrl_render_data *physics_debug_render_data = cstrl_renderer_create_render_data();
     da_float physics_debug_positions;
     cstrl_da_float_init(&physics_debug_positions, 36);
-    update_physics_debug(&physics_debug_positions);
+    fill_physics_positions(&physics_debug_positions, &g_physics_ray_positions);
     cstrl_renderer_add_positions(physics_debug_render_data, physics_debug_positions.array, 3,
                                  physics_debug_positions.size / 3);
 
@@ -1140,9 +962,12 @@ int planet_game()
     cstrl_render_data *bullet_render_data = cstrl_renderer_create_render_data();
     da_float bullet_positions;
     cstrl_da_float_init(&bullet_positions, 18);
+    da_int bullet_indices;
+    cstrl_da_int_init(&bullet_indices, 6);
     da_float bullet_uvs;
     cstrl_da_float_init(&bullet_uvs, 12);
     cstrl_renderer_add_positions(bullet_render_data, bullet_positions.array, 3, bullet_positions.size / 3);
+    cstrl_renderer_add_indices(bullet_render_data, bullet_indices.array, 6);
     cstrl_renderer_add_uvs(bullet_render_data, bullet_uvs.array);
 
     cstrl_shader bullet_shader = cstrl_load_shaders_from_files("resources/shaders/default3D_no_color.vert",
@@ -1227,11 +1052,7 @@ int planet_game()
                                 &g_players.formations[i].unit_ids[g_players.units[i].formation_id[j]], j);
                             int path_id =
                                 g_players.formations[i].path_heads[g_players.units[i].formation_id[j]].array[index];
-                            fire_lazer(&unit_lazer_positions, &unit_lazer_start_positions,
-                                       g_players.units[i].position[j],
-                                       cstrl_vec3_normalize(
-                                           get_point_on_path((vec3){0.0f, 0.0f, 0.0f}, g_players.units[i].position[j],
-                                                             g_players.paths[i].end_positions[path_id], 0.1f)));
+                            projectiles_add(&g_players.projectiles[i], i, g_players.units[i].position[j]);
                         }
                     }
                     vec4 color = UNIT_TEAM_COLORS[i];
@@ -1254,12 +1075,17 @@ int planet_game()
                         uv_positions, color);
                     unit_render_index++;
                 }
+                for (int j = 0; j < g_players.projectiles[i].count; j++)
+                {
+                    vec3 direction = cstrl_vec3_normalize(cstrl_vec3_sub(g_players.projectiles[i].position[j], g_players.projectiles[i].start_position[j]));
+                    g_players.projectiles[i].position[j] = cstrl_vec3_mult_scalar(direction, 0.0005f);
+                    update_billboard_object(&bullet_positions, &bullet_indices, &bullet_uvs, NULL, j, (transform){g_players.projectiles[i].position[j], (quat){1.0f, 0.0f, 0.0f, 0.0f}, (vec3){UNIT_SIZE_X * 0.25f, UNIT_SIZE_Y * 0.25f, 0.0f}}, (vec4){0.0f, 0.0f, 1.0f, 1.0f}, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+                }
             }
-            update_lazer(&unit_lazer_positions, &unit_lazer_start_positions);
-            if (unit_lazer_positions.size > 0)
+            if (bullet_positions.size > 0)
             {
-                cstrl_renderer_modify_positions(unit_lazer_render_data, unit_lazer_positions.array, 0,
-                                                unit_lazer_positions.size);
+                cstrl_renderer_modify_render_attributes(bullet_render_data, bullet_positions.array, bullet_uvs.array, NULL, bullet_positions.size / 3);
+                cstrl_renderer_modify_indices(bullet_render_data, bullet_indices.array, 0, bullet_indices.size);
             }
             else
             {
@@ -1427,7 +1253,7 @@ int planet_game()
         if (g_physics_debug_draw_enabled)
         {
             cstrl_da_float_clear(&physics_debug_positions);
-            update_physics_debug(&physics_debug_positions);
+            fill_physics_positions(&physics_debug_positions, &g_physics_ray_positions);
             cstrl_renderer_modify_render_attributes(physics_debug_render_data, physics_debug_positions.array, NULL,
                                                     NULL, physics_debug_positions.size / 3);
             cstrl_set_uniform_mat4(physics_debug_shader.program, "view", g_main_camera->view);

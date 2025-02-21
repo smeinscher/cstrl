@@ -1,8 +1,8 @@
 #include "units.h"
 #include "../helpers/helpers.h"
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_util.h"
+#include "physics_wrapper.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -15,7 +15,6 @@ const float BASE_UNIT_VIEW_DISTANCES[MAX_RAY_DIRECTIONS] = {UNIT_SIZE_X * 4.0f, 
                                                             UNIT_SIZE_X * 2.0f, UNIT_SIZE_X * 2.0f, UNIT_SIZE_X * 2.0f,
                                                             UNIT_SIZE_X * 3.0f, UNIT_SIZE_X * 4.0f};
 
-aabb_tree_t g_aabb_tree;
 
 static void recalculate_ray_directions(units_t *units, int unit_id, vec3 direction)
 {
@@ -53,7 +52,7 @@ bool units_init(units_t *units)
 
     cstrl_da_int_init(&units->free_ids, 1);
 
-    units->position = malloc(sizeof(transform));
+    units->position = malloc(sizeof(vec3));
     if (!units->position)
     {
         printf("Error allocating memory for unit positions\n");
@@ -257,11 +256,8 @@ int units_add(units_t *units, int player_id, vec3 position, int type)
         cstrl_vec3_sub(position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
     units->aabb_max[new_id] =
         cstrl_vec3_add(position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
-    unit_data_t *data = malloc(sizeof(unit_data_t));
-    data->player_id = player_id;
-    data->unit_id = new_id;
-    units->collision_id[new_id] = cstrl_collision_aabb_tree_insert(
-        &g_aabb_tree, data, (vec3[]){units->aabb_min[new_id], units->aabb_max[new_id]});
+    collision_object_user_data_t *user_data = malloc(sizeof(collision_object_user_data_t));
+    units->collision_id[new_id] = insert_aabb(user_data, (vec3[]){units->aabb_min[new_id], units->aabb_max[new_id]});
     recalculate_ray_directions(units, new_id, (vec3){0.0f, 1.0f, 0.0f});
     units->velocity[new_id] = (vec3){0.0f, 0.0f, 0.0f};
     units->attacking[new_id] = false;
@@ -293,6 +289,7 @@ void units_remove(units_t *units, int unit_id)
     units->position[unit_id] = (vec3){0.0f, 0.0f, 0.0f};
     units->active[unit_id] = false;
     cstrl_da_int_push_back(&units->free_ids, unit_id);
+    remove_aabb(units->collision_id[unit_id]);
 }
 
 void units_free(units_t *units)
@@ -314,11 +311,6 @@ void units_free(units_t *units)
     cstrl_da_int_free(&units->free_ids);
 }
 
-aabb_tree_t *units_get_aabb_tree()
-{
-    return &g_aabb_tree;
-}
-
 void units_update_aabb(units_t *units, int unit_id)
 {
 
@@ -326,6 +318,5 @@ void units_update_aabb(units_t *units, int unit_id)
         cstrl_vec3_sub(units->position[unit_id], (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
     units->aabb_max[unit_id] =
         cstrl_vec3_add(units->position[unit_id], (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
-    cstrl_collision_aabb_tree_update_node(&g_aabb_tree, units->collision_id[unit_id],
-                                          (vec3[]){units->aabb_min[unit_id], units->aabb_max[unit_id]});
+    update_aabb(units->collision_id[unit_id], (vec3[]){units->aabb_min[unit_id], units->aabb_max[unit_id]});
 }

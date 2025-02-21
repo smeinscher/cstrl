@@ -2,8 +2,9 @@
 #include "../helpers/helpers.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_physics.h"
-#include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_util.h"
+#include "physics_wrapper.h"
+#include "projectile.h"
 #include "units.h"
 #include <stdio.h>
 
@@ -156,7 +157,7 @@ void players_add_selected_units_to_formation(players_t *players, int player_id)
     }
 }
 
-void players_init(players_t *players, int count)
+bool players_init(players_t *players, int count)
 {
     for (int i = 0; i < MAX_PLAYER_COUNT; i++)
     {
@@ -167,11 +168,29 @@ void players_init(players_t *players, int count)
         }
         players->active[i] = true;
         players->selected_formation[i] = -1;
-        units_init(&players->units[i]);
-        formations_init(&players->formations[i]);
-        paths_init(&players->paths[i]);
+        if (!units_init(&players->units[i]))
+        {
+            printf("Error initializing units\n");
+            return false;
+        }
+        if (!formations_init(&players->formations[i]))
+        {
+            printf("Error initializing formations\n");
+            return false;
+        }
+        if (!paths_init(&players->paths[i]))
+        {
+            printf("Error initializing paths\n");
+            return false;
+        }
         cstrl_da_int_init(&players->selected_units[i], 1);
+        if (!projectiles_init(&players->projectiles[i]))
+        {
+            printf("Error initializing projectiles\n");
+            return false;
+        }
     }
+    return true;
 }
 static vec3 compute_alignment(players_t *players, int player_id, int unit_id)
 {
@@ -275,7 +294,7 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     cstrl_da_int_init(&excluded_nodes, 1);
     cstrl_da_int_push_back(&excluded_nodes, players->units[player_id].collision_id[unit_id]);
     ray_cast_result_t result =
-        curved_ray_cast(units_get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
+        curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
                         cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
@@ -285,7 +304,7 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     ahead = cstrl_vec3_add(
         players->units[player_id].position[unit_id],
         cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, left)), BASE_UNIT_VIEW_DISTANCES[0]));
-    result = curved_ray_cast(units_get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f},
+    result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f},
                              players->units[player_id].position[unit_id], cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
@@ -294,7 +313,7 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     ahead = cstrl_vec3_add(
         players->units[player_id].position[unit_id],
         cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, right)), BASE_UNIT_VIEW_DISTANCES[0]));
-    result = curved_ray_cast(units_get_aabb_tree(), (vec3){0.0f, 0.0f, 0.0f},
+    result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f},
                              players->units[player_id].position[unit_id], cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
@@ -362,14 +381,17 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
     {
         players_add_selected_units_to_formation(players, player_id);
     }
-    unit_data_t tracked_unit = {-1, -1};
+    collision_object_user_data_t collision_object_data = {-1, COLLISION_UNIT, -1};
     ray_cast_result_t result =
-        cstrl_collision_aabb_tree_ray_cast(units_get_aabb_tree(), end_position, cstrl_vec3_normalize(end_position),
+        regular_ray_cast(end_position, cstrl_vec3_normalize(end_position),
                                            1.0f, &players->selected_units[player_id]);
     if (result.hit)
     {
-        players->formations[player_id].following_enemy[players->selected_formation[player_id]] = true;
-        tracked_unit = *(unit_data_t *)units_get_aabb_tree()->nodes[result.node_index].user_data;
+        collision_object_data = get_collision_object_user_data(result.node_index);
+        if (collision_object_data.type == COLLISION_UNIT)
+        {
+            players->formations[player_id].following_enemy[players->selected_formation[player_id]] = true;
+        }
     }
     else
     {
@@ -385,6 +407,9 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
             paths_recursive_remove(&players->paths[player_id], head_path_id);
             players->formations[player_id].path_heads[players->selected_formation[player_id]].array[i] = -1;
         }
+        unit_data_t tracked_unit;
+        tracked_unit.player_id = collision_object_data.player_id;
+        tracked_unit.unit_id = collision_object_data.id;
         new_path(players, player_id, start_position, end_position, false, unit_id, -1, tracked_unit);
     }
     optimize_formation_positions(players, player_id, players->selected_formation[player_id]);

@@ -8,6 +8,7 @@ typedef struct projectiles_t
 {
     size_t count;
     size_t capacity;
+    vec3 *start_position;
     vec3 *position;
     bool *active;
     da_int free_ids;

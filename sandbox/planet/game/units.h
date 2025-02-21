@@ -62,7 +62,7 @@ typedef struct unit_stats_t
     float current_health;
 } unit_stats_t;
 
-typedef struct unit_collision_data_t
+typedef struct unit_data_t
 {
     int player_id;
     int unit_id;
@@ -98,8 +98,6 @@ bool units_move(units_t *units, int unit_id, vec3 target_position);
 void units_remove(units_t *units, int unit_id);
 
 void units_free(units_t *units);
-
-aabb_tree_t *units_get_aabb_tree();
 
 void units_update_aabb(units_t *units, int unit_id);
 
