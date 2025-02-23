@@ -21,8 +21,9 @@
 typedef struct internal_data
 {
     unsigned int vao;
-    unsigned int vbos[4];
+    unsigned int vbos[CSTRL_RENDER_ATTRIBUTE_MAX];
     unsigned int ebo;
+    unsigned int ubo;
     size_t count;
     unsigned int dimensions;
     size_t indices_count;
@@ -169,6 +170,38 @@ CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *i
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_count * sizeof(int), indices, GL_DYNAMIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float *tangents)
+{
+    internal_data *data = render_data->internal_data;
+    data->cleared = false;
+
+    glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_TANGENTS]);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_TANGENTS]);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), tangents, GL_STATIC_DRAW);
+    glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_TANGENTS, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_TANGENTS);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, float *bitangents)
+{
+    internal_data *data = render_data->internal_data;
+    data->cleared = false;
+
+    glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_BITANGENTS]);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_BITANGENTS]);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), bitangents, GL_STATIC_DRAW);
+    glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_BITANGENTS, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_BITANGENTS);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 
@@ -366,6 +399,27 @@ CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled)
     {
         glDisable(GL_DEPTH_TEST);
     }
+}
+
+CSTRL_API unsigned int cstrl_renderer_add_ubo(size_t size)
+{
+    unsigned int ubo;
+    glGenBuffers(1, &ubo);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, 0, size);
+
+    return ubo;
+}
+
+CSTRL_API void cstrl_renderer_update_ubo(unsigned int ubo, void *object, size_t size, size_t offset)
+{
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    glBufferSubData(GL_UNIFORM_BUFFER, offset, size, object);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 #endif

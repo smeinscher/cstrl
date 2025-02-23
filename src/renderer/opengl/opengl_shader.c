@@ -191,6 +191,12 @@ CSTRL_API void cstrl_use_shader(cstrl_shader shader)
     glUseProgram(shader.program);
 }
 
+CSTRL_API void cstrl_set_uniform_block_binding(cstrl_shader shader, const char *name, unsigned int binding_point)
+{
+    unsigned int uniform_block_index = glGetUniformBlockIndex(shader.program, name);
+    glUniformBlockBinding(shader.program, uniform_block_index, binding_point);
+}
+
 CSTRL_API void cstrl_set_uniform_int(unsigned int program, const char *name, int d)
 {
     glUseProgram(program);

@@ -15,6 +15,8 @@ const float BASE_UNIT_VIEW_DISTANCES[MAX_RAY_DIRECTIONS] = {UNIT_SIZE_X * 4.0f, 
                                                             UNIT_SIZE_X * 2.0f, UNIT_SIZE_X * 2.0f, UNIT_SIZE_X * 2.0f,
                                                             UNIT_SIZE_X * 3.0f, UNIT_SIZE_X * 4.0f};
 
+const float BASE_UNIT_HEALTH[MAX_UNIT_TYPES] = {10.0f, 10.0f, 1.0f, 75.0f, 75.0f, 75.0f, 150.0f};
+const float BASE_UNIT_ATTACK[MAX_UNIT_TYPES] = {1.0f, 2.0f, 0.0f, 5.0f, 20.0f, 20.0f, 20.0f};
 
 static void recalculate_ray_directions(units_t *units, int unit_id, vec3 direction)
 {
@@ -257,9 +259,15 @@ int units_add(units_t *units, int player_id, vec3 position, int type)
     units->aabb_max[new_id] =
         cstrl_vec3_add(position, (vec3){UNIT_SIZE_X * 0.5f, UNIT_SIZE_Y * 0.5f, UNIT_SIZE_X * 0.5f});
     collision_object_user_data_t *user_data = malloc(sizeof(collision_object_user_data_t));
+    user_data->player_id = player_id;
+    user_data->type = COLLISION_UNIT;
+    user_data->id = new_id;
     units->collision_id[new_id] = insert_aabb(user_data, (vec3[]){units->aabb_min[new_id], units->aabb_max[new_id]});
     recalculate_ray_directions(units, new_id, (vec3){0.0f, 1.0f, 0.0f});
     units->velocity[new_id] = (vec3){0.0f, 0.0f, 0.0f};
+    units->stats[new_id].max_health = BASE_UNIT_HEALTH[type];
+    units->stats[new_id].current_health = BASE_UNIT_HEALTH[type];
+    units->stats[new_id].attack_strength = BASE_UNIT_ATTACK[type];
     units->attacking[new_id] = false;
     units->last_attack_time[new_id] = 0.0;
     return new_id;

@@ -293,9 +293,8 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     da_int excluded_nodes;
     cstrl_da_int_init(&excluded_nodes, 1);
     cstrl_da_int_push_back(&excluded_nodes, players->units[player_id].collision_id[unit_id]);
-    ray_cast_result_t result =
-        curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
-                        cstrl_vec3_normalize(ahead), &excluded_nodes);
+    ray_cast_result_t result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
+                                               cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
         avoidance_force = cstrl_vec3_cross(cstrl_vec3_normalize(cstrl_vec3_sub(ahead, result.aabb_center)),
@@ -304,8 +303,8 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     ahead = cstrl_vec3_add(
         players->units[player_id].position[unit_id],
         cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, left)), BASE_UNIT_VIEW_DISTANCES[0]));
-    result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f},
-                             players->units[player_id].position[unit_id], cstrl_vec3_normalize(ahead), &excluded_nodes);
+    result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
+                             cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
         avoidance_force = cstrl_vec3_sub(avoidance_force, left);
@@ -313,8 +312,8 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     ahead = cstrl_vec3_add(
         players->units[player_id].position[unit_id],
         cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, right)), BASE_UNIT_VIEW_DISTANCES[0]));
-    result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f},
-                             players->units[player_id].position[unit_id], cstrl_vec3_normalize(ahead), &excluded_nodes);
+    result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
+                             cstrl_vec3_normalize(ahead), &excluded_nodes);
     if (result.hit)
     {
         avoidance_force = cstrl_vec3_sub(avoidance_force, right);
@@ -382,20 +381,27 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
         players_add_selected_units_to_formation(players, player_id);
     }
     collision_object_user_data_t collision_object_data = {-1, COLLISION_UNIT, -1};
+    da_int excluded_nodes;
+    cstrl_da_int_init(&excluded_nodes, 1);
+    for (int i = 0; i < players->selected_units[player_id].size; i++)
+    {
+        int unit_id = players->selected_units[player_id].array[i];
+        cstrl_da_int_push_back(&excluded_nodes, players->units[player_id].collision_id[unit_id]);
+    }
     ray_cast_result_t result =
-        regular_ray_cast(end_position, cstrl_vec3_normalize(end_position),
-                                           1.0f, &players->selected_units[player_id]);
+        regular_ray_cast(end_position, cstrl_vec3_normalize(end_position), 1.0f, &excluded_nodes);
+    players->formations[player_id].following_enemy[players->selected_formation[player_id]] = false;
     if (result.hit)
     {
         collision_object_data = get_collision_object_user_data(result.node_index);
-        if (collision_object_data.type == COLLISION_UNIT)
+        if (collision_object_data.type == COLLISION_UNIT /*&& collision_object_data.player_id != player_id*/)
         {
             players->formations[player_id].following_enemy[players->selected_formation[player_id]] = true;
         }
-    }
-    else
-    {
-        players->formations[player_id].following_enemy[players->selected_formation[player_id]] = false;
+        else
+        {
+            collision_object_data = (collision_object_user_data_t){-1, COLLISION_UNIT, -1};
+        }
     }
     for (int i = 0; i < players->formations[player_id].unit_ids[players->selected_formation[player_id]].size; i++)
     {

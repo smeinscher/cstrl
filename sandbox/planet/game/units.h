@@ -34,8 +34,6 @@ typedef enum unit_type
     MAX_UNIT_TYPES
 } unit_type;
 
-extern const float BASE_UNIT_SPEEDS[MAX_UNIT_TYPES];
-
 typedef enum ray_directions_t
 {
     FORWARD,
@@ -48,7 +46,11 @@ typedef enum ray_directions_t
     FORWARD_RIGHT,
     MAX_RAY_DIRECTIONS
 } ray_directions_t;
+
+extern const float BASE_UNIT_SPEEDS[MAX_UNIT_TYPES];
 extern const float BASE_UNIT_VIEW_DISTANCES[MAX_RAY_DIRECTIONS];
+extern const float BASE_UNIT_HEALTH[MAX_UNIT_TYPES];
+extern const float BASE_UNIT_ATTACK[MAX_UNIT_TYPES];
 
 typedef struct unit_rays_t
 {
@@ -60,6 +62,7 @@ typedef struct unit_stats_t
 {
     float max_health;
     float current_health;
+    float attack_strength;
 } unit_stats_t;
 
 typedef struct unit_data_t

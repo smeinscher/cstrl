@@ -5,8 +5,11 @@ layout(location = 1) in vec2 a_uv;
 
 out vec2 uv;
 
-uniform mat4 view;
-uniform mat4 projection;
+layout(std140) uniform Matrices
+{
+    mat4 view;
+    mat4 projection;
+};
 
 void main()
 {

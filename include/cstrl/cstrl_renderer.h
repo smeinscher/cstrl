@@ -15,6 +15,8 @@ typedef enum cstrl_render_attribute_type
     CSTRL_RENDER_ATTRIBUTE_UVS,
     CSTRL_RENDER_ATTRIBUTE_COLORS,
     CSTRL_RENDER_ATTRIBUTE_NORMALS,
+    CSTRL_RENDER_ATTRIBUTE_TANGENTS,
+    CSTRL_RENDER_ATTRIBUTE_BITANGENTS,
     CSTRL_RENDER_ATTRIBUTE_MAX
 } cstrl_render_attribute_type;
 
@@ -81,6 +83,10 @@ CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float 
 
 CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t vertex_count);
 
+CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float *tangents);
+
+CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, float *bitangents);
+
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index, size_t count);
 
 CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int *indices, size_t start_index,
@@ -105,6 +111,10 @@ CSTRL_API void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state)
 
 CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled);
 
+CSTRL_API unsigned int cstrl_renderer_add_ubo(size_t size);
+
+CSTRL_API void cstrl_renderer_update_ubo(unsigned int ubo, void *object, size_t size, size_t offset);
+
 /*
  *
  *  Shader
@@ -126,6 +136,8 @@ CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_source(const char *v
                                                                    const char *tessellation_evaluation_shader_source);
 
 CSTRL_API void cstrl_use_shader(cstrl_shader shader);
+
+CSTRL_API void cstrl_set_uniform_block_binding(cstrl_shader shader, const char *name, unsigned int binding_point);
 
 CSTRL_API void cstrl_set_uniform_int(unsigned int program, const char *name, int d);
 
@@ -151,7 +163,7 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path);
 
 CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height);
 
-CSTRL_API cstrl_texture cstrl_texture_cube_map_generate_from_folder(const char *folder);
+CSTRL_API cstrl_texture cstrl_texture_cube_map_generate_from_folder(const char *folder, bool alpha_channel);
 
 CSTRL_API void cstrl_texture_hot_reload(cstrl_texture *texture);
 

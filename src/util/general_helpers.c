@@ -91,6 +91,18 @@ CSTRL_API bool cstrl_realloc_vec3(vec3 **vec3_ptr, size_t size)
     return true;
 }
 
+CSTRL_API bool cstrl_realloc_vec4(vec4 **vec4_ptr, size_t size)
+{
+    vec4 *temp_vec4_ptr = realloc(*vec4_ptr, size * sizeof(vec4));
+    if (temp_vec4_ptr == NULL)
+    {
+        log_error("Error reallocating memory for vec4_ptr");
+        return false;
+    }
+    *vec4_ptr = temp_vec4_ptr;
+    return true;
+}
+
 CSTRL_API bool cstrl_realloc_bool(bool **bool_ptr, size_t size)
 {
     bool *temp_bool_ptr = realloc(*bool_ptr, size * sizeof(bool));

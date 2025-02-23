@@ -4,6 +4,7 @@ out vec4 frag_color;
 
 in vec3 frag_position;
 in vec3 normal;
+in mat3 tbn;
 
 uniform vec3 view_position;
 
@@ -28,12 +29,14 @@ struct light_t
 uniform light_t light;
 
 uniform samplerCube texture0;
+uniform samplerCube normal0;
 
 void main()
 {
     vec3 ambient = light.ambient * material.ambient;
 
-    vec3 norm = normalize(normal);
+    vec3 normal_coordinate = texture(normal0, frag_position).rgb * 2.0 - 1.0;
+    vec3 norm = normalize(tbn * normal_coordinate);
     vec3 light_direction = normalize(light.position - frag_position);
     float diff = max(dot(norm, light_direction), 0.0);
     vec3 diffuse = light.diffuse * (diff * material.diffuse);
