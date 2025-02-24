@@ -375,6 +375,9 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
     result.hit = false;
     result.node_index = -1;
     result.t = 1.0f;
+    result.normal = (vec3){0.0f, 0.0f, 0.0f};
+    result.intersection = (vec3){0.0f, 0.0f, 0.0f};
+    result.aabb_center = (vec3){0.0f, 0.0f, 0.0f};
 
     da_int nodes;
     cstrl_da_int_init(&nodes, 1);

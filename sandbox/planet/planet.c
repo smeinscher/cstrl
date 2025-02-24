@@ -1349,7 +1349,7 @@ int planet_game()
         }
         if (g_render_path_lines)
         {
-            if (!g_players.formations[g_human_player].following_enemy[g_players.selected_formation[g_human_player]])
+            if (g_players.selected_formation[g_human_player] != -1 && !g_players.formations[g_human_player].following_enemy[g_players.selected_formation[g_human_player]])
             {
                 cstrl_set_uniform_4f(path_line_shader.program, "color", PATH_MARKER_COLOR.r, PATH_MARKER_COLOR.g,
                                      PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
@@ -1480,11 +1480,28 @@ int planet_game()
 
     cstrl_camera_free(g_main_camera);
     cstrl_camera_free(g_ui_camera);
+
+    cstrl_da_float_free(&unit_lazer_positions);
+    cstrl_da_float_free(&unit_lazer_start_positions);
+    cstrl_da_float_free(&bullet_positions);
+    cstrl_da_int_free(&bullet_indices);
+    cstrl_da_float_free(&bullet_uvs);
+    cstrl_da_float_free(&explosion_positions);
+    cstrl_da_int_free(&explosion_indices);
+    cstrl_da_float_free(&explosion_uvs);
+
     cstrl_renderer_free_render_data(planet_render_data);
+    cstrl_renderer_free_render_data(city_render_data);
     cstrl_renderer_free_render_data(unit_render_data);
     cstrl_renderer_free_render_data(path_marker_render_data);
     cstrl_renderer_free_render_data(path_line_render_data);
     cstrl_renderer_free_render_data(selection_box_render_data);
+    cstrl_renderer_free_render_data(skybox_render_data);
+    cstrl_renderer_free_render_data(physics_debug_render_data);
+    cstrl_renderer_free_render_data(unit_lazer_render_data);
+    cstrl_renderer_free_render_data(bullet_render_data);
+    cstrl_renderer_free_render_data(explosion_render_data);
+
     cstrl_ui_shutdown(g_ui_context);
     cstrl_renderer_shutdown(&g_platform_state);
     cstrl_platform_shutdown(&g_platform_state);

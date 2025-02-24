@@ -11,9 +11,16 @@ ray_cast_result_t curved_ray_cast(vec3 origin, vec3 start_position, vec3 end_pos
     da_float positions;
     cstrl_da_float_init(&positions, 3);
     generate_line_segments(&positions, start_position, end_position, 0.1f);
-    ray_cast_result_t result = {0};
+    ray_cast_result_t result;
+    result.hit = false;
+    result.node_index = -1;
+    result.t = 1.0f;
+    result.normal = (vec3){0.0f, 0.0f, 0.0f};
+    result.intersection = (vec3){0.0f, 0.0f, 0.0f};
+    result.aabb_center = (vec3){0.0f, 0.0f, 0.0f};
     if (positions.size == 0)
     {
+        cstrl_da_float_free(&positions);
         return result;
     }
     for (int i = 0; i < positions.size / 3 - 1; i++)
@@ -28,6 +35,7 @@ ray_cast_result_t curved_ray_cast(vec3 origin, vec3 start_position, vec3 end_pos
             break;
         }
     }
+    cstrl_da_float_free(&positions);
     return result;
 }
 

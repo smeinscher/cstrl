@@ -318,6 +318,7 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     {
         avoidance_force = cstrl_vec3_sub(avoidance_force, right);
     }
+    cstrl_da_int_free(&excluded_nodes);
     return cstrl_vec3_mult_scalar(cstrl_vec3_normalize(avoidance_force), AVOIDANCE_WEIGHT);
 }
 
@@ -391,6 +392,7 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
     ray_cast_result_t result =
         regular_ray_cast(end_position, cstrl_vec3_normalize(end_position), 1.0f, &excluded_nodes);
     players->formations[player_id].following_enemy[players->selected_formation[player_id]] = false;
+    cstrl_da_int_free(&excluded_nodes);
     if (result.hit)
     {
         collision_object_data = get_collision_object_user_data(result.node_index);
