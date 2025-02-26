@@ -58,7 +58,7 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path)
     return texture;
 }
 
-CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height)
+CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height, cstrl_texture_format format, cstrl_texture_format internal_format)
 {
     cstrl_texture texture = {0};
     unsigned int texture_id;
@@ -70,7 +70,34 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+    GLuint gl_format;
+    GLuint gl_internal_format;
+    switch (format)
+    {
+    case CSTRL_RED:
+        gl_format = GL_RED;
+        break;
+    case CSTRL_RGB:
+        gl_format = GL_RGB;
+        break;
+    case CSTRL_RGBA:
+        gl_format = GL_RGBA;
+        break;
+    }
+    switch (internal_format)
+    {
+    case CSTRL_RED:
+        gl_internal_format = GL_R8;
+        break;
+    case CSTRL_RGB:
+        gl_internal_format = GL_RGB;
+        break;
+    case CSTRL_RGBA:
+        gl_internal_format = GL_RGBA;
+        break;
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, gl_internal_format, width, height, 0, gl_format, GL_UNSIGNED_BYTE, bitmap);
 
     glGenerateMipmap(GL_TEXTURE_2D);
 

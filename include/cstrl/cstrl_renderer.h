@@ -39,6 +39,13 @@ typedef struct cstrl_texture
     time_t last_modified_timestamp;
 } cstrl_texture;
 
+typedef enum cstrl_texture_format
+{
+    CSTRL_RED,
+    CSTRL_RGB,
+    CSTRL_RGBA
+} cstrl_texture_format;
+
 #elif defined(CSTRL_RENDER_API_VULKAN)
 typedef struct cstrl_shader
 {
@@ -161,7 +168,7 @@ CSTRL_API void cstrl_shader_hot_reload(cstrl_shader *shader);
 
 CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path);
 
-CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height);
+CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height, cstrl_texture_format format, cstrl_texture_format internal_format);
 
 CSTRL_API cstrl_texture cstrl_texture_cube_map_generate_from_folder(const char *folder, bool alpha_channel);
 

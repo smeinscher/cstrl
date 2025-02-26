@@ -1411,6 +1411,10 @@ int planet_game()
         {
             cstrl_ui_container_end(&g_ui_context);
         }
+        if (cstrl_ui_container_begin(&g_ui_context, "Something Else", 14, 400, 300, 200, 300, GEN_ID(0), false, false, 2))
+        {
+            cstrl_ui_container_end(&g_ui_context);
+        }
         /*
         if (cstrl_ui_container_begin(g_ui_context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
         {

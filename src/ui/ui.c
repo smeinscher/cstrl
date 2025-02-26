@@ -202,6 +202,8 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
         float a = ui_state->elements.colors.array[index * 4 + 3];
         cstrl_ui_renderer_add_rect_color(context->internal_render_state, r, g, b, a);
 
+        cstrl_ui_renderer_add_rect_uv(context->internal_render_state, 0.0f, 0.0f, 1.0f, 1.0f);
+
         ui_state->element_cache.ids.array[index] = ui_state->elements.ids.array[index];
         ui_state->element_cache.screen_coords.array[index * 4] = x0;
         ui_state->element_cache.screen_coords.array[index * 4 + 1] = y0;
@@ -364,10 +366,10 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     cstrl_da_int_push_back(&ui_state->elements.screen_coords, y + h);
 
     // TODO: get from config somewhere
-    cstrl_da_float_push_back(&ui_state->elements.colors, 0.8f);
-    cstrl_da_float_push_back(&ui_state->elements.colors, 0.2f);
-    cstrl_da_float_push_back(&ui_state->elements.colors, 0.2f);
-    cstrl_da_float_push_back(&ui_state->elements.colors, 0.9f);
+    cstrl_da_float_push_back(&ui_state->elements.colors, 0.4f);
+    cstrl_da_float_push_back(&ui_state->elements.colors, 0.4f);
+    cstrl_da_float_push_back(&ui_state->elements.colors, 0.4f);
+    cstrl_da_float_push_back(&ui_state->elements.colors, 0.7f);
 
     return true;
 }
