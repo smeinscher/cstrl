@@ -11,8 +11,8 @@
 
 typedef struct cstrl_ui_context
 {
-    bool mouse_locked;
     void *internal_ui_state;
+    void *internal_render_state;
 } cstrl_ui_context;
 
 typedef enum cstrl_ui_text_alignment
@@ -22,7 +22,7 @@ typedef enum cstrl_ui_text_alignment
     CSTRL_UI_TEXT_ALIGN_RIGHT
 } cstrl_ui_text_alignment;
 
-CSTRL_API cstrl_ui_context *cstrl_ui_init(cstrl_platform_state *platform_state);
+CSTRL_API void cstrl_ui_init(cstrl_ui_context *context, cstrl_platform_state *platform_state);
 
 CSTRL_API void cstrl_ui_begin(cstrl_ui_context *context);
 
@@ -47,5 +47,7 @@ CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int ti
 
 CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x, int y,
                          int w, int h, int id, char *buffer, size_t buffer_size);
+
+CSTRL_API bool cstrl_ui_mouse_locked(cstrl_ui_context *context);
 
 #endif // CSTRL_UI_H

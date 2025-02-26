@@ -58,44 +58,45 @@ int basic_ui()
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     cstrl_set_uniform_mat4(shader.program, "view", camera->view);
     cstrl_set_uniform_mat4(shader.program, "projection", camera->projection);
-    cstrl_ui_context *context = cstrl_ui_init(&platform_state);
+    cstrl_ui_context context;
+    cstrl_ui_init(&context, &platform_state);
     while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&platform_state);
         cstrl_renderer_clear(0.1f, 0.1f, 0.1f, 1.0f);
         cstrl_texture_bind(texture);
         cstrl_renderer_draw(render_data);
-        cstrl_ui_begin(context);
-        if (cstrl_ui_container_begin(context, "Menu", 4, 0, 0, 800, 30, GEN_ID(0), true, true, 1))
-        {
-            if (cstrl_ui_button(context, "Quit", 4, 760, 5, 50, 20, GEN_ID(0)))
-            {
-                cstrl_platform_set_should_exit(true);
-            }
-            cstrl_ui_container_end(context);
-        }
-        if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
-        {
-            char num_buffer[20];
-            if (cstrl_ui_text_field(context, "PLACEHOLDER", 11, 10, 75, 180, 30, GEN_ID(0), num_buffer, 20))
-            {
-            }
-            if (cstrl_ui_button(context, "Save", 4, 145, 270, 50, 30, GEN_ID(0)))
-            {
-                double value = atof(num_buffer);
-                printf("%lf\n", value);
-            }
-            cstrl_ui_container_end(context);
-        }
-        if (cstrl_ui_container_begin(context, "Console", 7, 10, 390, 780, 200, GEN_ID(0), false, false, 1))
-        {
-            cstrl_ui_container_end(context);
-        }
-        cstrl_ui_end(context);
+        cstrl_ui_begin(&context);
+        // if (cstrl_ui_container_begin(context, "Menu", 4, 0, 0, 800, 30, GEN_ID(0), true, true, 1))
+        // {
+        //     if (cstrl_ui_button(context, "Quit", 4, 760, 5, 50, 20, GEN_ID(0)))
+        //     {
+        //         cstrl_platform_set_should_exit(true);
+        //     }
+        //     cstrl_ui_container_end(context);
+        // }
+        // if (cstrl_ui_container_begin(context, "Test", 4, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
+        // {
+        //     char num_buffer[20];
+        //     if (cstrl_ui_text_field(context, "PLACEHOLDER", 11, 10, 75, 180, 30, GEN_ID(0), num_buffer, 20))
+        //     {
+        //     }
+        //     if (cstrl_ui_button(context, "Save", 4, 145, 270, 50, 30, GEN_ID(0)))
+        //     {
+        //         double value = atof(num_buffer);
+        //         printf("%lf\n", value);
+        //     }
+        //     cstrl_ui_container_end(context);
+        // }
+        // if (cstrl_ui_container_begin(context, "Console", 7, 10, 390, 780, 200, GEN_ID(0), false, false, 1))
+        // {
+        //     cstrl_ui_container_end(context);
+        // }
+        cstrl_ui_end(&context);
         cstrl_renderer_swap_buffers(&platform_state);
     }
     cstrl_camera_free(camera);
-    cstrl_ui_shutdown(context);
+    cstrl_ui_shutdown(&context);
     cstrl_renderer_free_render_data(render_data);
     cstrl_renderer_shutdown(&platform_state);
     cstrl_platform_shutdown(&platform_state);

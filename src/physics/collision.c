@@ -328,6 +328,11 @@ CSTRL_API int cstrl_collision_aabb_tree_insert(aabb_tree_t *tree, void *user_dat
 
 CSTRL_API void cstrl_collision_aabb_tree_remove(aabb_tree_t *tree, int node_index)
 {
+    if (tree->nodes[node_index].active == false)
+    {
+        log_warn("Attempting to remove collision node that is not active, skipping...");
+        return;
+    }
     int parent_index = tree->nodes[node_index].parent_index;
     if (parent_index != -1)
     {
@@ -365,6 +370,7 @@ CSTRL_API void cstrl_collision_aabb_tree_remove(aabb_tree_t *tree, int node_inde
         tree->node_count = 0;
     }
     free(tree->nodes[node_index].user_data);
+    tree->nodes[node_index].user_data = NULL;
     tree->nodes[node_index].active = false;
 }
 

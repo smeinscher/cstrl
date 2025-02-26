@@ -82,13 +82,15 @@ static vec2 g_selection_end;
 
 static bool g_border_update = true;
 
-static cstrl_ui_context *g_ui_context;
+static cstrl_ui_context g_ui_context;
 
 static da_float g_physics_ray_positions;
 static bool g_physics_debug_draw_enabled = false;
 
 static bool g_view_projection_update = true;
 static bool g_ui_view_projection_update = true;
+
+static bool g_render_planet = true;
 
 static vec3 position_from_ray_cast(vec3 d, float t)
 {
@@ -248,6 +250,12 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             g_render_path_lines = g_render_path_markers;
         }
         break;
+    case CSTRL_KEY_6:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            g_render_planet = !g_render_planet;
+        }
+        break;
     case CSTRL_KEY_C:
         if (action == CSTRL_ACTION_PRESS)
         {
@@ -325,7 +333,7 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
     g_mouse_position_x = xpos;
     g_mouse_position_y = ypos;
 
-    if (g_ui_context->mouse_locked)
+    if (cstrl_ui_mouse_locked(&g_ui_context))
     {
         return;
     }
@@ -366,7 +374,7 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
 
 static void mouse_button_callback(cstrl_platform_state *state, int button, int action, int mods)
 {
-    if (g_ui_context->mouse_locked)
+    if (cstrl_ui_mouse_locked(&g_ui_context))
     {
         return;
     }
@@ -456,7 +464,7 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
 
 static void mouse_wheel_callback(cstrl_platform_state *state, int delta_x, int delta_y, int keys_down)
 {
-    if (g_ui_context->mouse_locked)
+    if (cstrl_ui_mouse_locked(&g_ui_context))
     {
         return;
     }
@@ -1056,7 +1064,7 @@ int planet_game()
     double lag = 0.0;
     float light_start_x = 0.0f;
     float light_start_z = 0.0f;
-    g_ui_context = cstrl_ui_init(&g_platform_state);
+    cstrl_ui_init(&g_ui_context, &g_platform_state);
     while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&g_platform_state);
@@ -1293,17 +1301,20 @@ int planet_game()
             cstrl_set_uniform_mat4(selection_box_shader.program, "projection", g_ui_camera->projection);
         }
         cstrl_renderer_clear(0.1f, 0.0f, 0.1f, 1.0f);
-        vec3 light_position = {10.0f * cosf(light_start_x), 1.0f, 10.0f * sinf(light_start_z)};
-        cstrl_set_uniform_3f(planet_shader.program, "light.position", light_position.x, light_position.y,
-                             light_position.z);
-        cstrl_use_shader(planet_shader);
-        cstrl_set_active_texture(0);
-        cstrl_texture_cube_map_bind(planet_texture);
-        cstrl_set_uniform_int(planet_shader.program, "texture0", 0);
-        cstrl_set_active_texture(1);
-        cstrl_texture_cube_map_bind(planet_normal);
-        cstrl_set_uniform_int(planet_shader.program, "normal0", 1);
-        cstrl_renderer_draw_indices(planet_render_data);
+        if (g_render_planet)
+        {
+            vec3 light_position = {10.0f * cosf(light_start_x), 1.0f, 10.0f * sinf(light_start_z)};
+            cstrl_set_uniform_3f(planet_shader.program, "light.position", light_position.x, light_position.y,
+                                 light_position.z);
+            cstrl_use_shader(planet_shader);
+            cstrl_set_active_texture(0);
+            cstrl_texture_cube_map_bind(planet_texture);
+            cstrl_set_uniform_int(planet_shader.program, "texture0", 0);
+            cstrl_set_active_texture(1);
+            cstrl_texture_cube_map_bind(planet_normal);
+            cstrl_set_uniform_int(planet_shader.program, "normal0", 1);
+            cstrl_renderer_draw_indices(planet_render_data);
+        }
 
         if (g_border_update)
         {
@@ -1349,7 +1360,8 @@ int planet_game()
         }
         if (g_render_path_lines)
         {
-            if (g_players.selected_formation[g_human_player] != -1 && !g_players.formations[g_human_player].following_enemy[g_players.selected_formation[g_human_player]])
+            if (g_players.selected_formation[g_human_player] != -1 &&
+                !g_players.formations[g_human_player].following_enemy[g_players.selected_formation[g_human_player]])
             {
                 cstrl_set_uniform_4f(path_line_shader.program, "color", PATH_MARKER_COLOR.r, PATH_MARKER_COLOR.g,
                                      PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
@@ -1394,8 +1406,12 @@ int planet_game()
         cstrl_texture_cube_map_bind(skybox_texture);
         cstrl_renderer_draw(skybox_render_data);
 
+        cstrl_ui_begin(&g_ui_context);
+        if (cstrl_ui_container_begin(&g_ui_context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
+        {
+            cstrl_ui_container_end(&g_ui_context);
+        }
         /*
-        cstrl_ui_begin(g_ui_context);
         if (cstrl_ui_container_begin(g_ui_context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
         {
             static double monies = 10666;
@@ -1455,8 +1471,8 @@ int planet_game()
                 cstrl_ui_container_end(g_ui_context);
             }
         }
-        cstrl_ui_end(g_ui_context);
         */
+        cstrl_ui_end(&g_ui_context);
         cstrl_renderer_swap_buffers(&g_platform_state);
     }
 
@@ -1502,7 +1518,7 @@ int planet_game()
     cstrl_renderer_free_render_data(bullet_render_data);
     cstrl_renderer_free_render_data(explosion_render_data);
 
-    cstrl_ui_shutdown(g_ui_context);
+    cstrl_ui_shutdown(&g_ui_context);
     cstrl_renderer_shutdown(&g_platform_state);
     cstrl_platform_shutdown(&g_platform_state);
 

@@ -2,6 +2,7 @@
 // Created by sterling on 7/28/24.
 //
 
+#include "cstrl/cstrl_assert.h"
 #include "log.c/log.h"
 
 #include "cstrl/cstrl_util.h"
@@ -19,12 +20,7 @@ CSTRL_API void cstrl_da_int_init(da_int *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(int) * initial_size);
-    if (da->array == NULL)
-    {
-        log_error("Failed to allocate dynamic int array");
-        da->capacity = 0;
-        return;
-    }
+    CSTRL_ASSERT(da->array, "Failed to allocate dynamic int array");
     da->capacity = initial_size;
 }
 
@@ -32,12 +28,7 @@ CSTRL_API void cstrl_da_float_init(da_float *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(float) * initial_size);
-    if (da->array == NULL)
-    {
-        log_error("Failed to allocate dynamic float array");
-        da->capacity = 0;
-        return;
-    }
+    CSTRL_ASSERT(da->array, "Failed to allocate dynamic float array");
     da->capacity = initial_size;
 }
 
@@ -45,12 +36,7 @@ CSTRL_API void cstrl_string_init(string *str, size_t initial_size)
 {
     str->size = 0;
     str->array = malloc(sizeof(char) * initial_size);
-    if (str->array == NULL)
-    {
-        log_error("Failed to allocate dynamic char array (string)");
-        str->capacity = 0;
-        return;
-    }
+    CSTRL_ASSERT(str->array, "Failed to allocate dynamic char array (string)");
     str->capacity = initial_size;
 }
 
@@ -58,12 +44,7 @@ CSTRL_API void cstrl_da_string_init(da_string *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(string) * initial_size);
-    if (da->array == NULL)
-    {
-        log_error("Failed to allocate dynamic string array");
-        da->capacity = 0;
-        return;
-    }
+    CSTRL_ASSERT(da->array, "Failed to allocate dynamic string array");
     for (int i = 0; i < initial_size; i++)
     {
         da->array[i].array = NULL;

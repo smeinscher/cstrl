@@ -68,6 +68,8 @@ add_library(cstrl SHARED
         src/util/general_helpers.c
         include/cstrl/cstrl_ui.h
         src/ui/ui.c
+        src/ui/ui_opengl_renderer.c
+        src/ui/ui_internal.h
         extern/stb/stb_truetype.c
         extern/stb/stb_truetype.h
         extern/stb/stb_image_write.c
@@ -83,6 +85,7 @@ add_library(cstrl SHARED
         src/renderer/vulkan/vulkan_platform_linux.c
         include/cstrl/cstrl_physics.h
         src/physics/collision.c
+        src/debug/assert.c
 )
 
 add_executable(cstrl-test
