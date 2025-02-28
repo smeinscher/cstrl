@@ -279,8 +279,9 @@ static vec3 compute_flocking_force(players_t *players, int player_id, int unit_i
 
 static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
 {
+    return (vec3){0.0f, 0.0f, 0.0f};
     float ray_side_offset = UNIT_SIZE_X * 0.5f;
-
+   
     vec3 forward = cstrl_vec3_normalize(players->units[player_id].velocity[unit_id]);
     vec3 left = cstrl_vec3_normalize(
         cstrl_vec3_cross(forward, cstrl_vec3_normalize(players->units[player_id].position[unit_id])));
@@ -293,8 +294,8 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     da_int excluded_nodes;
     cstrl_da_int_init(&excluded_nodes, 1);
     cstrl_da_int_push_back(&excluded_nodes, players->units[player_id].collision_id[unit_id]);
-    ray_cast_result_t result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
-                                               cstrl_vec3_normalize(ahead), &excluded_nodes);
+    ray_cast_result_t result =
+        curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id], ahead, &excluded_nodes);
     if (result.hit)
     {
         avoidance_force = cstrl_vec3_cross(cstrl_vec3_normalize(cstrl_vec3_sub(ahead, result.aabb_center)),
@@ -303,8 +304,8 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     ahead = cstrl_vec3_add(
         players->units[player_id].position[unit_id],
         cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, left)), BASE_UNIT_VIEW_DISTANCES[0]));
-    result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
-                             cstrl_vec3_normalize(ahead), &excluded_nodes);
+    result =
+        curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id], ahead, &excluded_nodes);
     if (result.hit)
     {
         avoidance_force = cstrl_vec3_sub(avoidance_force, left);
@@ -312,8 +313,8 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
     ahead = cstrl_vec3_add(
         players->units[player_id].position[unit_id],
         cstrl_vec3_mult_scalar(cstrl_vec3_normalize(cstrl_vec3_add(forward, right)), BASE_UNIT_VIEW_DISTANCES[0]));
-    result = curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id],
-                             cstrl_vec3_normalize(ahead), &excluded_nodes);
+    result =
+        curved_ray_cast((vec3){0.0f, 0.0f, 0.0f}, players->units[player_id].position[unit_id], ahead, &excluded_nodes);
     if (result.hit)
     {
         avoidance_force = cstrl_vec3_sub(avoidance_force, right);
@@ -396,7 +397,7 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
     if (result.hit)
     {
         collision_object_data = get_collision_object_user_data(result.node_index);
-        if (collision_object_data.type == COLLISION_UNIT /*&& collision_object_data.player_id != player_id*/)
+        if (collision_object_data.type == COLLISION_UNIT && collision_object_data.player_id != player_id)
         {
             players->formations[player_id].following_enemy[players->selected_formation[player_id]] = true;
         }

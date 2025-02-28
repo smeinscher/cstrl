@@ -75,6 +75,12 @@ CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a);
 
 CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height);
 
+CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao);
+
+CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo);
+
+CSTRL_API void cstrl_renderer_framebuffer_draw(unsigned int vao);
+
 CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data();
 
 CSTRL_API void cstrl_renderer_free_render_data(cstrl_render_data *render_data);
@@ -117,6 +123,8 @@ CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state);
 CSTRL_API void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state);
 
 CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled);
+
+CSTRL_API void cstrl_renderer_set_cull_face_enabled(bool enabled);
 
 CSTRL_API unsigned int cstrl_renderer_add_ubo(size_t size);
 
@@ -165,6 +173,8 @@ CSTRL_API void cstrl_shader_hot_reload(cstrl_shader *shader);
  *  Texture
  *
  */
+
+CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height);
 
 CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path);
 

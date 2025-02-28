@@ -2,6 +2,7 @@
 // Created by 12105 on 11/23/2024.
 //
 
+#include "cstrl/cstrl_assert.h"
 #include "cstrl/cstrl_platform.h"
 #if defined(CSTRL_RENDER_API_OPENGL)
 #include "cstrl/cstrl_defines.h"
@@ -58,6 +59,52 @@ CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a)
 CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height)
 {
     glViewport(x, y, width, height);
+}
+
+CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao)
+{
+    glGenFramebuffers(1, fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
+
+    glGenRenderbuffers(1, rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rbo);
+
+    unsigned int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    CSTRL_ASSERT(status == GL_FRAMEBUFFER_COMPLETE, "Error creating framebuffer object");
+
+    float x0 = -1.0f;
+    float y0 = -1.0f;
+    float x1 = 1.0f;
+    float y1 = 1.0f;
+    float u0 = 0.0f;
+    float v0 = 0.0f;
+    float u1 = 1.0f;
+    float v1 = 1.0f;
+
+    float vertices[] = {x0, y1, u0, v1, x1, y0, u1, v0, x0, y0, u0, v0, x0, y1, u0, v1, x1, y0, u1, v0, x1, y1, u1, v1};
+    unsigned int vbo;
+    glGenVertexArrays(1, vao);
+    glGenBuffers(1, &vbo);
+    glBindVertexArray(*vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+}
+
+CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo)
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+}
+
+CSTRL_API void cstrl_renderer_framebuffer_draw(unsigned int vao)
+{
+    glBindVertexArray(vao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data()
@@ -398,6 +445,18 @@ CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled)
     else
     {
         glDisable(GL_DEPTH_TEST);
+    }
+}
+
+CSTRL_API void cstrl_renderer_set_cull_face_enabled(bool enabled)
+{
+    if (enabled)
+    {
+        glEnable(GL_CULL_FACE);
+    }
+    else
+    {
+        glDisable(GL_CULL_FACE);
     }
 }
 

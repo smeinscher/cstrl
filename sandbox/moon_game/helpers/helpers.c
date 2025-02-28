@@ -1,8 +1,6 @@
 #include "helpers.h"
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_util.h"
-#include <stdio.h>
 
 bool planet_hit_check(vec3 d, float *t, vec3 origin, vec3 center, float radius)
 {
@@ -33,7 +31,7 @@ void generate_line_segments(da_float *positions, vec3 origin, vec3 destination, 
     }
     float dot = cstrl_vec3_dot(cstrl_vec3_normalize(origin), cstrl_vec3_normalize(destination));
     float angle = acosf(dot) * 0.5f;
-    vec3 axis = cstrl_vec3_cross(origin, destination);
+    vec3 axis = cstrl_vec3_cross(cstrl_vec3_normalize(origin), cstrl_vec3_normalize(destination));
     if (cstrl_vec3_is_equal(axis, (vec3){0.0f, 0.0f, 0.0f}))
     {
         return;

@@ -2,7 +2,6 @@
 #define HELPERS_H
 
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_types.h"
 #include <stdbool.h>
 

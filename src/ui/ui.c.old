@@ -601,7 +601,7 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     if (!is_static && ui_state->dragged_element_id < 0 &&
         cstrl_ui_region_hit(ui_state->mouse_x, ui_state->mouse_y, x, y, w, h) && ui_state->left_mouse_button_down)
     {
-        // context->mouse_locked = true;
+        context->mouse_locked = true;
         ui_state->dragged_element_id = id;
         ui_state->active_item = id;
     }

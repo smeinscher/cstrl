@@ -33,6 +33,22 @@ CSTRL_API int upload_opengl_texture(const char *path)
     return 0;
 }
 
+CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height)
+{
+    cstrl_texture texture = {0};
+    unsigned int texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture_id, 0);
+    texture.id = texture_id;
+    return texture;
+}
+
 CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path)
 {
     cstrl_texture texture = {0};
@@ -58,7 +74,9 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path)
     return texture;
 }
 
-CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height, cstrl_texture_format format, cstrl_texture_format internal_format)
+CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height,
+                                                           cstrl_texture_format format,
+                                                           cstrl_texture_format internal_format)
 {
     cstrl_texture texture = {0};
     unsigned int texture_id;

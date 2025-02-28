@@ -285,7 +285,14 @@ bool units_move(units_t *units, int unit_id, vec3 target_position)
     vec3 new_position = cstrl_vec3_normalize(cstrl_vec3_add(
         start_position, cstrl_vec3_mult_scalar(units->velocity[unit_id],
                                                BASE_UNIT_SPEEDS[units->type[unit_id]] * UNIT_SPEED_MODIFIER)));
-    new_position = cstrl_vec3_mult_scalar(new_position, 1.0f + UNIT_SIZE_X * 0.5f);
+    if (units->type[unit_id] != JET && units->type[unit_id] != PLANE)
+    {
+        new_position = cstrl_vec3_mult_scalar(new_position, 1.0f + UNIT_SIZE_X * 0.5f);
+    }
+    else
+    {
+        new_position = cstrl_vec3_mult_scalar(new_position, 1.0f + UNIT_SIZE_X * 5.0f);
+    }
     units->position[unit_id] = new_position;
 
     units_update_aabb(units, unit_id);

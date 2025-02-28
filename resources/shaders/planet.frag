@@ -37,6 +37,7 @@ void main()
 
     vec3 normal_coordinate = texture(normal0, frag_position).rgb * 2.0 - 1.0;
     vec3 norm = normalize(tbn * normal_coordinate);
+
     vec3 light_direction = normalize(light.position - frag_position);
     float diff = max(dot(norm, light_direction), 0.0);
     vec3 diffuse = light.diffuse * (diff * material.diffuse);
@@ -47,5 +48,6 @@ void main()
     vec3 specular = light.specular * (spec * material.specular);
 
     vec3 result = ambient + diffuse + specular;
+
     frag_color = vec4(result, 1.0) * texture(texture0, frag_position);
 }

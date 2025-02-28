@@ -1,12 +1,11 @@
 #include "physics_wrapper.h"
+#include "../helpers/helpers.h"
 #include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_util.h"
-#include "../helpers/helpers.h"
 
 aabb_tree_t g_aabb_tree;
 
-ray_cast_result_t curved_ray_cast(vec3 origin, vec3 start_position, vec3 end_position,
-                                  da_int *excluded_nodes)
+ray_cast_result_t curved_ray_cast(vec3 origin, vec3 start_position, vec3 end_position, da_int *excluded_nodes)
 {
     da_float positions;
     cstrl_da_float_init(&positions, 3);
@@ -169,7 +168,7 @@ void fill_physics_positions(da_float *positions, da_float *ray_positions)
 
 collision_object_user_data_t get_collision_object_user_data(int node_id)
 {
-        return *(collision_object_user_data_t *)g_aabb_tree.nodes[node_id].user_data;
+    return *(collision_object_user_data_t *)g_aabb_tree.nodes[node_id].user_data;
 }
 
 int insert_aabb(collision_object_user_data_t *user_data, vec3 *aabb)

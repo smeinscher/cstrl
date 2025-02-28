@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.29)
 project(cstrl C)
 project(cstrl-test C)
 project(cstrl-sandbox C)
+project(cstrl-moon-game C)
 
 #set(CMAKE_SYSTEM_PROCESSOR arm)
 
@@ -122,44 +123,48 @@ add_executable(cstrl-test
 )
 
 add_executable(cstrl-sandbox
-        sandbox/learnopengl/learnopengl.c
-        sandbox/learnopengl/learnopengl.h
-        sandbox/physics_for_game_developers/physics_for_game_developers.c
-        sandbox/physics_for_game_developers/physics_for_game_developers.h
-        sandbox/physics_for_game_developers/cannon_example.c
-        sandbox/physics_for_game_developers/cannon_example.h
         sandbox/main.c
-        sandbox/ui/basic_ui.c
-        sandbox/ui/basic_ui.h
-        sandbox/vulkan-tutorial/vulkan_triangle.c
-        sandbox/vulkan-tutorial/vulkan_triangle.h
-        sandbox/the_ray_tracer_challenge/challenge.c
-        sandbox/the_ray_tracer_challenge/challenge.h
-        sandbox/pong/pong.c
-        sandbox/pong/pong.h
-        sandbox/planet/planet.c
-        sandbox/planet/planet.h
-        sandbox/planet/game/formation.c
-        sandbox/planet/game/formation.h
-        sandbox/planet/game/paths.c
-        sandbox/planet/game/paths.h
-        sandbox/planet/game/players.c
-        sandbox/planet/game/players.h
-        sandbox/planet/game/units.c
-        sandbox/planet/game/units.h
-        sandbox/planet/game/sphere.c
-        sandbox/planet/game/sphere.h
-        sandbox/planet/helpers/helpers.c
-        sandbox/planet/helpers/helpers.h
-        sandbox/planet/game/ai.c
-        sandbox/planet/game/ai.h
-        sandbox/planet/game/projectile.c
-        sandbox/planet/game/projectile.h
-        sandbox/planet/game/physics_wrapper.c
-        sandbox/planet/game/physics_wrapper.h
+        # sandbox/learnopengl/learnopengl.c
+        # sandbox/learnopengl/learnopengl.h
+        # sandbox/physics_for_game_developers/physics_for_game_developers.c
+        # sandbox/physics_for_game_developers/physics_for_game_developers.h
+        # sandbox/physics_for_game_developers/cannon_example.c
+        # sandbox/physics_for_game_developers/cannon_example.h
+        # sandbox/ui/basic_ui.c
+        # sandbox/ui/basic_ui.h
+        # sandbox/vulkan-tutorial/vulkan_triangle.c
+        # sandbox/vulkan-tutorial/vulkan_triangle.h
+        # sandbox/the_ray_tracer_challenge/challenge.c
+        # sandbox/the_ray_tracer_challenge/challenge.h
+        # sandbox/pong/pong.c
+        # sandbox/pong/pong.h
+)
+
+add_library(cstrl-moon-game SHARED
+        sandbox/moon_game/moon_game.c
+        sandbox/moon_game/moon_game.h
+        sandbox/moon_game/game/formation.c
+        sandbox/moon_game/game/formation.h
+        sandbox/moon_game/game/paths.c
+        sandbox/moon_game/game/paths.h
+        sandbox/moon_game/game/players.c
+        sandbox/moon_game/game/players.h
+        sandbox/moon_game/game/units.c
+        sandbox/moon_game/game/units.h
+        sandbox/moon_game/game/sphere.c
+        sandbox/moon_game/game/sphere.h
+        sandbox/moon_game/helpers/helpers.c
+        sandbox/moon_game/helpers/helpers.h
+        sandbox/moon_game/game/ai.c
+        sandbox/moon_game/game/ai.h
+        sandbox/moon_game/game/projectile.c
+        sandbox/moon_game/game/projectile.h
+        sandbox/moon_game/game/physics_wrapper.c
+        sandbox/moon_game/game/physics_wrapper.h
 )
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
+target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT)
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES})
 if (X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)
@@ -175,9 +180,11 @@ else ()
     target_link_libraries(cstrl PRIVATE Vulkan::Vulkan)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log_c cstrl)
-target_link_libraries(cstrl-sandbox PRIVATE cstrl)
+target_link_libraries(cstrl-sandbox PRIVATE cstrl cstrl-moon-game)
+target_link_libraries(cstrl-moon-game PRIVATE cstrl)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(cstrl-moon-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
 

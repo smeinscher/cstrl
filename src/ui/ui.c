@@ -155,9 +155,6 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
 
-    bool depth_test_enabled = glIsEnabled(GL_DEPTH_TEST);
-    glDisable(GL_DEPTH_TEST);
-
     cstrl_da_int_clear(&ui_state->element_cache.ids);
     cstrl_da_int_clear(&ui_state->element_cache.screen_coords);
     cstrl_da_float_clear(&ui_state->element_cache.colors);
@@ -237,10 +234,6 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
     else
     {
         ui_state->left_mouse_button_processed = false;
-    }
-    if (depth_test_enabled)
-    {
-        glEnable(GL_DEPTH_TEST);
     }
 }
 

@@ -82,3 +82,21 @@ CSTRL_API void cstrl_platform_set_mouse_wheel_callback(cstrl_platform_state *pla
     internal_state *state = platform_state->internal_state;
     state->state_common.callbacks.mouse_wheel = mouse_wheel_callback;
 }
+
+CSTRL_API void *cstrl_platform_get_user_data(cstrl_platform_state *platform_state)
+{
+    internal_state *state = platform_state->internal_state;
+    return state->state_common.user_data;
+}
+
+CSTRL_API void cstrl_platform_set_user_data(cstrl_platform_state *platform_state, void *user_data)
+{
+    internal_state *state = platform_state->internal_state;
+    state->state_common.user_data = user_data;
+}
+
+CSTRL_API void cstrl_platform_free_user_data(cstrl_platform_state *platform_state)
+{
+    internal_state *state = platform_state->internal_state;
+    free(state->state_common.user_data);
+}

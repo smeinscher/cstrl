@@ -76,4 +76,10 @@ CSTRL_API void cstrl_platform_set_mouse_button_callback(cstrl_platform_state *pl
 
 CSTRL_API void cstrl_platform_set_mouse_wheel_callback(cstrl_platform_state *platform_state, cstrl_mouse_wheel_callback mouse_wheel_callback);
 
+CSTRL_API void *cstrl_platform_get_user_data(cstrl_platform_state *platform_state);
+
+CSTRL_API void cstrl_platform_set_user_data(cstrl_platform_state *platform_state, void *user_data);
+
+CSTRL_API void cstrl_platform_free_user_data(cstrl_platform_state *platform_state);
+
 #endif // CSTRL_PLATFORM_H

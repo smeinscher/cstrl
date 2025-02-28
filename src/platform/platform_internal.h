@@ -36,6 +36,7 @@ typedef struct internal_state_common
     int window_height;
     user_callbacks callbacks;
     input_state input;
+    void *user_data;
 } internal_state_common;
 
 #if defined(CSTRL_PLATFORM_WINDOWS)
