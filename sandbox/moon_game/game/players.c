@@ -1,7 +1,9 @@
 #include "players.h"
 #include "../helpers/helpers.h"
+#include "cstrl/cstrl_assert.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_physics.h"
+#include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
 #include "physics_wrapper.h"
 #include "projectile.h"
@@ -47,7 +49,7 @@ static void optimize_formation_positions(players_t *players, int player_id, int 
         for (int j = 0; j < players->formations[player_id].unit_ids[formation_id].size; j++)
         {
             int path_id = players->formations[player_id].path_heads[formation_id].array[j];
-            if (cstrl_da_int_find_first(&taken_paths, path_id) != -1)
+            if (cstrl_da_int_find_first(&taken_paths, path_id) != CSTRL_DA_INT_ITEM_NOT_FOUND)
             {
                 continue;
             }
@@ -83,7 +85,7 @@ static void new_path(players_t *players, int player_id, vec3 start_position, vec
     }
     int unit_index = cstrl_da_int_find_first(
         &players->formations[player_id].unit_ids[players->selected_formation[player_id]], unit_id);
-    if (unit_index > 0)
+    if (unit_index != CSTRL_DA_INT_ITEM_NOT_FOUND)
     {
         float mod = ground_units ? 0.5f : 5.0f;
         vec3 path_vector = cstrl_vec3_sub(
@@ -145,6 +147,11 @@ void players_add_selected_units_to_formation(players_t *players, int player_id)
         if (old_formation_id != -1)
         {
             int unit_index = cstrl_da_int_find_first(&players->formations[player_id].unit_ids[old_formation_id], id);
+            if (unit_index == CSTRL_DA_INT_ITEM_NOT_FOUND)
+            {
+                printf("Unit Index not found in formation\n");
+                continue;
+            }
             int path_id = players->formations[player_id].path_heads[old_formation_id].array[unit_index];
             if (path_id != -1)
             {
@@ -188,6 +195,10 @@ bool players_init(players_t *players, int count)
         {
             printf("Error initializing projectiles\n");
             return false;
+        }
+        for (int j = 0; j < MAX_PLAYER_COUNT; j++)
+        {
+            players->at_war[i][j] = true;
         }
     }
     return true;
@@ -281,7 +292,7 @@ static vec3 compute_avoidance(players_t *players, int player_id, int unit_id)
 {
     return (vec3){0.0f, 0.0f, 0.0f};
     float ray_side_offset = UNIT_SIZE_X * 0.5f;
-   
+
     vec3 forward = cstrl_vec3_normalize(players->units[player_id].velocity[unit_id]);
     vec3 left = cstrl_vec3_normalize(
         cstrl_vec3_cross(forward, cstrl_vec3_normalize(players->units[player_id].position[unit_id])));
@@ -341,6 +352,7 @@ void players_update(players_t *players, int player_id)
         {
             int unit_id = players->formations[player_id].unit_ids[i].array[j];
             int index = cstrl_da_int_find_first(&players->formations[player_id].unit_ids[i], unit_id);
+            CSTRL_ASSERT(index != CSTRL_DA_INT_ITEM_NOT_FOUND, "Unit index not found in formation");
             int path_id = players->formations[player_id].path_heads[i].array[index];
             if (path_id == -1)
             {
@@ -397,7 +409,8 @@ void players_move_units_normal_mode(players_t *players, int player_id, vec3 end_
     if (result.hit)
     {
         collision_object_data = get_collision_object_user_data(result.node_index);
-        if (collision_object_data.type == COLLISION_UNIT && collision_object_data.player_id != player_id)
+        if (collision_object_data.type == COLLISION_UNIT && collision_object_data.player_id != player_id &&
+            players->at_war[player_id][collision_object_data.player_id])
         {
             players->formations[player_id].following_enemy[players->selected_formation[player_id]] = true;
         }
@@ -529,4 +542,20 @@ bool players_select_units(players_t *players, int player_id, int viewport_width,
         players->selected_formation[player_id] = formation_state;
     }
     return players->selected_units[player_id].size > 0;
+}
+
+void players_free(players_t *players)
+{
+    for (int i = 0; i < MAX_PLAYER_COUNT; i++)
+    {
+        if (!players->active[i])
+        {
+            continue;
+        }
+        units_free(&players->units[i]);
+        formations_free(&players->formations[i]);
+        paths_free(&players->paths[i]);
+        cstrl_da_int_free(&players->selected_units[i]);
+        projectiles_free(&players->projectiles[i]);
+    }
 }

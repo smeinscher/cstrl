@@ -5,13 +5,14 @@
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_util.h"
 #include "moon_game/moon_game.h"
-#include "windows.h"
 #include <stdio.h>
 
 static void *game_dl = NULL;
 
 static time_t g_last_edit_ts = 0;
 
+#ifdef CSTRL_PLATFORM_WINDOWS
+#include "windows.h"
 void hot_reload()
 {
     if (game_dl)
@@ -35,7 +36,7 @@ void reload_game()
     }
     hot_reload();
 }
-
+#endif
 int main()
 {
     render_state_t render_state;
@@ -49,6 +50,9 @@ int main()
         moon_game_update(&game_state, &platform_state, &previous_time, &lag);
         moon_game_render(&render_state, &game_state, &platform_state);
     }
+    moon_game_shutdown(&render_state, &game_state, &platform_state);
+#ifdef CSTRL_PLATFORM_WINDOWS
     FreeLibrary(game_dl);
+#endif
     return result;
 }

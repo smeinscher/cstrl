@@ -108,4 +108,12 @@ void projectiles_remove(projectiles_t *projectiles, int projectile_id)
 
 void projectiles_free(projectiles_t *projectiles)
 {
+    projectiles->count = 0;
+    projectiles->capacity = 0;
+    free(projectiles->direction);
+    free(projectiles->position);
+    free(projectiles->uvs);
+    free(projectiles->transition_time);
+    free(projectiles->active);
+    cstrl_da_int_free(&projectiles->free_ids);
 }

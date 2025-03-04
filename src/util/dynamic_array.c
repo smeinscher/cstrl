@@ -281,35 +281,40 @@ CSTRL_API int cstrl_da_int_find_first(da_int *da, int value)
         }
     }
 
-    return -1;
+    return CSTRL_DA_INT_ITEM_NOT_FOUND;
 }
 
 CSTRL_API int cstrl_da_int_pop_back(da_int *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop back. Size of array is 0 for da_int");
     da->size--;
     return da->array[da->size];
 }
 
 CSTRL_API float cstrl_da_float_pop_back(da_float *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop back. Size of array is 0 for da_float");
     da->size--;
     return da->array[da->size];
 }
 
 CSTRL_API char cstrl_string_pop_back(string *str)
 {
+    CSTRL_ASSERT(str->size != 0, "Can not perform pop back. Size of array is 0 for string");
     str->size--;
     return str->array[str->size];
 }
 
 CSTRL_API string cstrl_da_string_pop_back(da_string *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop back. Size of array is 0 for da_string");
     da->size--;
     return da->array[da->size];
 }
 
 CSTRL_API int cstrl_da_int_pop_front(da_int *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_int");
     int temp = da->array[0];
     cstrl_da_int_remove(da, 0);
     return temp;
@@ -317,6 +322,7 @@ CSTRL_API int cstrl_da_int_pop_front(da_int *da)
 
 CSTRL_API float cstrl_da_float_pop_front(da_float *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_float");
     float temp = da->array[0];
     cstrl_da_float_remove(da, 0);
     return temp;
@@ -324,6 +330,7 @@ CSTRL_API float cstrl_da_float_pop_front(da_float *da)
 
 CSTRL_API string cstrl_da_string_pop_front(da_string *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_string");
     string temp = da->array[0];
     cstrl_da_string_remove(da, 0);
     return temp;

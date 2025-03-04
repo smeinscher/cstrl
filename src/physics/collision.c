@@ -1,5 +1,6 @@
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_physics.h"
+#include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
 #include "log.c/log.h"
 #include <stdlib.h>
@@ -397,7 +398,7 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
     {
         int node_index = cstrl_da_int_pop_front(&nodes);
 
-        if (excluded_nodes != NULL && cstrl_da_int_find_first(excluded_nodes, node_index) != -1)
+        if (excluded_nodes != NULL && cstrl_da_int_find_first(excluded_nodes, node_index) != CSTRL_DA_INT_ITEM_NOT_FOUND)
         {
             continue;
         }

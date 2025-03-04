@@ -1,4 +1,5 @@
 #include "formation.h"
+#include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,6 +138,11 @@ void formations_add_unit(formations_t *formations, int formation_id, int unit_id
 void formations_remove_unit(formations_t *formations, int formation_id, int unit_id)
 {
     int index = cstrl_da_int_find_first(&formations->unit_ids[formation_id], unit_id);
+    if (index == CSTRL_DA_INT_ITEM_NOT_FOUND)
+    {
+        printf("unit_id not found in formation\n");
+        return;
+    }
     cstrl_da_int_remove(&formations->path_heads[formation_id], index);
     cstrl_da_int_remove(&formations->unit_ids[formation_id], index);
     if (formations->unit_ids[formation_id].size == 0)

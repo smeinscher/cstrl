@@ -21,6 +21,7 @@ typedef struct players_t
     paths_t paths[MAX_PLAYER_COUNT];
     da_int selected_units[MAX_PLAYER_COUNT];
     projectiles_t projectiles[MAX_PLAYER_COUNT];
+    bool at_war[MAX_PLAYER_COUNT][MAX_PLAYER_COUNT];
 } players_t;
 
 void players_set_units_in_formation_selected(players_t *players, int player_id);
@@ -37,5 +38,7 @@ void players_move_units_path_mode(players_t *players, int player_id, vec3 end_po
 
 bool players_select_units(players_t *players, int player_id, int viewport_width, int viewport_height,
                           vec2 selection_start, vec2 selection_end, cstrl_camera *camera, int selection_type);
+
+void players_free(players_t *players);
 
 #endif

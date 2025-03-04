@@ -5,36 +5,38 @@
 #define CSTRL_ASSERTIONS_ENABLED
 
 #if defined(__has_builtin) && !defined(__ibmxl__)
-#   if __has_builtin(__builtin_debugtrap)
-#       define cstrl_debug_break() __builtin_debugtrap()
-#   elif __has_builtin_(__debugbreak)
-#       define cstrl_debug_break() __debug_break()
-#   endif
+#if __has_builtin(__builtin_debugtrap)
+#define cstrl_debug_break() __builtin_debugtrap()
+#elif __has_builtin(__debugbreak)
+#define cstrl_debug_break() __debug_break()
+#endif
 #endif
 
 #if !defined(cstrl_debug_break)
-#   if defined(__clang__) || defined(__gcc__)
-#        define cstrl_debug_break() __builtin_trap()
-#    elif defined(_MSC_VER)
-#        include <intrin.h>
-#        define cstrl_debug_break() __debugbreak()
-#    else
-#        define cstrl_debug_break() asm { int 3 }
-#    endif
+#if defined(__clang__) || defined(__gcc__)
+#define cstrl_debug_break() __builtin_trap()
+#elif defined(_MSC_VER)
+#include <intrin.h>
+#define cstrl_debug_break() __debugbreak()
+#else
+#define cstrl_debug_break() asm("int3")
+#endif
 #endif
 
 #ifdef CSTRL_ASSERTIONS_ENABLED
 
 CSTRL_API void log_assertion_failed(const char *expression, const char *message, const char *file, int line);
 
-#define CSTRL_ASSERT(expr, message)                              \
-    {                                                            \
-        if (expr){}                                              \
-        else                                                     \
-        {                                                        \
-            log_assertion_failed(#expr, message, __FILE__, __LINE__); \
-            cstrl_debug_break();                                 \
-        }                                                        \
+#define CSTRL_ASSERT(expr, message)                                                                                    \
+    {                                                                                                                  \
+        if (expr)                                                                                                      \
+        {                                                                                                              \
+        }                                                                                                              \
+        else                                                                                                           \
+        {                                                                                                              \
+            log_assertion_failed(#expr, message, __FILE__, __LINE__);                                                  \
+            cstrl_debug_break();                                                                                       \
+        }                                                                                                              \
     }
 
 #ifdef CSTRL_DEBUG
@@ -43,6 +45,6 @@ CSTRL_API void log_assertion_failed(const char *expression, const char *message,
 #define CSTRL_ASSERT_DEBUG(expr, message)
 #endif
 
-#endif  // CSTRL_ASSERTIONS_ENABLED
+#endif // CSTRL_ASSERTIONS_ENABLED
 
 #endif // CSTRL_ASSERT_H

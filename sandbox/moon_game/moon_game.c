@@ -1,4 +1,5 @@
 #include "moon_game.h"
+#include "cstrl/cstrl_assert.h"
 #include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_physics.h"
@@ -118,14 +119,14 @@ static vec3 mouse_cursor_ray_cast(int window_width, int window_height, int mouse
                            camera->view);
 }
 
-static void move_units_to_cursor_position(players_t players, int player_id, bool path_mode, cstrl_camera *camera,
+static void move_units_to_cursor_position(players_t *players, int player_id, bool path_mode, cstrl_camera *camera,
                                           int mouse_x, int mouse_y)
 {
-    if (players.selected_units[player_id].size == 0)
+    if (players->selected_units[player_id].size == 0)
     {
         return;
     }
-    int type = players.units[player_id].type[players.selected_units[player_id].array[0]];
+    int type = players->units[player_id].type[players->selected_units[player_id].array[0]];
     if (type == CITY)
     {
         return;
@@ -147,11 +148,11 @@ static void move_units_to_cursor_position(players_t players, int player_id, bool
         }
         if (path_mode)
         {
-            players_move_units_path_mode(&players, player_id, end_position);
+            players_move_units_path_mode(players, player_id, end_position);
         }
         else
         {
-            players_move_units_normal_mode(&players, player_id, end_position);
+            players_move_units_normal_mode(players, player_id, end_position);
         }
     }
 }
@@ -174,7 +175,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
 {
     combo_state_t *combo_state = cstrl_platform_get_user_data(state);
     cstrl_camera *main_camera = combo_state->render_state->camera_objects.main_camera;
-    players_t players = combo_state->game_state->player_data.players;
+    players_t *players = &combo_state->game_state->player_data.players;
     int human_player = combo_state->game_state->player_data.human_player;
     int mouse_x = combo_state->game_state->mouse_data.position_x;
     int mouse_y = combo_state->game_state->mouse_data.position_y;
@@ -189,26 +190,34 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_R:
         if (action == CSTRL_ACTION_PRESS)
         {
-            main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(players.units[human_player].position[0]));
-            main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(main_camera->forward, main_camera->up));
-            main_camera->position = cstrl_vec3_mult_scalar(main_camera->forward, -3.0f);
-            combo_state->render_state->toggles.main_view_projection_update = true;
+            if (human_player != -1)
+            {
+                main_camera->forward =
+                    cstrl_vec3_normalize(cstrl_vec3_negate(players->units[human_player].position[0]));
+                main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(main_camera->forward, main_camera->up));
+                main_camera->position = cstrl_vec3_mult_scalar(main_camera->forward, -3.0f);
+                combo_state->render_state->toggles.main_view_projection_update = true;
+            }
         }
         break;
     case CSTRL_KEY_1:
         if (action == CSTRL_ACTION_PRESS)
         {
-            vec3 d =
-                mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y, main_camera);
-            float t;
-            if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            if (human_player != -1)
             {
-                ray_cast_result_t result = regular_ray_cast(main_camera->position, d, 5.0f, NULL);
-                if (!result.hit)
+                vec3 d = mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y,
+                                               main_camera);
+                float t;
+                if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION,
+                                     (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
                 {
-                    vec3 position = position_from_ray_cast(d, t, main_camera->position);
-                    position = cstrl_vec3_mult_scalar(position, 1.0f + UNIT_SIZE_X * 0.5f);
-                    units_add(&players.units[human_player], human_player, position, ASTRONAUT);
+                    ray_cast_result_t result = regular_ray_cast(main_camera->position, d, 5.0f, NULL);
+                    if (!result.hit)
+                    {
+                        vec3 position = position_from_ray_cast(d, t, main_camera->position);
+                        position = cstrl_vec3_mult_scalar(position, 1.0f + UNIT_SIZE_X * 0.5f);
+                        units_add(&players->units[human_player], human_player, position, ASTRONAUT);
+                    }
                 }
             }
         }
@@ -216,17 +225,21 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_2:
         if (action == CSTRL_ACTION_PRESS)
         {
-            vec3 d =
-                mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y, main_camera);
-            float t;
-            if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            if (human_player != -1)
             {
-                ray_cast_result_t result = regular_ray_cast(main_camera->position, d, 5.0f, NULL);
-                if (!result.hit)
+                vec3 d = mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y,
+                                               main_camera);
+                float t;
+                if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION,
+                                     (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
                 {
-                    vec3 position = position_from_ray_cast(d, t, main_camera->position);
-                    position = cstrl_vec3_mult_scalar(position, 1.0f + UNIT_SIZE_X * 0.5f);
-                    units_add(&players.units[human_player], human_player, position, ASTRONAUT_ARMED);
+                    ray_cast_result_t result = regular_ray_cast(main_camera->position, d, 5.0f, NULL);
+                    if (!result.hit)
+                    {
+                        vec3 position = position_from_ray_cast(d, t, main_camera->position);
+                        position = cstrl_vec3_mult_scalar(position, 1.0f + UNIT_SIZE_X * 0.5f);
+                        units_add(&players->units[human_player], human_player, position, ASTRONAUT_ARMED);
+                    }
                 }
             }
         }
@@ -234,17 +247,21 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_3:
         if (action == CSTRL_ACTION_PRESS)
         {
-            vec3 d =
-                mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y, main_camera);
-            float t;
-            if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            if (human_player != -1)
             {
-                ray_cast_result_t result = regular_ray_cast(main_camera->position, d, 5.0f, NULL);
-                if (!result.hit)
+                vec3 d = mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y,
+                                               main_camera);
+                float t;
+                if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION,
+                                     (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
                 {
-                    vec3 position = position_from_ray_cast(d, t, main_camera->position);
-                    position = cstrl_vec3_mult_scalar(position, 1.0f + UNIT_SIZE_X * 0.5f);
-                    units_add(&players.units[human_player], human_player, position, HUMVEE);
+                    ray_cast_result_t result = regular_ray_cast(main_camera->position, d, 5.0f, NULL);
+                    if (!result.hit)
+                    {
+                        vec3 position = position_from_ray_cast(d, t, main_camera->position);
+                        position = cstrl_vec3_mult_scalar(position, 1.0f + UNIT_SIZE_X * 0.5f);
+                        units_add(&players->units[human_player], human_player, position, HUMVEE);
+                    }
                 }
             }
         }
@@ -252,17 +269,21 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_4:
         if (action == CSTRL_ACTION_PRESS)
         {
-            vec3 d =
-                mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y, main_camera);
-            float t;
-            if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
+            if (human_player != -1)
             {
-                ray_cast_result_t result = regular_ray_cast(main_camera->position, d, 5.0f, NULL);
-                if (!result.hit)
+                vec3 d = mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y,
+                                               main_camera);
+                float t;
+                if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION,
+                                     (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
                 {
-                    vec3 position = position_from_ray_cast(d, t, main_camera->position);
-                    position = cstrl_vec3_mult_scalar(position, 1.0f + UNIT_SIZE_X * 0.5f);
-                    units_add(&players.units[human_player], human_player, position, TANK);
+                    ray_cast_result_t result = regular_ray_cast(main_camera->position, d, 5.0f, NULL);
+                    if (!result.hit)
+                    {
+                        vec3 position = position_from_ray_cast(d, t, main_camera->position);
+                        position = cstrl_vec3_mult_scalar(position, 1.0f + UNIT_SIZE_X * 0.5f);
+                        units_add(&players->units[human_player], human_player, position, TANK);
+                    }
                 }
             }
         }
@@ -282,52 +303,19 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
             combo_state->render_state->toggles.render_planet = !combo_state->render_state->toggles.render_planet;
         }
         break;
-    case CSTRL_KEY_C:
-        if (action == CSTRL_ACTION_PRESS)
-        {
-            vec3 d =
-                mouse_cursor_ray_cast(main_camera->viewport.x, main_camera->viewport.y, mouse_x, mouse_y, main_camera);
-            float t;
-            if (planet_hit_check(d, &t, main_camera->position, PLANET_POSITION, (PLANET_SIZE.x + UNIT_SIZE.x) * 0.5f))
-            {
-                vec3 position = position_from_ray_cast(d, t, main_camera->position);
-                int unit_id = -1;
-                int player_id = -1;
-                for (int i = 0; i < MAX_PLAYER_COUNT; i++)
-                {
-                    unit_id = units_hit(&players.units[i], position);
-                    if (unit_id != -1)
-                    {
-                        player_id = i;
-                        break;
-                    }
-                }
-                if (unit_id != -1)
-                {
-                    vec3 old_position = players.units[player_id].position[unit_id];
-                    int old_type = players.units[player_id].type[unit_id];
-                    units_remove(&players.units[player_id], unit_id);
-                    player_id++;
-                    if (player_id >= ACTIVE_PLAYERS)
-                    {
-                        player_id = 0;
-                    }
-                    units_add(&players.units[player_id], player_id, old_position, old_type);
-                }
-            }
-            combo_state->render_state->toggles.border_update = true;
-        }
-        break;
     case CSTRL_KEY_T:
         if (action == CSTRL_ACTION_PRESS)
         {
-            players_set_units_in_formation_selected(&players, human_player);
+            players_set_units_in_formation_selected(players, human_player);
         }
         break;
     case CSTRL_KEY_B:
         if (action == CSTRL_ACTION_PRESS)
         {
-            players_add_selected_units_to_formation(&players, human_player);
+            if (human_player != -1)
+            {
+                players_add_selected_units_to_formation(players, human_player);
+            }
         }
         break;
     case CSTRL_KEY_D:
@@ -339,13 +327,17 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
     case CSTRL_KEY_S:
         if (action == CSTRL_ACTION_PRESS)
         {
-            players.selected_formation[human_player] = -1;
-            human_player = (human_player + 1) % 6;
-            players.selected_formation[human_player] = -1;
-            main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(players.units[human_player].position[0]));
-            main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(main_camera->forward, main_camera->up));
-            main_camera->position = cstrl_vec3_mult_scalar(main_camera->forward, -3.0f);
-            combo_state->render_state->toggles.main_view_projection_update = true;
+            if (human_player != -1)
+            {
+                players->selected_formation[human_player] = -1;
+                human_player = (human_player + 1) % 6;
+                players->selected_formation[human_player] = -1;
+                main_camera->forward =
+                    cstrl_vec3_normalize(cstrl_vec3_negate(players->units[human_player].position[0]));
+                main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(main_camera->forward, main_camera->up));
+                main_camera->position = cstrl_vec3_mult_scalar(main_camera->forward, -3.0f);
+                combo_state->render_state->toggles.main_view_projection_update = true;
+            }
         }
         break;
     default:
@@ -411,7 +403,7 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
     cstrl_camera *main_camera = combo_state->render_state->camera_objects.main_camera;
     int mouse_x = combo_state->game_state->mouse_data.position_x;
     int mouse_y = combo_state->game_state->mouse_data.position_y;
-    players_t players = combo_state->game_state->player_data.players;
+    players_t *players = &combo_state->game_state->player_data.players;
     int human_player = combo_state->game_state->player_data.human_player;
     if (button == CSTRL_MOUSE_BUTTON_LEFT)
     {
@@ -432,32 +424,43 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
             }
             if (mods & CSTRL_KEY_MOD_CONTROL)
             {
-                combo_state->game_state->unit_selection_data.current_selection_type = SELECTION_GROUND;
-                combo_state->game_state->unit_selection_data.selection_start = (vec2){mouse_x, mouse_y};
-                combo_state->game_state->unit_selection_data.selection_end = (vec2){mouse_x, mouse_y};
-                players.selected_formation[human_player] = -1;
-                cstrl_da_int_clear(&players.selected_units[human_player]);
+                if (human_player != -1)
+                {
+                    combo_state->game_state->unit_selection_data.current_selection_type = SELECTION_GROUND;
+                    combo_state->game_state->unit_selection_data.selection_start = (vec2){mouse_x, mouse_y};
+                    combo_state->game_state->unit_selection_data.selection_end = (vec2){mouse_x, mouse_y};
+                    players->selected_formation[human_player] = -1;
+                    cstrl_da_int_clear(&players->selected_units[human_player]);
+                }
             }
             else if (mods & CSTRL_KEY_MOD_SHIFT)
             {
-                combo_state->game_state->unit_selection_data.current_selection_type = SELECTION_AIR;
-                combo_state->game_state->unit_selection_data.selection_start = (vec2){mouse_x, mouse_y};
-                combo_state->game_state->unit_selection_data.selection_end = (vec2){mouse_x, mouse_y};
-                players.selected_formation[human_player] = -1;
-                cstrl_da_int_clear(&players.selected_units[human_player]);
+                if (human_player != -1)
+                {
+                    combo_state->game_state->unit_selection_data.current_selection_type = SELECTION_AIR;
+                    combo_state->game_state->unit_selection_data.selection_start = (vec2){mouse_x, mouse_y};
+                    combo_state->game_state->unit_selection_data.selection_end = (vec2){mouse_x, mouse_y};
+                    players->selected_formation[human_player] = -1;
+                    cstrl_da_int_clear(&players->selected_units[human_player]);
+                }
             }
             else
             {
-                vec2 mouse_position = {mouse_x, mouse_y};
-                players_select_units(&players, human_player, main_camera->viewport.x, main_camera->viewport.y,
-                                     mouse_position, mouse_position, main_camera, 0);
+                if (human_player != -1)
+                {
+                    combo_state->game_state->unit_selection_data.current_selection_type = SELECTION_CITY;
+                    vec2 mouse_position = {mouse_x, mouse_y};
+                    players_select_units(players, human_player, main_camera->viewport.x, main_camera->viewport.y,
+                                         mouse_position, mouse_position, main_camera, SELECTION_CITY);
+                }
             }
         }
         else if (action == CSTRL_ACTION_RELEASE)
         {
-            if (combo_state->game_state->unit_selection_data.current_selection_type != SELECTION_CITY)
+            if (human_player != -1 &&
+                combo_state->game_state->unit_selection_data.current_selection_type != SELECTION_CITY)
             {
-                players_select_units(&players, human_player, main_camera->viewport.x, main_camera->viewport.y,
+                players_select_units(players, human_player, main_camera->viewport.x, main_camera->viewport.y,
                                      combo_state->game_state->unit_selection_data.selection_start,
                                      combo_state->game_state->unit_selection_data.selection_end, main_camera,
                                      combo_state->game_state->unit_selection_data.current_selection_type);
@@ -469,9 +472,12 @@ static void mouse_button_callback(cstrl_platform_state *state, int button, int a
     {
         if (action == CSTRL_ACTION_PRESS)
         {
-            move_units_to_cursor_position(players, human_player, mods & CSTRL_KEY_MOD_CONTROL, main_camera,
-                                          combo_state->game_state->mouse_data.position_x,
-                                          combo_state->game_state->mouse_data.position_y);
+            if (human_player != -1)
+            {
+                move_units_to_cursor_position(players, human_player, mods & CSTRL_KEY_MOD_CONTROL, main_camera,
+                                              combo_state->game_state->mouse_data.position_x,
+                                              combo_state->game_state->mouse_data.position_y);
+            }
         }
     }
     if (button == CSTRL_MOUSE_BUTTON_MIDDLE)
@@ -501,9 +507,9 @@ static void mouse_wheel_callback(cstrl_platform_state *state, int delta_x, int d
     {
         main_camera->fov = 20.0f * cstrl_pi_180;
     }
-    else if (main_camera->fov >= 60.0f * cstrl_pi_180)
+    else if (main_camera->fov >= 90.0f * cstrl_pi_180)
     {
-        main_camera->fov = 60.0f * cstrl_pi_180;
+        main_camera->fov = 90.0f * cstrl_pi_180;
     }
     combo_state->render_state->toggles.main_view_projection_update = true;
 }
@@ -735,8 +741,8 @@ static void create_and_place_unit(vec3 city_origin, players_t *players, int play
 {
     while (true)
     {
-        int randx = rand() % 2 - 1;
-        int randy = rand() % 2 - 1;
+        int randx = (rand() % 100 - 50) / 10;
+        int randy = (rand() % 100 - 50) / 10;
         int randz = randx != 0 && randy != 0 ? rand() % 2 - 1 : 1;
         vec3 unit_position =
             cstrl_vec3_add(city_origin, (vec3){(float)(randx)*UNIT_SIZE_X * 2.0f, (float)(randy)*UNIT_SIZE_Y * 2.0f,
@@ -845,36 +851,39 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
     players->units[5].position[0] = player6_origin;
     units_update_aabb(&players->units[5], 0);
 
-    create_and_place_unit(player1_origin, players, 0, HUMVEE);
-    create_and_place_unit(player1_origin, players, 0, ASTRONAUT);
-    create_and_place_unit(player1_origin, players, 0, TANK);
-    create_and_place_unit(player1_origin, players, 0, JET);
-    create_and_place_unit(player1_origin, players, 0, PLANE);
-    create_and_place_unit(player2_origin, players, 1, HUMVEE);
-    create_and_place_unit(player2_origin, players, 1, ASTRONAUT);
-    create_and_place_unit(player2_origin, players, 1, TANK);
-    create_and_place_unit(player2_origin, players, 1, JET);
-    create_and_place_unit(player2_origin, players, 1, PLANE);
-    create_and_place_unit(player3_origin, players, 2, HUMVEE);
-    create_and_place_unit(player3_origin, players, 2, ASTRONAUT);
-    create_and_place_unit(player3_origin, players, 2, TANK);
-    create_and_place_unit(player3_origin, players, 2, JET);
-    create_and_place_unit(player3_origin, players, 2, PLANE);
-    create_and_place_unit(player4_origin, players, 3, HUMVEE);
-    create_and_place_unit(player4_origin, players, 3, ASTRONAUT);
-    create_and_place_unit(player4_origin, players, 3, TANK);
-    create_and_place_unit(player4_origin, players, 3, JET);
-    create_and_place_unit(player4_origin, players, 3, PLANE);
-    create_and_place_unit(player5_origin, players, 4, HUMVEE);
-    create_and_place_unit(player5_origin, players, 4, ASTRONAUT);
-    create_and_place_unit(player5_origin, players, 4, TANK);
-    create_and_place_unit(player5_origin, players, 4, JET);
-    create_and_place_unit(player5_origin, players, 4, PLANE);
-    create_and_place_unit(player6_origin, players, 5, HUMVEE);
-    create_and_place_unit(player6_origin, players, 5, ASTRONAUT);
-    create_and_place_unit(player6_origin, players, 5, TANK);
-    create_and_place_unit(player6_origin, players, 5, JET);
-    create_and_place_unit(player6_origin, players, 5, PLANE);
+    for (int i = 0; i < 2; i++)
+    {
+        create_and_place_unit(player1_origin, players, 0, HUMVEE);
+        create_and_place_unit(player1_origin, players, 0, ASTRONAUT_ARMED);
+        create_and_place_unit(player1_origin, players, 0, TANK);
+        create_and_place_unit(player1_origin, players, 0, JET);
+        create_and_place_unit(player1_origin, players, 0, PLANE);
+        create_and_place_unit(player2_origin, players, 1, HUMVEE);
+        create_and_place_unit(player2_origin, players, 1, ASTRONAUT_ARMED);
+        create_and_place_unit(player2_origin, players, 1, TANK);
+        create_and_place_unit(player2_origin, players, 1, JET);
+        create_and_place_unit(player2_origin, players, 1, PLANE);
+        create_and_place_unit(player3_origin, players, 2, HUMVEE);
+        create_and_place_unit(player3_origin, players, 2, ASTRONAUT_ARMED);
+        create_and_place_unit(player3_origin, players, 2, TANK);
+        create_and_place_unit(player3_origin, players, 2, JET);
+        create_and_place_unit(player3_origin, players, 2, PLANE);
+        create_and_place_unit(player4_origin, players, 3, HUMVEE);
+        create_and_place_unit(player4_origin, players, 3, ASTRONAUT_ARMED);
+        create_and_place_unit(player4_origin, players, 3, TANK);
+        create_and_place_unit(player4_origin, players, 3, JET);
+        create_and_place_unit(player4_origin, players, 3, PLANE);
+        create_and_place_unit(player5_origin, players, 4, HUMVEE);
+        create_and_place_unit(player5_origin, players, 4, ASTRONAUT_ARMED);
+        create_and_place_unit(player5_origin, players, 4, TANK);
+        create_and_place_unit(player5_origin, players, 4, JET);
+        create_and_place_unit(player5_origin, players, 4, PLANE);
+        create_and_place_unit(player6_origin, players, 5, HUMVEE);
+        create_and_place_unit(player6_origin, players, 5, ASTRONAUT_ARMED);
+        create_and_place_unit(player6_origin, players, 5, TANK);
+        create_and_place_unit(player6_origin, players, 5, JET);
+        create_and_place_unit(player6_origin, players, 5, PLANE);
+    }
 
     render_state->render_data[RENDER_DATA_CITY] = cstrl_renderer_create_render_data();
 
@@ -973,7 +982,17 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
         cstrl_texture_generate_from_path("resources/textures/planet_game/explosion2.png");
 
     render_state->camera_objects.main_camera = cstrl_camera_create(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, false);
-    render_state->camera_objects.main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(player1_origin));
+    vec3 origin;
+    if (game_state->player_data.human_player != -1)
+    {
+        origin = players->units[game_state->player_data.human_player].position[0];
+    }
+    else
+    {
+        int random_id = rand() % 6;
+        origin = players->units[random_id].position[0];
+    }
+    render_state->camera_objects.main_camera->forward = cstrl_vec3_normalize(cstrl_vec3_negate(origin));
     render_state->camera_objects.main_camera->right = cstrl_vec3_normalize(cstrl_vec3_cross(
         render_state->camera_objects.main_camera->forward, render_state->camera_objects.main_camera->up));
     render_state->camera_objects.main_camera->position =
@@ -1034,7 +1053,7 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
     combo_state_t *combo_state = malloc(sizeof(combo_state_t));
     combo_state->game_state = game_state;
     combo_state->render_state = render_state;
-    cstrl_platform_set_user_data(platform_state, (void *)combo_state);
+    cstrl_platform_set_user_data(platform_state, combo_state);
     return 0;
 }
 
@@ -1043,7 +1062,7 @@ GAME_API int moon_game_update(game_state_t *game_state, cstrl_platform_state *pl
 {
     cstrl_platform_pump_messages(platform_state);
 
-    players_t players = game_state->player_data.players;
+    players_t *players = &game_state->player_data.players;
     double current_time = cstrl_platform_get_absolute_time();
     double elapsed_time = current_time - *previous_time;
     *previous_time = current_time;
@@ -1052,32 +1071,33 @@ GAME_API int moon_game_update(game_state_t *game_state, cstrl_platform_state *pl
     {
         for (int i = 0; i < MAX_PLAYER_COUNT; i++)
         {
-            if (!players.active[i])
+            if (!players->active[i])
             {
                 continue;
             }
             players_update(&game_state->player_data.players, i);
-            for (int j = 0; j < players.units[i].count; j++)
+            for (int j = 0; j < players->units[i].count; j++)
             {
-                if (!players.units[i].active[j])
+                if (!players->units[i].active[j])
                 {
                     continue;
                 }
-                if (players.units[i].attacking[j])
+                if (players->units[i].attacking[j])
                 {
-                    if (cstrl_platform_get_absolute_time() > players.units[i].last_attack_time[j] + 0.1)
+                    if (cstrl_platform_get_absolute_time() > players->units[i].last_attack_time[j] + 0.1)
                     {
-                        players.units[i].last_attack_time[j] = cstrl_platform_get_absolute_time();
+                        players->units[i].last_attack_time[j] = cstrl_platform_get_absolute_time();
                         int index = cstrl_da_int_find_first(
-                            &players.formations[i].unit_ids[players.units[i].formation_id[j]], j);
-                        int path_id = players.formations[i].path_heads[players.units[i].formation_id[j]].array[index];
+                            &players->formations[i].unit_ids[players->units[i].formation_id[j]], j);
+                        CSTRL_ASSERT(index != CSTRL_DA_INT_ITEM_NOT_FOUND, "Unit ID not found in formation\n");
+                        int path_id = players->formations[i].path_heads[players->units[i].formation_id[j]].array[index];
                         vec3 direction = cstrl_vec3_normalize(
-                            cstrl_vec3_sub(get_point_on_path((vec3){0.0f, 0.0f, 0.0f}, players.units[i].position[j],
-                                                             players.paths[i].end_positions[path_id], 0.5f),
-                                           players.units[i].position[j]));
-                        unit_data_t tracked_unit_data = players.paths[i].tracked_unit[path_id];
-                        vec3 position = players.units[tracked_unit_data.player_id].position[tracked_unit_data.unit_id];
-                        int type = players.units[tracked_unit_data.player_id].type[tracked_unit_data.unit_id];
+                            cstrl_vec3_sub(get_point_on_path((vec3){0.0f, 0.0f, 0.0f}, players->units[i].position[j],
+                                                             players->paths[i].end_positions[path_id], 0.5f),
+                                           players->units[i].position[j]));
+                        unit_data_t tracked_unit_data = players->paths[i].tracked_unit[path_id];
+                        vec3 position = players->units[tracked_unit_data.player_id].position[tracked_unit_data.unit_id];
+                        int type = players->units[tracked_unit_data.player_id].type[tracked_unit_data.unit_id];
                         position.x += (rand() % 100 - 50) / 5000.0f;
                         position.y += (rand() % 100 - 50) / 5000.0f;
                         position.z += (rand() % 100 - 50) / 5000.0f;
@@ -1091,36 +1111,36 @@ GAME_API int moon_game_update(game_state_t *game_state, cstrl_platform_state *pl
                             position =
                                 cstrl_vec3_mult_scalar(cstrl_vec3_normalize(position), 1.0f + UNIT_SIZE_X * 5.1f);
                         }
-                        projectiles_add(&players.projectiles[i], i, position, direction);
-                        players.units[tracked_unit_data.player_id].stats[tracked_unit_data.unit_id].current_health -=
+                        projectiles_add(&players->projectiles[i], i, position, direction);
+                        players->units[tracked_unit_data.player_id].stats[tracked_unit_data.unit_id].current_health -=
                             1.0f;
-                        if (players.units[tracked_unit_data.player_id]
+                        if (players->units[tracked_unit_data.player_id]
                                 .stats[tracked_unit_data.unit_id]
                                 .current_health <= 0.0f)
                         {
-                            units_remove(&players.units[tracked_unit_data.player_id], tracked_unit_data.unit_id);
-                            players.paths[i].tracked_unit[path_id].player_id = -1;
-                            players.paths[i].tracked_unit[path_id].unit_id = -1;
-                            players.units[i].attacking[j] = false;
+                            units_remove(&players->units[tracked_unit_data.player_id], tracked_unit_data.unit_id);
+                            players->paths[i].tracked_unit[path_id].player_id = -1;
+                            players->paths[i].tracked_unit[path_id].unit_id = -1;
+                            players->units[i].attacking[j] = false;
                         }
                     }
                 }
             }
-            for (int j = 0; j < players.projectiles[i].count; j++)
+            for (int j = 0; j < players->projectiles[i].count; j++)
             {
-                if (!players.projectiles[i].active[j])
+                if (!players->projectiles[i].active[j])
                 {
                     continue;
                 }
                 float increment = 1.0f / 20.0f;
-                if (cstrl_platform_get_absolute_time() > players.projectiles[i].transition_time[j] + 0.0)
+                if (cstrl_platform_get_absolute_time() > players->projectiles[i].transition_time[j] + 0.0)
                 {
-                    players.projectiles[i].transition_time[j] = cstrl_platform_get_absolute_time();
-                    players.projectiles[i].uvs[j].u0 += increment;
-                    players.projectiles[i].uvs[j].u1 += increment;
-                    if (players.projectiles[i].uvs[j].u1 >= 1.0f)
+                    players->projectiles[i].transition_time[j] = cstrl_platform_get_absolute_time();
+                    players->projectiles[i].uvs[j].u0 += increment;
+                    players->projectiles[i].uvs[j].u1 += increment;
+                    if (players->projectiles[i].uvs[j].u1 >= 1.0f)
                     {
-                        projectiles_remove(&players.projectiles[i], j);
+                        projectiles_remove(&players->projectiles[i], j);
                         continue;
                     }
                 }
@@ -1196,7 +1216,7 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
 {
     cstrl_camera_update(render_state->camera_objects.main_camera, CSTRL_CAMERA_DIRECTION_NONE,
                         CSTRL_CAMERA_DIRECTION_NONE);
-    players_t players = game_state->player_data.players;
+    players_t *players = &game_state->player_data.players;
     int human_player = game_state->player_data.human_player;
     da_float selection_box_positions;
     cstrl_da_float_init(&selection_box_positions, 8);
@@ -1252,26 +1272,26 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
             }
             vec4 color = UNIT_TEAM_COLORS[i];
             if (i == game_state->player_data.human_player &&
-                cstrl_da_int_find_first(&players.selected_units[i], j) != -1)
+                cstrl_da_int_find_first(&players->selected_units[i], j) != CSTRL_DA_INT_ITEM_NOT_FOUND)
             {
                 color.r += 0.2f;
                 color.g += 0.2f;
                 color.b += 0.2f;
                 color.a = 1.0f;
             }
-            int type = players.units[i].type[j];
+            int type = players->units[i].type[j];
             vec4 uv_positions = {(float)type / MAX_UNIT_TYPES, 0.0f, ((float)type + 1.0f) / MAX_UNIT_TYPES, 1.0f};
             vec3 size =
-                (type != ASTRONAUT && type != ASTRONAUT_ARMED ? UNIT_SIZE : cstrl_vec3_mult_scalar(UNIT_SIZE, 0.65f));
+                (type != ASTRONAUT && type != ASTRONAUT_ARMED ? UNIT_SIZE : cstrl_vec3_mult_scalar(UNIT_SIZE, 0.85f));
             update_billboard_object(
                 &unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
-                (transform){players.units[i].position[j], billboard_rotation,
+                (transform){players->units[i].position[j], billboard_rotation,
                             adjust_billboard_scale(size, render_state->camera_objects.main_camera->fov /
                                                              (45.0f * cstrl_pi_180))},
                 uv_positions, color);
             unit_render_index++;
         }
-        for (int j = 0; j < players.projectiles[i].count; j++)
+        for (int j = 0; j < players->projectiles[i].count; j++)
         {
             if (!game_state->player_data.players.projectiles[i].active[j])
             {
@@ -1280,10 +1300,10 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
             update_billboard_object(
                 &explosion_positions, &explosion_indices, &explosion_uvs, NULL, projectile_render_index++,
                 (transform){
-                    players.projectiles[i].position[j], billboard_rotation,
+                    players->projectiles[i].position[j], billboard_rotation,
                     adjust_billboard_scale((vec3){UNIT_SIZE_X * 0.4f, UNIT_SIZE_Y * 0.4f, 0.0f},
                                            render_state->camera_objects.main_camera->fov / (45.0f * cstrl_pi_180))},
-                players.projectiles[i].uvs[j], (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+                players->projectiles[i].uvs[j], (vec4){1.0f, 1.0f, 1.0f, 1.0f});
         }
     }
 
@@ -1329,8 +1349,8 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
     cstrl_renderer_clear(0.1f, 0.0f, 0.1f, 1.0f);
     if (render_state->toggles.render_planet)
     {
-        vec3 light_position = {10.0f * cosf(cstrl_platform_get_absolute_time() / 1000.0), 0.0f,
-                               10.0f * sinf(cstrl_platform_get_absolute_time() / 1000.0)};
+        vec3 light_position = {10.0f * cosf(cstrl_platform_get_absolute_time() / 40.0), 0.0f,
+                               10.0f * sinf(cstrl_platform_get_absolute_time() / 40.0)};
         cstrl_set_uniform_3f(render_state->shaders[SHADER_PLANET].program, "light.position", light_position.x,
                              light_position.y, light_position.z);
         cstrl_use_shader(render_state->shaders[SHADER_PLANET]);
@@ -1365,28 +1385,29 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
         int city_index = 0;
         for (int i = 0; i < MAX_PLAYER_COUNT; i++)
         {
-            if (!players.active[i])
+            if (!players->active[i])
             {
                 continue;
             }
-            for (int j = 0; j < players.units[i].count; j++)
+            for (int j = 0; j < players->units[i].count; j++)
             {
-                if (players.units[i].type[j] != CITY)
+                if (players->units[i].type[j] != CITY)
                 {
                     continue;
                 }
                 char buffer[30];
                 sprintf(buffer, "city_centers[%d]", city_index);
-                cstrl_set_uniform_3f(render_state->shaders[SHADER_CITY].program, buffer, players.units[i].position[j].x,
-                                     players.units[i].position[j].y, players.units[i].position[j].z);
+                cstrl_set_uniform_3f(render_state->shaders[SHADER_CITY].program, buffer,
+                                     players->units[i].position[j].x, players->units[i].position[j].y,
+                                     players->units[i].position[j].z);
                 sprintf(buffer, "team[%d]", city_index);
                 cstrl_set_uniform_int_array(render_state->shaders[SHADER_CITY].program, buffer, 1, &i);
                 sprintf(buffer, "weights[%d]", city_index);
                 cstrl_set_uniform_float(render_state->shaders[SHADER_CITY].program, buffer, 1.0f);
                 sprintf(buffer, "influence_strength[%d]", city_index);
-                cstrl_set_uniform_float(render_state->shaders[SHADER_CITY].program, buffer, 1.0f);
+                cstrl_set_uniform_float(render_state->shaders[SHADER_CITY].program, buffer, 0.25f);
                 sprintf(buffer, "influence_radius[%d]", city_index++);
-                cstrl_set_uniform_float(render_state->shaders[SHADER_CITY].program, buffer, 0.4f);
+                cstrl_set_uniform_float(render_state->shaders[SHADER_CITY].program, buffer, 0.2f);
             }
         }
         cstrl_set_uniform_int(render_state->shaders[SHADER_CITY].program, "cities_count", city_index);
@@ -1397,26 +1418,30 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
     cstrl_texture_bind(render_state->textures[TEXTURE_CITY_NOISE]);
     cstrl_renderer_draw_indices(render_state->render_data[RENDER_DATA_CITY]);
 
-    if (render_state->toggles.render_path_markers)
+    if (human_player != -1)
     {
-        cstrl_use_shader(render_state->shaders[SHADER_PATH_MARKER]);
-        cstrl_renderer_draw_indices(render_state->render_data[RENDER_DATA_PATH_MARKER]);
-    }
-    if (render_state->toggles.render_path_lines)
-    {
-        if (players.selected_formation[human_player] != -1 &&
-            !players.formations[human_player].following_enemy[players.selected_formation[human_player]])
+        if (render_state->toggles.render_path_markers)
         {
-            cstrl_set_uniform_4f(render_state->shaders[SHADER_PATH_LINE].program, "color", PATH_MARKER_COLOR.r,
-                                 PATH_MARKER_COLOR.g, PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
+            cstrl_use_shader(render_state->shaders[SHADER_PATH_MARKER]);
+            cstrl_renderer_draw_indices(render_state->render_data[RENDER_DATA_PATH_MARKER]);
         }
-        else
+        if (render_state->toggles.render_path_lines)
         {
-            cstrl_set_uniform_4f(render_state->shaders[SHADER_PATH_LINE].program, "color", PATH_MARKER_COLOR_ATTACK.r,
-                                 PATH_MARKER_COLOR_ATTACK.g, PATH_MARKER_COLOR_ATTACK.b, PATH_MARKER_COLOR_ATTACK.a);
+            if (players->selected_formation[human_player] != -1 &&
+                !players->formations[human_player].following_enemy[players->selected_formation[human_player]])
+            {
+                cstrl_set_uniform_4f(render_state->shaders[SHADER_PATH_LINE].program, "color", PATH_MARKER_COLOR.r,
+                                     PATH_MARKER_COLOR.g, PATH_MARKER_COLOR.b, PATH_MARKER_COLOR.a);
+            }
+            else
+            {
+                cstrl_set_uniform_4f(render_state->shaders[SHADER_PATH_LINE].program, "color",
+                                     PATH_MARKER_COLOR_ATTACK.r, PATH_MARKER_COLOR_ATTACK.g, PATH_MARKER_COLOR_ATTACK.b,
+                                     PATH_MARKER_COLOR_ATTACK.a);
+            }
+            cstrl_use_shader(render_state->shaders[SHADER_PATH_LINE]);
+            cstrl_renderer_draw_lines(render_state->render_data[RENDER_DATA_PATH_LINE]);
         }
-        cstrl_use_shader(render_state->shaders[SHADER_PATH_LINE]);
-        cstrl_renderer_draw_lines(render_state->render_data[RENDER_DATA_PATH_LINE]);
     }
 
     cstrl_use_shader(render_state->shaders[SHADER_UNIT]);
@@ -1450,7 +1475,7 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
     {
         cstrl_ui_container_end(&render_state->ui_context);
     }
-    if (cstrl_ui_container_begin(&render_state->ui_context, "Something Else", 14, 400, 300, 200, 300, GEN_ID(0), false,
+    if (cstrl_ui_container_begin(&render_state->ui_context, "Something Else", 14, 10, 320, 200, 300, GEN_ID(0), false,
                                  false, 2))
     {
         cstrl_ui_container_end(&render_state->ui_context);
@@ -1520,6 +1545,18 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
     cstrl_renderer_set_depth_test_enabled(true);
     cstrl_renderer_set_cull_face_enabled(true);
     cstrl_renderer_swap_buffers(platform_state);
+
+    cstrl_da_float_free(&selection_box_positions);
+    cstrl_da_int_free(&selection_box_indices);
+    cstrl_da_float_free(&selection_box_colors);
+    cstrl_da_float_free(&unit_positions);
+    cstrl_da_int_free(&unit_indices);
+    cstrl_da_float_free(&unit_uvs);
+    cstrl_da_float_free(&unit_colors);
+    cstrl_da_float_free(&explosion_positions);
+    cstrl_da_int_free(&explosion_indices);
+    cstrl_da_float_free(&explosion_uvs);
+
     return 0;
 }
 
@@ -1529,16 +1566,15 @@ GAME_API void moon_game_shutdown(render_state_t *render_state, game_state_t *gam
     cstrl_camera_free(render_state->camera_objects.main_camera);
     cstrl_camera_free(render_state->camera_objects.ui_camera);
 
-    cstrl_renderer_free_render_data(render_state->render_data[RENDER_DATA_PLANET]);
-    cstrl_renderer_free_render_data(render_state->render_data[RENDER_DATA_CITY]);
-    cstrl_renderer_free_render_data(render_state->render_data[RENDER_DATA_UNIT]);
-    cstrl_renderer_free_render_data(render_state->render_data[RENDER_DATA_PATH_MARKER]);
-    cstrl_renderer_free_render_data(render_state->render_data[RENDER_DATA_PATH_LINE]);
-    cstrl_renderer_free_render_data(render_state->render_data[RENDER_DATA_SELECTION_BOX]);
-    cstrl_renderer_free_render_data(render_state->render_data[RENDER_DATA_SKYBOX]);
-    // cstrl_renderer_free_render_data(physics_debug_render_data);
-    cstrl_renderer_free_render_data(render_state->render_data[RENDER_DATA_EXPLOSION]);
+    for (int i = 0; i < MAX_RENDER_DATA_TYPES; i++)
+    {
+        cstrl_renderer_free_render_data(render_state->render_data[i]);
+    }
+    free(render_state->render_data);
+    free(render_state->shaders);
+    free(render_state->textures);
 
+    players_free(&game_state->player_data.players);
     cstrl_ui_shutdown(&render_state->ui_context);
     cstrl_renderer_shutdown(platform_state);
     cstrl_platform_free_user_data(platform_state);

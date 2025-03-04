@@ -5,7 +5,10 @@
 #ifndef CSTRL_TYPES_H
 #define CSTRL_TYPES_H
 
+#include <limits.h>
 #include <stddef.h>
+
+#define CSTRL_DA_INT_ITEM_NOT_FOUND INT_MAX
 
 typedef struct dynamic_array_int
 {
