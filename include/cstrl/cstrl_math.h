@@ -9,7 +9,6 @@
 
 #include <math.h>
 #include <stdbool.h>
-#include <stdio.h>
 
 #define cstrl_pi 3.14159265359f
 #define cstrl_pi_2 1.57079632679f
@@ -19,6 +18,8 @@
 
 #define cstrl_epsilon 1.19e-7
 #define cstrl_epsilon_double 2.22e-16
+
+#define cstrl_infinity 1e+300
 
 typedef struct vec2
 {
@@ -86,6 +87,13 @@ typedef struct vec4
             float g;
             float b;
             float a;
+        };
+        struct
+        {
+            float u0;
+            float v0;
+            float u1;
+            float v1;
         };
         float v[4];
     };
@@ -182,8 +190,8 @@ typedef struct transform
     vec3 scale;
 } transform;
 
-#define cstrl_max(a, b) a > b ? a : b
-#define cstrl_min(a, b) a < b ? a : b
+#define cstrl_max(a, b) (a > b ? a : b)
+#define cstrl_min(a, b) (a < b ? a : b)
 
 /*
  *
@@ -209,7 +217,7 @@ CSTRL_INLINE vec2 cstrl_vec2_normalize(const vec2 v)
 // TODO: add to unit tests
 CSTRL_INLINE bool cstrl_vec2_is_equal(const vec2 a, const vec2 b)
 {
-    return fabsf(a.x - b.x) > cstrl_epsilon && fabsf(a.y - b.y) > cstrl_epsilon;
+    return fabsf(a.x - b.x) < cstrl_epsilon && fabsf(a.y - b.y) < cstrl_epsilon;
 }
 
 CSTRL_INLINE vec2 cstrl_vec2_add(const vec2 a, const vec2 b)
@@ -253,6 +261,21 @@ CSTRL_INLINE vec2 cstrl_vec2_negate(const vec2 v)
     return (vec2){-v.x, -v.y};
 }
 
+// TODO: add to unit tests
+CSTRL_INLINE bool cstrl_vec2_point_inside_rect(const vec2 m, const vec2 a, const vec2 b, const vec2 d)
+{
+    vec2 am = cstrl_vec2_mult(a, m);
+    vec2 ab = cstrl_vec2_mult(b, m);
+    vec2 ad = cstrl_vec2_mult(a, d);
+
+    float am_dot_ab = cstrl_vec2_dot(am, ab);
+    float ab_dot_ab = cstrl_vec2_dot(ab, ab);
+    float am_dot_ad = cstrl_vec2_dot(am, ad);
+    float ad_dot_ad = cstrl_vec2_dot(ad, ad);
+
+    return am_dot_ab > 0.0f && am_dot_ab < ab_dot_ab && am_dot_ad > 0.0f && am_dot_ad < ad_dot_ad;
+}
+
 /*
  *
  *      vec3 math functions
@@ -267,7 +290,7 @@ CSTRL_INLINE float cstrl_vec3_length(const vec3 v)
 CSTRL_INLINE vec3 cstrl_vec3_normalize(const vec3 v)
 {
     float len = cstrl_vec3_length(v);
-    if (len > 0.0f)
+    if (len > cstrl_epsilon)
     {
         return (vec3){v.x / len, v.y / len, v.z / len};
     }
@@ -479,6 +502,7 @@ CSTRL_INLINE vec4 cstrl_vec4_mult_mat4(const vec4 v, const mat4 m)
 
     return (vec4){x, y, z, w};
 }
+
 /*
  *
  *      mat3x3 math functions
@@ -799,6 +823,15 @@ CSTRL_INLINE mat4 cstrl_mat4_affine_inverse(mat4 m)
 CSTRL_INLINE mat3 cstrl_mat4_upper_left(mat4 m)
 {
     return (mat3){m.xx, m.yx, m.zx, m.xy, m.yy, m.zy, m.xz, m.yz, m.zz};
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_view_remove_translation(mat4 m)
+{
+    return (mat4){m.xx, m.yx, m.zx, 0.0f,
+                  m.yx, m.yy, m.zy, 0.0f,
+                  m.xz, m.yz, m.zz, 0.0f,
+                  0.0f, 0.0f, 0.0f, 1.0f};
 }
 
 // TODO: add to unit tests

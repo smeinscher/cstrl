@@ -1,0 +1,51 @@
+#version 460 core
+
+uniform vec3 city_centers[100];
+uniform int team[100];
+uniform float weights[100];
+uniform int cities_count;
+
+out vec4 frag_color;
+
+in vec3 frag_position;
+
+void main()
+{
+    float max_distance = 0.5;
+    float min_distance = 1e9;
+    int closest = -1;
+    int second_closest = -1;
+
+    float unweighted_closest_distance = 1e9;
+    float unweighted_second_closest_distance = 1e9;
+
+    for (int i = 0; i < cities_count; i++)
+    {
+        float dist = distance(frag_position, city_centers[i]) / weights[i];
+
+        if (dist < min_distance)
+        {
+            second_closest = closest;
+            min_distance = dist;
+            closest = i;
+        }
+        else if (second_closest == -1 || dist < distance(frag_position, city_centers[second_closest]))
+        {
+            second_closest = i;
+        }
+    }
+    if (closest != -1)
+    {
+        unweighted_closest_distance = distance(frag_position, city_centers[closest]);
+    }
+    if (second_closest != -1)
+    {
+        unweighted_second_closest_distance = distance(frag_position, city_centers[closest]);
+    }
+    float border_factor = smoothstep(0.02, 0.04, abs(distance(frag_position, city_centers[closest]) / weights[closest] - distance(frag_position, city_centers[second_closest]) / weights[second_closest]));
+
+    vec3 colors[8] = vec3[8](vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0), vec3(0.3, 0.3, 0.3));
+    vec4 color = mix(vec4(colors[team[closest]], 0.4), vec4(0.0), border_factor);
+
+    frag_color = color;
+}

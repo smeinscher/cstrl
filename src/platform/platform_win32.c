@@ -168,7 +168,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
             {
                 mods |= CSTRL_KEY_MOD_CONTROL;
             }
-            if (wparam & MK_ALT)
+            if (HIBYTE(GetKeyState(VK_MENU)) & 0x80)
             {
                 mods |= CSTRL_KEY_MOD_ALT;
             }
@@ -194,6 +194,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         }
         if (internal_state->state_common.input.mouse_mode == CSTRL_MOUSE_DISABLED)
         {
+            // TODO: base this on screen dimensions
             SetCursorPos(1920 / 2, 1080 / 2);
         }
         else
@@ -210,7 +211,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
         if (state == NULL)
         {
-            log_trace("State is NULL, skipping keyboard input");
+            log_trace("State is NULL, skipping size update");
             return 0;
         }
         internal_state *internal_state = state->internal_state;
@@ -224,6 +225,39 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
             {
                 internal_state->state_common.callbacks.framebuffer_size(state, width, height);
             }
+        }
+        return 0;
+    }
+    case WM_MOUSEWHEEL: {
+        short delta = GET_WHEEL_DELTA_WPARAM(wparam);
+        short fw_keys = GET_KEYSTATE_WPARAM(wparam);
+        cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
+        if (state == NULL)
+        {
+            log_trace("State is NULL, skipping mouse wheel update");
+            return 0;
+        }
+        internal_state *internal_state = state->internal_state;
+        if (internal_state->state_common.callbacks.mouse_wheel != NULL)
+        {
+            internal_state->state_common.callbacks.mouse_wheel(state, 0, delta, fw_keys);
+        }
+        return 0;
+    }
+    case WM_MOUSEHWHEEL: {
+        short delta = GET_WHEEL_DELTA_WPARAM(wparam);
+        short fw_keys = GET_KEYSTATE_WPARAM(wparam);
+        cstrl_platform_state *state = GetPropW(hwnd, L"cstrl_platform_state");
+        if (state == NULL)
+        {
+            log_trace("State is NULL, skipping mouse wheel update");
+            return 0;
+        }
+        internal_state *internal_state = state->internal_state;
+
+        if (internal_state->state_common.callbacks.mouse_wheel != NULL)
+        {
+            internal_state->state_common.callbacks.mouse_wheel(state, delta, 0, fw_keys);
         }
         return 0;
     }
@@ -302,6 +336,7 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
     state->state_common.callbacks.mouse_position = NULL;
     state->state_common.callbacks.framebuffer_size = NULL;
     state->state_common.callbacks.mouse_button = NULL;
+    state->state_common.callbacks.mouse_wheel = NULL;
 
     win32_key_to_cstrl_key_init();
 

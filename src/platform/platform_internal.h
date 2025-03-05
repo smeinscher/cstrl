@@ -15,6 +15,7 @@ typedef struct user_callbacks
     cstrl_mouse_position_callback mouse_position;
     cstrl_framebuffer_size_callback framebuffer_size;
     cstrl_mouse_button_callback mouse_button;
+    cstrl_mouse_wheel_callback mouse_wheel;
 } user_callbacks;
 
 typedef struct input_state
@@ -35,6 +36,7 @@ typedef struct internal_state_common
     int window_height;
     user_callbacks callbacks;
     input_state input;
+    void *user_data;
 } internal_state_common;
 
 #if defined(CSTRL_PLATFORM_WINDOWS)

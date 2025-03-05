@@ -2,6 +2,7 @@
 // Created by sterling on 7/28/24.
 //
 
+#include "cstrl/cstrl_assert.h"
 #include "log.c/log.h"
 
 #include "cstrl/cstrl_util.h"
@@ -12,16 +13,14 @@
 
 #define GROWTH_FACTOR 2
 
+// TODO: see how much repeated code I can replace with macros
+// TODO: investigate asserts
+
 CSTRL_API void cstrl_da_int_init(da_int *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(int) * initial_size);
-    if (da->array == NULL)
-    {
-        log_error("Failed to allocate dynamic int array");
-        da->capacity = 0;
-        return;
-    }
+    CSTRL_ASSERT(da->array, "Failed to allocate dynamic int array");
     da->capacity = initial_size;
 }
 
@@ -29,12 +28,7 @@ CSTRL_API void cstrl_da_float_init(da_float *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(float) * initial_size);
-    if (da->array == NULL)
-    {
-        log_error("Failed to allocate dynamic float array");
-        da->capacity = 0;
-        return;
-    }
+    CSTRL_ASSERT(da->array, "Failed to allocate dynamic float array");
     da->capacity = initial_size;
 }
 
@@ -42,12 +36,7 @@ CSTRL_API void cstrl_string_init(string *str, size_t initial_size)
 {
     str->size = 0;
     str->array = malloc(sizeof(char) * initial_size);
-    if (str->array == NULL)
-    {
-        log_error("Failed to allocate dynamic char array (string)");
-        str->capacity = 0;
-        return;
-    }
+    CSTRL_ASSERT(str->array, "Failed to allocate dynamic char array (string)");
     str->capacity = initial_size;
 }
 
@@ -55,12 +44,7 @@ CSTRL_API void cstrl_da_string_init(da_string *da, size_t initial_size)
 {
     da->size = 0;
     da->array = malloc(sizeof(string) * initial_size);
-    if (da->array == NULL)
-    {
-        log_error("Failed to allocate dynamic string array");
-        da->capacity = 0;
-        return;
-    }
+    CSTRL_ASSERT(da->array, "Failed to allocate dynamic string array");
     for (int i = 0; i < initial_size; i++)
     {
         da->array[i].array = NULL;
@@ -68,13 +52,21 @@ CSTRL_API void cstrl_da_string_init(da_string *da, size_t initial_size)
     da->capacity = initial_size;
 }
 
+#define CHECK_DYNAMIC_ARRAY(da_struct, da_array)                                                                       \
+    if (da_struct == NULL)                                                                                             \
+    {                                                                                                                  \
+        log_error("Dynamic array pointer is NULL");                                                                    \
+        return false;                                                                                                  \
+    }                                                                                                                  \
+    if (da_array == NULL)                                                                                              \
+    {                                                                                                                  \
+        log_error("Dynamic array not allocated");                                                                      \
+        return false;                                                                                                  \
+    }
+
 CSTRL_API bool cstrl_da_int_reserve(da_int *da, size_t new_capacity)
 {
-    if (da == NULL || da->array == NULL)
-    {
-        log_error("Invalid dynamic array structure");
-        return false;
-    }
+    CHECK_DYNAMIC_ARRAY(da, da->array);
     if (new_capacity >= SIZE_MAX / sizeof(int))
     {
         log_error("New capacity is too large");
@@ -93,11 +85,7 @@ CSTRL_API bool cstrl_da_int_reserve(da_int *da, size_t new_capacity)
 
 CSTRL_API bool cstrl_da_float_reserve(da_float *da, size_t new_capacity)
 {
-    if (da == NULL || da->array == NULL)
-    {
-        log_error("Invalid dynamic array structure");
-        return false;
-    }
+    CHECK_DYNAMIC_ARRAY(da, da->array);
     if (new_capacity >= SIZE_MAX / sizeof(float))
     {
         log_error("New capacity is too large");
@@ -116,16 +104,7 @@ CSTRL_API bool cstrl_da_float_reserve(da_float *da, size_t new_capacity)
 
 CSTRL_API bool cstrl_string_reserve(string *str, size_t new_capacity)
 {
-    if (str == NULL || str->array == NULL)
-    {
-        log_error("Invalid dynamic array structure");
-        return false;
-    }
-    if (new_capacity >= SIZE_MAX / sizeof(char))
-    {
-        log_error("New capacity is too large");
-        return false;
-    }
+    CHECK_DYNAMIC_ARRAY(str, str->array);
     char *temp = realloc(str->array, new_capacity * sizeof(char));
     if (temp == NULL)
     {
@@ -139,16 +118,7 @@ CSTRL_API bool cstrl_string_reserve(string *str, size_t new_capacity)
 
 CSTRL_API bool cstrl_da_string_reserve(da_string *da, size_t new_capacity)
 {
-    if (da == NULL || da->array == NULL)
-    {
-        log_error("Invalid dynamic array structure");
-        return false;
-    }
-    if (new_capacity >= SIZE_MAX / sizeof(string))
-    {
-        log_error("New capacity is too large");
-        return false;
-    }
+    CHECK_DYNAMIC_ARRAY(da, da->array);
     string *temp = realloc(da->array, new_capacity * sizeof(string));
     if (temp == NULL)
     {
@@ -311,35 +281,40 @@ CSTRL_API int cstrl_da_int_find_first(da_int *da, int value)
         }
     }
 
-    return -1;
+    return CSTRL_DA_INT_ITEM_NOT_FOUND;
 }
 
 CSTRL_API int cstrl_da_int_pop_back(da_int *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop back. Size of array is 0 for da_int");
     da->size--;
     return da->array[da->size];
 }
 
 CSTRL_API float cstrl_da_float_pop_back(da_float *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop back. Size of array is 0 for da_float");
     da->size--;
     return da->array[da->size];
 }
 
 CSTRL_API char cstrl_string_pop_back(string *str)
 {
+    CSTRL_ASSERT(str->size != 0, "Can not perform pop back. Size of array is 0 for string");
     str->size--;
     return str->array[str->size];
 }
 
 CSTRL_API string cstrl_da_string_pop_back(da_string *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop back. Size of array is 0 for da_string");
     da->size--;
     return da->array[da->size];
 }
 
 CSTRL_API int cstrl_da_int_pop_front(da_int *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_int");
     int temp = da->array[0];
     cstrl_da_int_remove(da, 0);
     return temp;
@@ -347,6 +322,7 @@ CSTRL_API int cstrl_da_int_pop_front(da_int *da)
 
 CSTRL_API float cstrl_da_float_pop_front(da_float *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_float");
     float temp = da->array[0];
     cstrl_da_float_remove(da, 0);
     return temp;
@@ -354,6 +330,7 @@ CSTRL_API float cstrl_da_float_pop_front(da_float *da)
 
 CSTRL_API string cstrl_da_string_pop_front(da_string *da)
 {
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_string");
     string temp = da->array[0];
     cstrl_da_string_remove(da, 0);
     return temp;

@@ -5,6 +5,12 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#if _DEBUG
+#define CSTRL_DEBUG
+#else
+#define CSTRL_RELEASE
+#endif
+
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
 #define CSTRL_PLATFORM_WINDOWS
 #elif defined(__ANDROID__)
