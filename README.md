@@ -61,16 +61,22 @@ a stackoverflow post describing the issue with MSVC. If you want to use Visual S
    ```sh
    ./cmake_build.sh
    ```
-   Running without arguments defaults to Debug OPENGL
+   Running without arguments defaults to Debug OPENGL.
    Possible arguments are:
+   <br />
      $1: Debug/Release
+   <br />
      $2: OPENGL/VULKAN
+   <br />
    Note that Vulkan is not supported yet so things will break if you build with that option.
+   <br />
    You can build and run the tests with the script provided:
    ```sh
    ./run_tests.sh
    ```
-   OR if you want to build and run the sandbox code
+   OR if you want to build and run the sandbox code:
    ```sh
    ./run_sandbox.sh
    ```
+
+   Instructions for alternative building methods will come soon.
