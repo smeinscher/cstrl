@@ -11,6 +11,7 @@
     <br />
     <a href="https://github.com/smeinscher/cstrl">View Demo (coming soon...)</a>
   </p>
+  <img src="screenshots/cstrl.png" alt="Logo" width="640" height="360">
 </div>
 
 ## About The Project
