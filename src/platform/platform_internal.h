@@ -80,4 +80,18 @@ typedef struct internal_state
 
 #endif
 
+#if defined(CSTRL_PLATFORM_EM_WEB)
+
+#include <GLES2/gl2.h>
+#include <EGL/egl.h>
+
+typedef struct internal_state
+{
+    EGLDisplay display;
+    EGLConfig config;
+    EGLSurface surface;
+    internal_state_common state_common;
+} internal_state;
+
+#endif
 #endif // PLATFORM_INTERNAL_H

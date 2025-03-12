@@ -17,6 +17,8 @@
 #define CSTRL_PLATFORM_ANDROID
 #elif defined(__linux__) || defined(__gnu_linux__)
 #define CSTRL_PLATFORM_LINUX
+#elif defined(__EMSCRIPTEN__)
+#define CSTRL_PLATFORM_EM_WEB
 #else
 #error "Unknown platform"
 #endif

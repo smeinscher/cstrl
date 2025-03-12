@@ -53,6 +53,7 @@ CSTRL_API cstrl_shader cstrl_load_shaders_from_source(const char *vertex_shader_
     if (fragment_shader == 0)
     {
         log_error("Fragment shader failed to compile");
+        glDeleteShader(vertex_shader);
         return shader;
     }
 
@@ -122,6 +123,7 @@ CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_source(const char *v
     if (fragment_shader == 0)
     {
         log_error("Fragment shader failed to compile");
+        glDeleteShader(vertex_shader);
         return shader;
     }
     const unsigned int tessellation_control_shader =
@@ -129,6 +131,8 @@ CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_source(const char *v
     if (tessellation_control_shader == 0)
     {
         log_error("Tessellation Control shader failed to compile");
+        glDeleteShader(vertex_shader);
+        glDeleteShader(fragment_shader);
         return shader;
     }
     const unsigned int tessellation_evaluation_shader =
@@ -136,6 +140,9 @@ CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_source(const char *v
     if (tessellation_evaluation_shader == 0)
     {
         log_error("Tessellation Evaluation shader failed to compile");
+        glDeleteShader(vertex_shader);
+        glDeleteShader(fragment_shader);
+        glDeleteShader(tessellation_control_shader);
         return shader;
     }
 
@@ -181,6 +188,7 @@ unsigned int compile_shader(const char *shader_source, unsigned int type)
         char info_log[MAX_LOG_BUFFER_SIZE];
         glGetShaderInfoLog(shader, MAX_LOG_BUFFER_SIZE, NULL, info_log);
         log_error("Failed to compile shader:\n\t%s", info_log);
+        glDeleteShader(shader);
         return 0;
     }
     return shader;

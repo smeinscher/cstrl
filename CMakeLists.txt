@@ -33,7 +33,7 @@ elseif (${RENDER_API} STREQUAL "VULKAN")
     add_compile_definitions(CSTRL_RENDER_API_VULKAN)
 endif ()
 
-if (ANDROID)
+if (ANDROID OR EMSCRIPTEN)
     set(GLAD_C extern/glad/gles3/glad.c)
     set(GLAD_H extern/glad/gles3/glad.h extern/glad/gles3/KHR/khrplatform.h)
 else ()
@@ -87,6 +87,8 @@ add_library(cstrl SHARED
         include/cstrl/cstrl_physics.h
         src/physics/collision.c
         src/debug/assert.c
+        src/platform/platform_em_web.c
+        src/renderer/opengl/opengl_platform_em_web.c
 )
 
 add_executable(cstrl-test
@@ -176,8 +178,8 @@ if (UNIX)
 endif ()
 if (ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
-else ()
-    target_link_libraries(cstrl PRIVATE Vulkan::Vulkan)
+# else ()
+    # target_link_libraries(cstrl PRIVATE Vulkan::Vulkan)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log_c cstrl)
 target_link_libraries(cstrl-sandbox PRIVATE cstrl cstrl-moon-game)
@@ -187,4 +189,3 @@ target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOUR
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-moon-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
-

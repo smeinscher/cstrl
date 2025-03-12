@@ -20,7 +20,19 @@ typedef enum cstrl_render_attribute_type
     CSTRL_RENDER_ATTRIBUTE_MAX
 } cstrl_render_attribute_type;
 
-#if defined(CSTRL_RENDER_API_OPENGL)
+#if defined(CSTRL_RENDER_API_VULKAN)
+
+typedef struct cstrl_shader
+{
+    int program;
+} cstrl_shader;
+
+typedef struct cstrl_texture
+{
+    int id;
+} cstrl_texture;
+
+#else 
 
 typedef struct cstrl_shader
 {
@@ -46,16 +58,6 @@ typedef enum cstrl_texture_format
     CSTRL_RGBA
 } cstrl_texture_format;
 
-#elif defined(CSTRL_RENDER_API_VULKAN)
-typedef struct cstrl_shader
-{
-    int program;
-} cstrl_shader;
-
-typedef struct cstrl_texture
-{
-    int id;
-} cstrl_texture;
 #endif
 
 typedef struct cstrl_render_data

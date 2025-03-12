@@ -6,7 +6,7 @@
 #include "cstrl/cstrl_platform.h"
 #if defined(CSTRL_RENDER_API_OPENGL)
 #include "cstrl/cstrl_defines.h"
-#if defined(CSTRL_PLATFORM_ANDROID)
+#if defined(CSTRL_PLATFORM_ANDROID) || defined(CSTRL_PLATFORM_EM_WEB)
 #include <glad/gles3/glad.h>
 #else
 #include "glad/glad.h"
@@ -42,10 +42,11 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
+#if !defined(CSTRL_PLATFORM_ANDROID) && !defined(CSTRL_PLATFORM_EM_WEB)
     glEnable(GL_LINE_SMOOTH);
-    glLineWidth(1.0f);
-
     glPatchParameteri(GL_PATCH_VERTICES, 16);
+#endif
+    glLineWidth(1.0f);
 
     return true;
 }
@@ -373,6 +374,7 @@ CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render
 
 CSTRL_API void cstrl_renderer_clear_render_attributes(cstrl_render_data *render_data)
 {
+#if !defined(CSTRL_PLATFORM_ANDROID) && !defined(CSTRL_PLATFORM_EM_WEB)
     internal_data *data = render_data->internal_data;
     if (data->cleared)
     {
@@ -395,6 +397,9 @@ CSTRL_API void cstrl_renderer_clear_render_attributes(cstrl_render_data *render_
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+#else
+    log_error("Can not clear render data on android/web (yet)");
+#endif
 }
 
 CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data)
