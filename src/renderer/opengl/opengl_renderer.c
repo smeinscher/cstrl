@@ -31,6 +31,27 @@ typedef struct internal_data
     bool cleared;
 } internal_data;
 
+static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                           const GLchar *message, const void *param)
+{
+    // TODO: convert enums to strings
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_HIGH:
+        log_error("source: %d, type: %d, id: %d. %s", source, type, id, message);
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        log_warn("source: %d, type: %d, id: %d. %s", source, type, id, message);
+        break;
+    case GL_DEBUG_SEVERITY_LOW:
+        log_debug("source: %d, type: %d, id: %d. %s", source, type, id, message);
+        break;
+    default:
+        log_info("source: %d, type: %d, id: %d. %s", source, type, id, message);
+        break;
+    }
+}
+
 CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
     if (!cstrl_opengl_platform_init(platform_state))
@@ -45,6 +66,15 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 #if !defined(CSTRL_PLATFORM_ANDROID) && !defined(CSTRL_PLATFORM_EM_WEB)
     glEnable(GL_LINE_SMOOTH);
     glPatchParameteri(GL_PATCH_VERTICES, 16);
+#endif
+#if defined(CSTRL_DEBUG)
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(debug_callback, NULL);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, NULL, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, NULL, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, NULL, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE);
 #endif
     glLineWidth(1.0f);
 

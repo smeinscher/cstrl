@@ -154,6 +154,10 @@ CSTRL_API cstrl_shader cstrl_load_shaders_tessellation_from_source(const char *v
 
 CSTRL_API void cstrl_use_shader(cstrl_shader shader);
 
+CSTRL_API int *cstrl_get_uniform_offsets(cstrl_shader shader, const char *names[], unsigned int count);
+
+CSTRL_API void cstrl_free_uniform_offsets(int **offsets);
+
 CSTRL_API void cstrl_set_uniform_block_binding(cstrl_shader shader, const char *name, unsigned int binding_point);
 
 CSTRL_API void cstrl_set_uniform_int(unsigned int program, const char *name, int d);
@@ -165,6 +169,8 @@ CSTRL_API void cstrl_set_uniform_float(unsigned int program, const char *name, f
 CSTRL_API void cstrl_set_uniform_3f(unsigned int program, const char *name, float x, float y, float z);
 
 CSTRL_API void cstrl_set_uniform_4f(unsigned int program, const char *name, float x, float y, float z, float w);
+
+CSTRL_API void cstrl_set_uniform_mat3(unsigned int program, const char *name, mat3 mat);
 
 CSTRL_API void cstrl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat);
 

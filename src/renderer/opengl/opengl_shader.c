@@ -199,6 +199,23 @@ CSTRL_API void cstrl_use_shader(cstrl_shader shader)
     glUseProgram(shader.program);
 }
 
+CSTRL_API int *cstrl_get_uniform_offsets(cstrl_shader shader, const char *names[], unsigned int count)
+{
+    unsigned int *indices = malloc(sizeof(unsigned int) * count);
+    glGetUniformIndices(shader.program, count, names, indices);
+
+    int *offsets = malloc(sizeof(size_t) * count);
+    glGetActiveUniformsiv(shader.program, count, indices, GL_UNIFORM_OFFSET, offsets);
+    free(indices);
+    return offsets;
+}
+
+CSTRL_API void cstrl_free_uniform_offsets(int **offsets)
+{
+    free(*offsets);
+    *offsets = NULL;
+}
+
 CSTRL_API void cstrl_set_uniform_block_binding(cstrl_shader shader, const char *name, unsigned int binding_point)
 {
     unsigned int uniform_block_index = glGetUniformBlockIndex(shader.program, name);
@@ -233,6 +250,12 @@ CSTRL_API void cstrl_set_uniform_4f(unsigned int program, const char *name, floa
 {
     glUseProgram(program);
     glUniform4f(glGetUniformLocation(program, name), x, y, z, w);
+}
+
+CSTRL_API void cstrl_set_uniform_mat3(unsigned int program, const char *name, mat3 mat)
+{
+    glUseProgram(program);
+    glUniformMatrix3fv(glGetUniformLocation(program, name), 1, GL_FALSE, &mat.m[0]);
 }
 
 CSTRL_API void cstrl_set_uniform_mat4(unsigned int program, const char *name, mat4 mat)
