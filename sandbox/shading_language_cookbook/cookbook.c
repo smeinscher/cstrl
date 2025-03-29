@@ -260,6 +260,83 @@ int cookbook()
 
     cstrl_renderer_init(&platform_state);
 
+    g_main_camera = cstrl_camera_create(800, 600, false);
+    g_main_camera->position = (vec3){0.0f, 0.0f, 3.0f};
+
+    cstrl_render_data *plane_render_data = cstrl_renderer_create_render_data();
+    float plane_positions[3 * g_plane_n_points];
+    float plane_normals[3 * g_plane_n_points];
+    float plane_uvs[2 * g_plane_n_points];
+    int plane_indices[6 * g_plane_x_divs * g_plane_z_divs];
+    create_plane(plane_positions, plane_normals, plane_uvs, plane_indices, 50.0f, 50.0f, 1.0f, 1.0f);
+    cstrl_renderer_add_positions(plane_render_data, plane_positions, 3, g_plane_n_points);
+    cstrl_renderer_add_normals(plane_render_data, plane_normals);
+    cstrl_renderer_add_uvs(plane_render_data, plane_uvs);
+    cstrl_renderer_add_indices(plane_render_data, plane_indices, 6 * g_plane_x_divs * g_plane_z_divs);
+
+    cstrl_shader plane_shader =
+        cstrl_load_shaders_from_files("resources/shaders/shading_language_cookbook/spotlight.vert",
+                                      "resources/shaders/shading_language_cookbook/spotlight.frag");
+
+    cstrl_set_uniform_3f(plane_shader.program, "spotlight.position", 0.0f, 10.0f, 0.0f);
+    cstrl_set_uniform_3f(plane_shader.program, "spotlight.direction", 0.0f, -1.0f, 0.0f);
+    cstrl_set_uniform_3f(plane_shader.program, "spotlight.ambient", 0.5f, 0.5f, 0.5f);
+    cstrl_set_uniform_3f(plane_shader.program, "spotlight.l", 0.9f, 0.9f, 0.9f);
+    cstrl_set_uniform_float(plane_shader.program, "spotlight.exponent", 50.0f);
+    cstrl_set_uniform_float(plane_shader.program, "spotlight.cutoff", 15.0f * cstrl_pi_180);
+
+    cstrl_set_uniform_3f(plane_shader.program, "material.ambient", 0.5f, 0.5f, 0.5f);
+    cstrl_set_uniform_3f(plane_shader.program, "material.diffuse", 0.9f, 0.9f, 0.9f);
+    cstrl_set_uniform_3f(plane_shader.program, "material.specular", 0.95f, 0.95f, 0.95f);
+    cstrl_set_uniform_float(plane_shader.program, "material.shininess", 100.0f);
+
+    mat4 plane_model = cstrl_mat4_identity();
+    plane_model = cstrl_mat4_translate(plane_model, (vec3){0.0f, -5.0f, 0.0f});
+
+    double previous_time = cstrl_platform_get_absolute_time();
+    double lag = 0.0;
+    while (!cstrl_platform_should_exit())
+    {
+        cstrl_platform_pump_messages(&platform_state);
+        double current_time = cstrl_platform_get_absolute_time();
+        double elapsed_time = current_time - previous_time;
+        previous_time = current_time;
+        lag += elapsed_time;
+        while (lag >= 1.0 / 60.0)
+        {
+            cstrl_camera_update(g_main_camera, g_movement, g_rotation);
+            lag -= 1.0 / 60.0;
+        }
+        cstrl_renderer_clear(0.4f, 0.2f, 0.6f, 1.0f);
+        cstrl_set_uniform_mat4(plane_shader.program, "model", plane_model);
+        cstrl_set_uniform_mat4(plane_shader.program, "view", g_main_camera->view);
+        cstrl_set_uniform_mat4(plane_shader.program, "projection", g_main_camera->projection);
+        cstrl_use_shader(plane_shader);
+        cstrl_renderer_draw_indices(plane_render_data);
+        cstrl_renderer_swap_buffers(&platform_state);
+    }
+
+    cstrl_renderer_free_render_data(plane_render_data);
+    cstrl_renderer_shutdown(&platform_state);
+    cstrl_platform_shutdown(&platform_state);
+
+    return 0;
+}
+
+int cookbook_chapter4_b()
+{
+    cstrl_platform_state platform_state;
+    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600))
+    {
+        printf("Failed to initialize platform\n");
+        cstrl_platform_shutdown(&platform_state);
+        return 1;
+    }
+
+    cstrl_platform_set_key_callback(&platform_state, key_callback);
+
+    cstrl_renderer_init(&platform_state);
+
     cstrl_render_data *render_data = cstrl_renderer_create_render_data();
     float positions[3 * g_torus_vertex_count];
     float normals[3 * g_torus_vertex_count];

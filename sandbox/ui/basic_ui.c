@@ -53,7 +53,7 @@ int basic_ui()
 
     cstrl_shader shader =
         cstrl_load_shaders_from_files("resources/shaders/default.vert", "resources/shaders/default.frag");
-    cstrl_texture texture = cstrl_texture_generate_from_path("resources/textures/background.jpg");
+    cstrl_texture texture = cstrl_texture_generate_from_path("resources/textures/background.png");
     cstrl_camera *camera = cstrl_camera_create(800, 600, true);
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     cstrl_set_uniform_mat4(shader.program, "view", camera->view);
@@ -67,6 +67,10 @@ int basic_ui()
         cstrl_texture_bind(texture);
         cstrl_renderer_draw(render_data);
         cstrl_ui_begin(&context);
+        if (cstrl_ui_container_begin(&context, "Example", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
+        {
+            cstrl_ui_container_end(&context);
+        }
         // if (cstrl_ui_container_begin(context, "Menu", 4, 0, 0, 800, 30, GEN_ID(0), true, true, 1))
         // {
         //     if (cstrl_ui_button(context, "Quit", 4, 760, 5, 50, 20, GEN_ID(0)))
