@@ -148,14 +148,14 @@ int units_hit(units_t *units, vec3 position)
     float new_x1 = position.x + UNIT_SIZE.x / 2.0f;
     float new_y0 = position.y - UNIT_SIZE.y / 2.0f;
     float new_y1 = position.y + UNIT_SIZE.y / 2.0f;
-    float new_z = position.z;
+    // float new_z = position.z;
     for (int i = 0; i < units->count; i++)
     {
         float taken_x0 = units->position[i].x - UNIT_SIZE.x / 2.0f;
         float taken_x1 = units->position[i].x + UNIT_SIZE.x / 2.0f;
         float taken_y0 = units->position[i].y - UNIT_SIZE.y / 2.0f;
         float taken_y1 = units->position[i].y + UNIT_SIZE.y / 2.0f;
-        float taken_z = units->position[i].z;
+        // float taken_z = units->position[i].z;
 
         bool same_side = cstrl_vec3_dot(position, units->position[i]) > 0.0f;
         if ((new_x0 < taken_x1 && new_x1 > taken_x0 && new_y0 < taken_y1 && new_y1 > taken_y0) && same_side)

@@ -67,24 +67,6 @@ static float compute_surface_area(vec3 *aabb)
     return 2 * (length * width + length * height + width * height);
 }
 
-static void rotate_tree_at_index(aabb_tree_t *tree, int index)
-{
-    // right rotation
-    int new_root = tree->nodes[index].child0;
-    if (new_root == -1)
-    {
-        return;
-    }
-    if (tree->nodes[index].parent_index == -1)
-    {
-        tree->root_index = new_root;
-    }
-    tree->nodes[new_root].parent_index = tree->nodes[index].parent_index;
-    tree->nodes[index].parent_index = new_root;
-    tree->nodes[index].child0 = tree->nodes[new_root].child1;
-    tree->nodes[new_root].child1 = index;
-}
-
 static bool aabb_intersection(vec3 *aabb_a, vec3 *aabb_b)
 {
     return (aabb_a[0].x <= aabb_b[1].x && aabb_a[1].x >= aabb_b[0].x && aabb_a[0].y <= aabb_b[1].y &&
@@ -236,54 +218,6 @@ static vec2 ray_intersects(vec3 ray_origin, vec3 ray_direction, vec3 *aabb)
     return (vec2){tnear, tfar};
 }
 
-static vec2 ray_intersects_gpt(vec3 ray_origin, vec3 ray_direction, vec3 *aabb)
-{
-    // Calculate intersection values for each axis (x, y, z)
-    vec3 t0 = cstrl_vec3_div(cstrl_vec3_sub(aabb[0], ray_origin), ray_direction);
-    vec3 t1 = cstrl_vec3_div(cstrl_vec3_sub(aabb[1], ray_origin), ray_direction);
-
-    // Use individual t-values for comparison
-    float tmin_x = fminf(t0.x, t1.x);
-    float tmax_x = fmaxf(t0.x, t1.x);
-    float tmin_y = fminf(t0.y, t1.y);
-    float tmax_y = fmaxf(t0.y, t1.y);
-    float tmin_z = fminf(t0.z, t1.z);
-    float tmax_z = fmaxf(t0.z, t1.z);
-
-    // Calculate the global min/max t-values
-    float tmin = fmaxf(fmaxf(tmin_x, tmin_y), tmin_z);
-    float tmax = fminf(fminf(tmax_x, tmax_y), tmax_z);
-
-    // If the ray misses the box, return no intersection
-    if (tmin > tmax || tmax < 0.0f)
-    {
-        return (vec2){-1.0f, -1.0f}; // No intersection
-    }
-
-    return (vec2){tmin, tmax}; // Return the intersection times
-}
-
-static vec2 ray_intersects_no_gpt(vec3 ray_origin, vec3 ray_direction, vec3 *aabb)
-{
-    vec3 t0 = cstrl_vec3_div(cstrl_vec3_sub(aabb[0], ray_origin), ray_direction);
-    vec3 t1 = cstrl_vec3_div(cstrl_vec3_sub(aabb[1], ray_origin), ray_direction);
-    vec3 tmin, tmax;
-
-    if (cstrl_vec3_length(t0) < cstrl_vec3_length(t1))
-    {
-        tmin = t0;
-        tmax = t1;
-    }
-    else
-    {
-        tmin = t1;
-        tmax = t0;
-    }
-    float t_near = fmaxf(fmaxf(tmin.x, tmin.y), tmin.z);
-    float t_far = fminf(fminf(tmax.x, tmax.y), tmax.z);
-    return (vec2){t_near, t_far};
-}
-
 CSTRL_API void cstrl_collision_aabb_tree_update_node(aabb_tree_t *tree, int node_index, vec3 *new_aabb)
 {
     tree->nodes[node_index].aabb[0] = new_aabb[0];
@@ -398,7 +332,8 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
     {
         int node_index = cstrl_da_int_pop_front(&nodes);
 
-        if (excluded_nodes != NULL && cstrl_da_int_find_first(excluded_nodes, node_index) != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        if (excluded_nodes != NULL &&
+            cstrl_da_int_find_first(excluded_nodes, node_index) != CSTRL_DA_INT_ITEM_NOT_FOUND)
         {
             continue;
         }
@@ -417,7 +352,7 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
             {
                 t = ray_aabb_result.y;
             }
-            if (t > max_distance || result.hit && result.t < t)
+            if (t > max_distance || (result.hit && result.t < t))
             {
                 continue;
             }
@@ -433,7 +368,7 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
                         result.intersection = cstrl_vec3_add(ray_origin, direction);
                         vec3 center_distance = cstrl_vec3_mult_scalar(
                             cstrl_vec3_sub(tree->nodes[node_index].aabb[1], tree->nodes[node_index].aabb[0]), 0.5f);
-                        vec3 center = cstrl_vec3_add(center, tree->nodes[node_index].aabb[0]);
+                        vec3 center = cstrl_vec3_add(center_distance, tree->nodes[node_index].aabb[0]);
                         result.aabb_center = center;
                         vec3 normal = cstrl_vec3_div_scalar(cstrl_vec3_sub(result.intersection, center),
                                                             cstrl_vec3_length(center_distance));

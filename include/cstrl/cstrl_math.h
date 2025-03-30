@@ -828,10 +828,7 @@ CSTRL_INLINE mat3 cstrl_mat4_upper_left(mat4 m)
 // TODO: add to unit tests
 CSTRL_INLINE mat4 cstrl_mat4_view_remove_translation(mat4 m)
 {
-    return (mat4){m.xx, m.yx, m.zx, 0.0f,
-                  m.yx, m.yy, m.zy, 0.0f,
-                  m.xz, m.yz, m.zz, 0.0f,
-                  0.0f, 0.0f, 0.0f, 1.0f};
+    return (mat4){m.xx, m.yx, m.zx, 0.0f, m.yx, m.yy, m.zy, 0.0f, m.xz, m.yz, m.zz, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
 }
 
 // TODO: add to unit tests
@@ -889,14 +886,14 @@ CSTRL_INLINE mat4 cstrl_mat4_inverse_glm(mat4 m)
     vec4 inv2_a = cstrl_vec4_mult(vec_0, fac1);
     vec4 inv2_b = cstrl_vec4_mult(vec_1, fac3);
     vec4 inv2_c = cstrl_vec4_mult(vec_3, fac5);
-    vec4 inv2_d = cstrl_vec4_sub(inv0_a, inv0_b);
-    vec4 inv2 = cstrl_vec4_add(inv0_d, inv0_c);
+    vec4 inv2_d = cstrl_vec4_sub(inv2_a, inv2_b);
+    vec4 inv2 = cstrl_vec4_add(inv2_d, inv2_c);
 
     vec4 inv3_a = cstrl_vec4_mult(vec_0, fac2);
     vec4 inv3_b = cstrl_vec4_mult(vec_1, fac4);
     vec4 inv3_c = cstrl_vec4_mult(vec_2, fac5);
-    vec4 inv3_d = cstrl_vec4_sub(inv1_a, inv1_b);
-    vec4 inv3 = cstrl_vec4_add(inv1_d, inv1_c);
+    vec4 inv3_d = cstrl_vec4_sub(inv3_a, inv3_b);
+    vec4 inv3 = cstrl_vec4_add(inv3_d, inv3_c);
 
     vec4 sign_a = {1.0f, -1.0f, 1.0f, -1.0f};
     vec4 sign_b = {-1.0f, 1.0f, -1.0f, 1.0f};

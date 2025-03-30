@@ -40,16 +40,16 @@ static const vec4 UNIT_TEAM_COLORS[] = {
     (vec4){0.6f, 0.0f, 0.6f, 0.8f}, (vec4){0.3f, 0.3f, 0.3f, 0.8f},
 };
 
-static const vec4 BORDER_COLORS[] = {
-    (vec4){0.6f, 0.0f, 0.0f, 0.2f}, (vec4){0.0f, 0.2f, 0.6f, 0.2f}, (vec4){0.0f, 0.6f, 0.0f, 0.2f},
-    (vec4){0.6f, 0.6f, 0.0f, 0.2f}, (vec4){0.8f, 0.8f, 0.8f, 0.2f}, (vec4){0.0f, 0.6f, 0.6f, 0.2f},
-    (vec4){0.6f, 0.0f, 0.6f, 0.2f}, (vec4){0.3f, 0.3f, 0.3f, 0.2f},
-};
+// static const vec4 BORDER_COLORS[] = {
+//     (vec4){0.6f, 0.0f, 0.0f, 0.2f}, (vec4){0.0f, 0.2f, 0.6f, 0.2f}, (vec4){0.0f, 0.6f, 0.0f, 0.2f},
+//     (vec4){0.6f, 0.6f, 0.0f, 0.2f}, (vec4){0.8f, 0.8f, 0.8f, 0.2f}, (vec4){0.0f, 0.6f, 0.6f, 0.2f},
+//     (vec4){0.6f, 0.0f, 0.6f, 0.2f}, (vec4){0.3f, 0.3f, 0.3f, 0.2f},
+// };
 
 static const vec3 PLANET_POSITION = (vec3){0.0f, 0.0f, 0.0f};
 
 static const vec3 PLANET_SIZE = {2.0f, 2.0f, 2.0f};
-static const vec3 PATH_MARKER_SIZE = {0.01f, 0.01f, 0.0f};
+// static const vec3 PATH_MARKER_SIZE = {0.01f, 0.01f, 0.0f};
 
 static const vec4 PATH_MARKER_COLOR = {0.8f, 0.8f, 0.8f, 0.9f};
 static const vec4 PATH_MARKER_COLOR_ATTACK = {0.8f, 0.2f, 0.2f, 0.9f};

@@ -6,7 +6,6 @@
 
 static void print_tree(aabb_tree_t *tree)
 {
-    int level = 0;
     da_int this_level;
     cstrl_da_int_init(&this_level, 1);
     cstrl_da_int_push_back(&this_level, tree->root_index);

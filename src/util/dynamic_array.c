@@ -426,7 +426,7 @@ static int cstrl_da_int_quick_sort_partition_internal(da_int *da, int left, int 
 
     for (int i = left; i < right; i++)
     {
-        if (!descending && da->array[i] > pivot || descending && da->array[i] < pivot)
+        if ((!descending && da->array[i] > pivot) || (descending && da->array[i] < pivot))
         {
             index++;
             int temp = da->array[index];

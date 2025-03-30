@@ -20,11 +20,11 @@ static const float FORMATION_OFFSETS[] = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
 
 static void optimize_formation_positions(players_t *players, int player_id, int formation_id)
 {
-    int leader_unit_id = players->formations[player_id].unit_ids[formation_id].array[0];
-    bool ground_units = players->units[player_id].type[leader_unit_id] == TANK ||
-                        players->units[player_id].type[leader_unit_id] == HUMVEE ||
-                        players->units[player_id].type[leader_unit_id] == ASTRONAUT ||
-                        players->units[player_id].type[leader_unit_id] == ASTRONAUT_ARMED;
+    // int leader_unit_id = players->formations[player_id].unit_ids[formation_id].array[0];
+    // bool ground_units = players->units[player_id].type[leader_unit_id] == TANK ||
+    //                     players->units[player_id].type[leader_unit_id] == HUMVEE ||
+    //                     players->units[player_id].type[leader_unit_id] == ASTRONAUT ||
+    //                     players->units[player_id].type[leader_unit_id] == ASTRONAUT_ARMED;
 
     da_float distance;
     cstrl_da_float_init(&distance, powf(players->formations[player_id].unit_ids[formation_id].size, 2.0f));
@@ -43,7 +43,7 @@ static void optimize_formation_positions(players_t *players, int player_id, int 
     cstrl_da_int_init(&taken_paths, players->formations[player_id].path_heads[formation_id].size);
     for (int i = 0; i < players->formations[player_id].path_heads[formation_id].size; i++)
     {
-        int unit_id = players->formations[player_id].unit_ids[formation_id].array[i];
+        // int unit_id = players->formations[player_id].unit_ids[formation_id].array[i];
         float min_distance = cstrl_infinity;
         int min_index = 0;
         for (int j = 0; j < players->formations[player_id].unit_ids[formation_id].size; j++)

@@ -3,13 +3,9 @@
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
-#include "cstrl/cstrl_ui.h"
-#include <stdio.h>
 
 static bool p1_moving_up = false;
 static bool p1_moving_down = false;
-static bool p2_moving_up = false;
-static bool p2_moving_down = false;
 
 static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -96,8 +92,8 @@ int pong()
         {
             ball_velocity.y *= -1.0f;
         }
-        if (positions[26] >= positions[12] && positions[25] > positions[15] && positions[27] < positions[13] ||
-            positions[24] <= positions[2] && positions[25] > positions[3] && positions[27] < positions[1])
+        if ((positions[26] >= positions[12] && positions[25] > positions[15] && positions[27] < positions[13]) ||
+            (positions[24] <= positions[2] && positions[25] > positions[3] && positions[27] < positions[1]))
         {
             ball_velocity.x *= -1.0f;
             speed += 0.5f;

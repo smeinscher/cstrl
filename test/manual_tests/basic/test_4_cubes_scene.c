@@ -10,7 +10,6 @@
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
-#include "cstrl/cstrl_ui.h"
 
 static cstrl_camera *g_main_camera;
 static cstrl_camera_direction_mask g_movement;
@@ -177,11 +176,6 @@ int test_4_cubes_scene()
 
     cstrl_renderer_init(&state);
     cstrl_render_data *render_data = cstrl_renderer_create_render_data();
-    float vertices_old[] = {
-        -0.5f, -0.5f, 0.0f, // left
-        0.5f,  -0.5f, 0.0f, // right
-        0.0f,  0.5f,  0.0f  // top
-    };
     float vertices[] = {-0.5f, -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, 0.5f,  0.5f,  -0.5f,
                         0.5f,  0.5f,  -0.5f, -0.5f, 0.5f,  -0.5f, -0.5f, -0.5f, -0.5f,
 

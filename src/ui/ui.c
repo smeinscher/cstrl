@@ -6,15 +6,8 @@
 #include "cstrl/cstrl_platform.h"
 #include "ui_internal.h"
 #define _CRT_SECURE_NO_WARNINGS
-#include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_ui.h"
 #include "cstrl/cstrl_util.h"
-#if defined(CSTRL_PLATFORM_ANDROID)
-#include <glad/gles3/glad.h>
-#else
-#include "glad/glad.h"
-#endif
-#include "log.c/log.h"
 #include "stb/stb_image_write.h"
 #include "stb/stb_truetype.h"
 
@@ -277,13 +270,13 @@ CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int obj
 
 CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale)
 {
-    cstrl_ui_internal_state *ui_state = context->internal_ui_state;
+    // cstrl_ui_internal_state *ui_state = context->internal_ui_state;
 
     int width = 0;
 
     for (int i = 0; text[i] != '\0'; i++)
     {
-        stbtt_packedchar c = cstrl_ui_renderer_get_char_data(context->internal_render_state)[text[i]];
+        stbtt_packedchar c = cstrl_ui_renderer_get_char_data(context->internal_render_state)[(int)text[i]];
         width += c.xadvance;
     }
     return (float)width * scale;
@@ -296,8 +289,8 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
 
     CSTRL_ASSERT(ui_state->parent_stack.size == 0, "CSTRL UI: Cannot have a container within a container");
 
-    int original_w = w;
-    int original_h = h;
+    // int original_w = w;
+    // int original_h = h;
     int original_order_priority = order_priority;
     if (ui_state->elements_cache.element_count > 0 &&
         ui_state->elements_cache.element_count > ui_state->elements.element_count)

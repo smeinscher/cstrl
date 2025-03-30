@@ -256,10 +256,10 @@ int test_cstrl_mat4_perspective()
 
 int test_cstrl_mat4_look_at()
 {
-    vec3 eye = {-3.0f, 0.0f, 0.0f};
-    vec3 forward = {1.0f, 0.0f, 0.0f};
-    vec3 up = {0.0f, 1.0f, 0.0f};
-    mat4 result = cstrl_mat4_look_at(eye, cstrl_vec3_add(eye, forward), up);
+    // vec3 eye = {-3.0f, 0.0f, 0.0f};
+    // vec3 forward = {1.0f, 0.0f, 0.0f};
+    // vec3 up = {0.0f, 1.0f, 0.0f};
+    // mat4 result = cstrl_mat4_look_at(eye, cstrl_vec3_add(eye, forward), up);
 
     return 1;
 }
