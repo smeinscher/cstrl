@@ -5,10 +5,10 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#if _DEBUG
-#define CSTRL_DEBUG
-#else
+#if defined(NDEBUG)
 #define CSTRL_RELEASE
+#else
+#define CSTRL_DEBUG
 #endif
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
@@ -38,5 +38,11 @@
 #endif
 
 #define CSTRL_INLINE static inline
+
+#if defined(_MSC_VER)
+#define CSTRL_PACKED_ENUM __pragma(pack(push, 1)) enum __pragma(pack(pop))
+#else
+#define CSTRL_PACKED_ENUM enum __attribute__((__packed__))
+#endif
 
 #endif // DEFINES_H

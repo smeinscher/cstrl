@@ -5,6 +5,7 @@
 #ifndef CSTRL_TYPES_H
 #define CSTRL_TYPES_H
 
+#include "cstrl/cstrl_defines.h"
 #include <limits.h>
 #include <stddef.h>
 
@@ -40,7 +41,7 @@ typedef struct dynamic_array_string
     size_t capacity;
 } da_string;
 
-typedef enum cstrl_mouse_button
+typedef CSTRL_PACKED_ENUM
 {
     CSTRL_MOUSE_BUTTON_LEFT,
     CSTRL_MOUSE_BUTTON_RIGHT,
@@ -116,7 +117,7 @@ typedef enum cstrl_key_modifier
     CSTRL_KEY_MOD_NUM_LOCK = 0x0020
 } cstrl_key_modifier;
 
-typedef enum cstrl_action
+typedef CSTRL_PACKED_ENUM
 {
     CSTRL_ACTION_NONE,
     CSTRL_ACTION_PRESS,
@@ -124,7 +125,7 @@ typedef enum cstrl_action
     CSTRL_ACTION_REPEAT
 } cstrl_action;
 
-typedef enum cstrl_mouse_mode
+typedef CSTRL_PACKED_ENUM
 {
     CSTRL_MOUSE_NORMAL,
     CSTRL_MOUSE_DISABLED
