@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FONT_SIZE 16
+#define FONT_SIZE 24
 
 typedef struct cstrl_ui_internal_render_state
 {
@@ -123,11 +123,11 @@ void *cstrl_ui_renderer_init(cstrl_platform_state *platform_state)
     cstrl_da_float_init(&render_state->font_uvs, 12);
     cstrl_da_float_init(&render_state->font_colors, 24);
 
-    unsigned char texture[]  = {0xff, 0xff, 0xff, 0xff};
+    unsigned char texture[] = {0xff, 0xff, 0xff, 0xff};
     render_state->texture = cstrl_texture_generate_from_bitmap(texture, 1, 1, CSTRL_RGBA, CSTRL_RGBA);
 
     // The real mvp https://sinf.org/opengl-text-using-stb_truetype/
-    FILE *font_file = fopen("resources/fonts/NocturneSerif-Regular.ttf", "rb");
+    FILE *font_file = fopen("resources/fonts/SUSE/static/SUSE-Regular.ttf", "rb");
     fseek(font_file, 0, SEEK_END);
     long size = ftell(font_file);
     fseek(font_file, 0, SEEK_SET);
@@ -225,21 +225,60 @@ void cstrl_ui_renderer_draw_rects(void *internal_render_state)
     cstrl_renderer_draw(render_state->render_data);
 }
 
-void cstrl_ui_renderer_add_font_position(void *internal_render_state, int x0, int y0, int x1, int y1)
+void cstrl_ui_renderer_add_font(void *internal_render_state, char *text, unsigned int start, unsigned int end,
+                                int start_x, int start_y, float r, float g, float b, float a)
 {
     cstrl_ui_internal_render_state *render_state = (cstrl_ui_internal_render_state *)internal_render_state;
-    cstrl_da_float_push_back(&render_state->font_positions, (float)x0);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)y1);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)x1);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)y0);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)x0);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)y0);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)x0);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)y1);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)x1);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)y0);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)x1);
-    cstrl_da_float_push_back(&render_state->font_positions, (float)y1);
+    int next_x = start_x;
+    for (int i = start; i < end; i++)
+    {
+        stbtt_packedchar packedchar = render_state->char_data[text[i]];
+        float x0 = (float)next_x + packedchar.xoff;
+        float y0 = FONT_SIZE / 2.0f + (float)start_y + packedchar.yoff2;
+        float x1 = (float)next_x + (packedchar.xoff2 - packedchar.xoff);
+        float y1 = FONT_SIZE / 2.0f + (float)start_y + packedchar.yoff;
+
+        cstrl_da_float_push_back(&render_state->font_positions, x0);
+        cstrl_da_float_push_back(&render_state->font_positions, y1);
+        cstrl_da_float_push_back(&render_state->font_positions, x1);
+        cstrl_da_float_push_back(&render_state->font_positions, y0);
+        cstrl_da_float_push_back(&render_state->font_positions, x0);
+        cstrl_da_float_push_back(&render_state->font_positions, y0);
+        cstrl_da_float_push_back(&render_state->font_positions, x0);
+        cstrl_da_float_push_back(&render_state->font_positions, y1);
+        cstrl_da_float_push_back(&render_state->font_positions, x1);
+        cstrl_da_float_push_back(&render_state->font_positions, y0);
+        cstrl_da_float_push_back(&render_state->font_positions, x1);
+        cstrl_da_float_push_back(&render_state->font_positions, y1);
+
+        float u0 = (float)packedchar.x0 / 512.0f;
+        float v0 = (float)packedchar.y1 / 512.0f;
+        float u1 = (float)packedchar.x1 / 512.0f;
+        float v1 = (float)packedchar.y0 / 512.0f;
+
+        cstrl_da_float_push_back(&render_state->font_uvs, u0);
+        cstrl_da_float_push_back(&render_state->font_uvs, v1);
+        cstrl_da_float_push_back(&render_state->font_uvs, u1);
+        cstrl_da_float_push_back(&render_state->font_uvs, v0);
+        cstrl_da_float_push_back(&render_state->font_uvs, u0);
+        cstrl_da_float_push_back(&render_state->font_uvs, v0);
+        cstrl_da_float_push_back(&render_state->font_uvs, u0);
+        cstrl_da_float_push_back(&render_state->font_uvs, v1);
+        cstrl_da_float_push_back(&render_state->font_uvs, u1);
+        cstrl_da_float_push_back(&render_state->font_uvs, v0);
+        cstrl_da_float_push_back(&render_state->font_uvs, u1);
+        cstrl_da_float_push_back(&render_state->font_uvs, v1);
+
+        for (int j = 0; j < 6; j++)
+        {
+            cstrl_da_float_push_back(&render_state->font_colors, r);
+            cstrl_da_float_push_back(&render_state->font_colors, g);
+            cstrl_da_float_push_back(&render_state->font_colors, b);
+            cstrl_da_float_push_back(&render_state->font_colors, a);
+        }
+
+        next_x += packedchar.xadvance;
+    }
 }
 
 void cstrl_ui_renderer_add_font_uv(void *internal_render_state, float u0, float v0, float u1, float v1)

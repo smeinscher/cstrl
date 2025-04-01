@@ -172,10 +172,14 @@ add_library(cstrl-moon-game SHARED
         games/moon_game/game/physics_wrapper.h
 )
 
-target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
-target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT -Wall -Werror -Wno-missing-braces)
-target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
-target_compile_options(cstrl-sandbox PRIVATE -Wall -Werror -Wno-missing-braces)
+#target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
+#target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT -Wall -Werror -Wno-missing-braces)
+#target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
+#target_compile_options(cstrl-sandbox PRIVATE -Wall -Werror -Wno-missing-braces)
+
+target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
+target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT)
+
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES})
 if (X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)

@@ -1471,12 +1471,17 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
     cstrl_use_shader(render_state->shaders[SHADER_SELECTION_BOX]);
     cstrl_renderer_draw_indices(render_state->render_data[RENDER_DATA_SELECTION_BOX]);
     cstrl_ui_begin(&render_state->ui_context);
-    if (cstrl_ui_container_begin(&render_state->ui_context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
+    cstrl_ui_layout layout = {0};
+    layout.color = (cstrl_ui_color){0.4f, 0.0f, 0.0f, 0.7f};
+    layout.border.color = (cstrl_ui_color){0.6f, 0.6f, 0.6f, 1.0f};
+    layout.border.size = (cstrl_ui_border_size){4, 4, 4, 4};
+    if (cstrl_ui_container_begin(&render_state->ui_context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2,
+                                 &layout))
     {
         cstrl_ui_container_end(&render_state->ui_context);
     }
     if (cstrl_ui_container_begin(&render_state->ui_context, "Something Else", 14, 10, 320, 200, 300, GEN_ID(0), false,
-                                 false, 2))
+                                 false, 2, &layout))
     {
         cstrl_ui_container_end(&render_state->ui_context);
     }

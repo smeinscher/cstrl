@@ -10,16 +10,16 @@
 
 #define GEN_ID(group) (((group) * 10000) + (__LINE__))
 
-typedef struct cstrl_ui_color
-{
-    float r, g, b, a;
-} cstrl_ui_color;
-
 typedef struct cstrl_ui_context
 {
     void *internal_ui_state;
     void *internal_render_state;
 } cstrl_ui_context;
+
+typedef struct cstrl_ui_color
+{
+    float r, g, b, a;
+} cstrl_ui_color;
 
 typedef CSTRL_PACKED_ENUM
 {
@@ -50,15 +50,6 @@ typedef struct cstrl_ui_padding
     unsigned short bottom;
 } cstrl_ui_padding;
 
-typedef struct cstrl_ui_layout
-{
-    cstrl_ui_sizing sizing;
-    cstrl_ui_padding padding;
-    unsigned short child_gap;
-    cstrl_ui_alignment child_alignment;
-    cstrl_ui_layout_direction layout_direction;
-} cstrl_ui_layout;
-
 typedef struct cstrl_ui_border_size
 {
     unsigned short left;
@@ -68,6 +59,14 @@ typedef struct cstrl_ui_border_size
     unsigned short between_children;
 } cstrl_ui_border_size;
 
+typedef struct cstrl_ui_border
+{
+    cstrl_ui_border_size size;
+    cstrl_ui_color color;
+    cstrl_ui_color gap_color;
+    unsigned short gap_size;
+} cstrl_ui_border;
+
 typedef struct cstrl_ui_corner_radius
 {
     float top_left;
@@ -76,16 +75,31 @@ typedef struct cstrl_ui_corner_radius
     float bottom_right;
 } cstrl_ui_corner_radius;
 
-typedef struct cstrl_ui_border
+typedef struct cstrl_ui_layout
 {
+    cstrl_ui_border border;
     cstrl_ui_color color;
-    cstrl_ui_border_size size;
-} cstrl_ui_border;
+    cstrl_ui_color font_color;
+    cstrl_ui_corner_radius corner_radius;
+    cstrl_ui_sizing sizing;
+    cstrl_ui_padding padding;
+    unsigned short child_gap;
+    cstrl_ui_alignment child_alignment;
+    cstrl_ui_layout_direction layout_direction;
+} cstrl_ui_layout;
 
-typedef struct cstrl_ui_rect
+typedef struct cstrl_ui_element
 {
-    cstrl_ui_color color;
-} cstrl_ui_rect;
+    cstrl_ui_layout *layout;
+    string text;
+    // da_int child_indices;
+    int id;
+    int index;
+    int parent_index;
+    unsigned short x_start, x_end;
+    unsigned short y_start, y_end;
+    int order_priority;
+} cstrl_ui_element;
 
 CSTRL_API void cstrl_ui_init(cstrl_ui_context *context, cstrl_platform_state *platform_state);
 
@@ -100,7 +114,7 @@ CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int obj
 CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale);
 
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
-                              int h, int id, bool is_static, bool can_minimize, int order_priority);
+                              int h, int id, bool is_static, bool can_minimize, int order_priority, cstrl_ui_layout *layout);
 
 CSTRL_API void cstrl_ui_container_end(cstrl_ui_context *context);
 
