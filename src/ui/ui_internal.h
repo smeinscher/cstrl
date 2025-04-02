@@ -9,7 +9,7 @@ void *cstrl_ui_renderer_init(cstrl_platform_state *platform_state);
 
 stbtt_packedchar *cstrl_ui_renderer_get_char_data(void *internal_render_state);
 
-void cstrl_ui_renderer_new_frame(void *internal_render_state);
+void cstrl_ui_renderer_clear_data(void *internal_render_state);
 
 void cstrl_ui_renderer_add_rect_position(void *internal_render_state, int x0, int y0, int x1, int y1);
 

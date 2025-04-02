@@ -60,6 +60,18 @@ int basic_ui()
     cstrl_set_uniform_mat4(shader.program, "projection", camera->projection);
     cstrl_ui_context context;
     cstrl_ui_init(&context, &platform_state);
+    cstrl_ui_layout base_layout = {0};
+    base_layout.border.size = (cstrl_ui_border_size){4, 4, 4, 4, 0};
+    base_layout.border.color = (cstrl_ui_color){0.96f, 0.98f, 0.85f, 1.0f};
+    base_layout.border.gap_color = (cstrl_ui_color){0.29f, 0.89f, 0.75f, 1.0f};
+    base_layout.border.gap_size = 1;
+    base_layout.color = (cstrl_ui_color){0.36f, 0.32f, 0.84f, 1.0f};
+    base_layout.font_color = (cstrl_ui_color){0.12f, 0.1f, 0.13f, 1.0f};
+    cstrl_ui_layout sub_layout = {0};
+    sub_layout.border.size = (cstrl_ui_border_size){1, 1, 1, 1, 0};
+    sub_layout.border.color = (cstrl_ui_color){0.12f, 0.1f, 0.13f, 1.0f};
+    sub_layout.color = (cstrl_ui_color){0.29f, 0.89f, 0.75f, 1.0f};
+    sub_layout.font_color = (cstrl_ui_color){0.12f, 0.1f, 0.13f, 1.0f};
     while (!cstrl_platform_should_exit())
     {
         cstrl_platform_pump_messages(&platform_state);
@@ -68,14 +80,16 @@ int basic_ui()
         cstrl_texture_bind(texture);
         cstrl_renderer_draw(render_data);
         cstrl_ui_begin(&context);
-        cstrl_ui_layout layout = {0};
-        layout.border.size = (cstrl_ui_border_size){4, 4, 4, 4, 0};
-        layout.border.color = (cstrl_ui_color){0.96f, 0.98f, 0.85f, 1.0f};
-        layout.border.gap_color = (cstrl_ui_color){0.29f, 0.89f, 0.75f, 1.0f};
-        layout.border.gap_size = 1;
-        layout.color = (cstrl_ui_color){0.36f, 0.32f, 0.84f, 0.7f};
-        layout.font_color = (cstrl_ui_color){0.12f, 0.1f, 0.13f, 1.0f};
-        if (cstrl_ui_container_begin(&context, "Menu", 4, 10, 10, 200, 300, GEN_ID(0), false, false, 2, &layout))
+        if (cstrl_ui_container_begin(&context, "Menu", 4, 10, 10, 200, 300, GEN_ID(0), false, false, 2, &base_layout))
+        {
+            if (cstrl_ui_subcontainer_begin(&context, "Sub-Menu", 8, 10, 50, 150, 50, GEN_ID(0), &sub_layout))
+            {
+                cstrl_ui_subcontainer_end(&context);
+            }
+            cstrl_ui_container_end(&context);
+        }
+        if (cstrl_ui_container_begin(&context, "Other", 5, 1070, 10, 200, 300, GEN_ID(0), false, false, 2,
+                                     &base_layout))
         {
             cstrl_ui_container_end(&context);
         }

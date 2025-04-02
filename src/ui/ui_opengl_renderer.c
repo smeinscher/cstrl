@@ -157,7 +157,7 @@ stbtt_packedchar *cstrl_ui_renderer_get_char_data(void *internal_render_state)
     return render_state->char_data;
 }
 
-void cstrl_ui_renderer_new_frame(void *internal_render_state)
+void cstrl_ui_renderer_clear_data(void *internal_render_state)
 {
     cstrl_ui_internal_render_state *render_state = (cstrl_ui_internal_render_state *)internal_render_state;
     cstrl_da_float_clear(&render_state->positions);
