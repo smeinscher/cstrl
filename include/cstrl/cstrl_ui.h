@@ -123,7 +123,7 @@ CSTRL_API bool cstrl_ui_subcontainer_begin(cstrl_ui_context *context, const char
 CSTRL_API void cstrl_ui_subcontainer_end(cstrl_ui_context *context);
 
 CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h,
-                     int id);
+                     int id, cstrl_ui_layout *layout);
 
 CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
                    int id, cstrl_ui_alignment alignment);

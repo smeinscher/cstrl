@@ -60,6 +60,9 @@ int basic_ui()
     cstrl_set_uniform_mat4(shader.program, "projection", camera->projection);
     cstrl_ui_context context;
     cstrl_ui_init(&context, &platform_state);
+    cstrl_ui_layout menu_layout = {0};
+    menu_layout.color = (cstrl_ui_color){0.6f, 0.6f, 0.6f, 1.0f};
+    menu_layout.font_color = (cstrl_ui_color){0.0f, 0.0f, 0.0f, 0.0f};
     cstrl_ui_layout base_layout = {0};
     base_layout.border.size = (cstrl_ui_border_size){4, 4, 4, 4, 0};
     base_layout.border.color = (cstrl_ui_color){0.96f, 0.98f, 0.85f, 1.0f};
@@ -80,7 +83,11 @@ int basic_ui()
         cstrl_texture_bind(texture);
         cstrl_renderer_draw(render_data);
         cstrl_ui_begin(&context);
-        if (cstrl_ui_container_begin(&context, "Menu", 4, 10, 10, 200, 300, GEN_ID(0), false, false, 2, &base_layout))
+        if (cstrl_ui_container_begin(&context, "", 0, 0, 0, 1280, 25, GEN_ID(0), true, false, 2, &menu_layout))
+        {
+            cstrl_ui_container_end(&context);
+        }
+        if (cstrl_ui_container_begin(&context, "Menu", 4, 10, 60, 200, 300, GEN_ID(0), false, false, 2, &base_layout))
         {
             if (cstrl_ui_subcontainer_begin(&context, "Sub-Menu", 8, 10, 50, 150, 50, GEN_ID(0), &sub_layout))
             {
@@ -91,6 +98,10 @@ int basic_ui()
         if (cstrl_ui_container_begin(&context, "Other", 5, 1070, 10, 200, 300, GEN_ID(0), false, false, 2,
                                      &base_layout))
         {
+            if (cstrl_ui_button(&context, "Button", 6, 10, 50, 150, 50, GEN_ID(0), &sub_layout))
+            {
+                printf("Howdy!\n");
+            }
             cstrl_ui_container_end(&context);
         }
         // if (cstrl_ui_container_begin(context, "Menu", 4, 0, 0, 800, 30, GEN_ID(0), true, true, 1))
