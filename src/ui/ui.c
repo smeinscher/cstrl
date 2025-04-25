@@ -504,7 +504,7 @@ CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int
     if (cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, x, y, w, h))
     {
         ui_state->hot_item = index;
-        if (ui_state->mouse_state.left_mouse_button_down &&
+        if (ui_state->mouse_state.left_mouse_button_down && !ui_state->mouse_state.left_mouse_button_processed &&
             (ui_state->active_item == -1 || ui_state->active_item == ui_state->elements.elements[index].parent_index))
         {
             ui_state->active_item = index;

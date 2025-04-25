@@ -4,6 +4,7 @@
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
+#include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_ui.h"
 #include "cstrl/cstrl_util.h"
 #include "objects/cup.h"
@@ -26,6 +27,11 @@ static CSTRL_PACKED_ENUM{PLAYER1_AIM_CUP,   PLAYER1_AIM_METER, PLAYER1_SHOOTING,
                          PLAYER2_AIM_METER, PLAYER2_SHOOTING,  PLAYER_TURNS_PROCESSED} g_player_state;
 
 static bool g_mouse_in_shot_area = false;
+
+static int player1_score = 0;
+static int player2_score = 0;
+
+static bool g_reset_game = false;
 
 static void key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -547,7 +553,6 @@ int bpc_game_run()
                                                cstrl_vec2_mult_scalar(target_position_mod, ball_progression));
                 if (ball_progression >= 1.0f)
                 {
-                    g_player_state = g_player_state == PLAYER1_SHOOTING ? PLAYER2_AIM_CUP : PLAYER_TURNS_PROCESSED;
                     ball_progression = 0.0f;
                     ball_position = PLAYER1_SHOOTING ? player2_start : player1_start;
                     cleared_target_and_meter = false;
@@ -569,8 +574,23 @@ int bpc_game_run()
                         cup_positions.array[made_cup * 12 + 9] = 0.0f;
                         cup_positions.array[made_cup * 12 + 10] = 0.0f;
                         cup_positions.array[made_cup * 12 + 11] = 0.0f;
+                        if (g_player_state == PLAYER1_SHOOTING)
+                        {
+                            player1_score++;
+                        }
+                        else
+                        {
+                            player2_score++;
+                        }
+                        if (player1_score == 10 || player2_score == 10)
+                        {
+                            g_reset_game = true;
+                            printf("Final Score\n");
+                        }
+                        printf("Player 1: %d; Player 2: %d\n", player1_score, player2_score);
                         cstrl_renderer_modify_positions(cup_render_data, cup_positions.array, made_cup * 12, 12);
                     }
+                    g_player_state = g_player_state == PLAYER1_SHOOTING ? PLAYER2_AIM_CUP : PLAYER_TURNS_PROCESSED;
                 }
             }
             else if (!next_turn && cstrl_platform_get_absolute_time() - turn_end_time > 2.0)
@@ -578,7 +598,11 @@ int bpc_game_run()
                 if (g_player_state == PLAYER2_AIM_CUP)
                 {
                     g_player_state = PLAYER2_SHOOTING;
-                    int selected_cup = rand() % 10 + 10;
+                    int selected_cup;
+                    do
+                    {
+                        selected_cup = rand() % 10 + 10;
+                    } while (cstrl_da_int_find_first(&cups.freed, selected_cup) != CSTRL_DA_INT_ITEM_NOT_FOUND);
                     target_position = cups.position[selected_cup];
                     target_error = (float)(rand() % 1000 - 500) / 1000.0f;
                 }
@@ -865,9 +889,9 @@ int bpc_game_run()
         if (cstrl_ui_container_begin(&context, "Other", 5, 0, WINDOW_HEIGHT - 200, WINDOW_WIDTH, 200, GEN_ID(0), true,
                                      false, 2, &base_layout))
         {
-            if (cstrl_ui_button(&context, "Button", 6, 10, 50, 150, 50, GEN_ID(0), &sub_layout))
+            if (cstrl_ui_button(&context, "Reset", 5, 10, 50, 150, 50, GEN_ID(0), &sub_layout))
             {
-                printf("Howdy!\n");
+                g_reset_game = true;
             }
             cstrl_ui_container_end(&context);
         }
@@ -878,6 +902,37 @@ int bpc_game_run()
         cstrl_renderer_draw(cursor_render_data);
 
         cstrl_renderer_swap_buffers(&platform_state);
+
+        if (g_reset_game)
+        {
+            printf("Resetting...\n");
+            cups_free(&cups);
+            cups_init(&cups);
+            cstrl_da_float_clear(&cup_positions);
+            for (int i = 0; i < 20; i++)
+            {
+                float x0 = cups.position[i].x - CUP_SIZE / 2.0f;
+                float y0 = cups.position[i].y - CUP_SIZE / 2.0f;
+                float x1 = cups.position[i].x + CUP_SIZE / 2.0f;
+                float y1 = cups.position[i].y + CUP_SIZE / 2.0f;
+                cstrl_da_float_push_back(&cup_positions, x0);
+                cstrl_da_float_push_back(&cup_positions, y1);
+                cstrl_da_float_push_back(&cup_positions, x1);
+                cstrl_da_float_push_back(&cup_positions, y0);
+                cstrl_da_float_push_back(&cup_positions, x0);
+                cstrl_da_float_push_back(&cup_positions, y0);
+                cstrl_da_float_push_back(&cup_positions, x0);
+                cstrl_da_float_push_back(&cup_positions, y1);
+                cstrl_da_float_push_back(&cup_positions, x1);
+                cstrl_da_float_push_back(&cup_positions, y0);
+                cstrl_da_float_push_back(&cup_positions, x1);
+                cstrl_da_float_push_back(&cup_positions, y1);
+            }
+            cstrl_renderer_modify_positions(cup_render_data, cup_positions.array, 0, 240);
+            player1_score = 0;
+            player2_score = 0;
+            g_reset_game = false;
+        }
     }
 
     cstrl_camera_free(camera);

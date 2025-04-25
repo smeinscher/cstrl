@@ -4,12 +4,13 @@
 static void *game_dl = NULL;
 static time_t g_last_edit_ts = 0;
 
+bool (*g_game_init_func_ptr)(void);
+
 #ifdef CSTRL_PLATFORM_WINDOWS
 #include "windows.h"
 #include <libloaderapi.h>
 #include <minwindef.h>
 #include <processenv.h>
-bool (*g_game_init_func_ptr)(void);
 PROC g_game_update_func_ptr;
 PROC g_game_render_func_ptr;
 PROC g_game_shutdown_func_ptr;
@@ -55,8 +56,18 @@ void reload_game()
         g_last_edit_ts = current_ts;
     }
 }
-#endif
+#else
 
+bool (*g_game_init_func_ptr)(void);
+void (*g_game_update_func_ptr)(void);
+void (*g_game_render_func_ptr)(void);
+void (*g_game_shutdown_func_ptr)(void);
+bool (*g_game_is_running_func_ptr)(void);
+void reload_game()
+{
+}
+
+#endif
 int main()
 {
     reload_game();

@@ -10,6 +10,7 @@
 #include "log.c/log.h"
 
 #include <X11/XKBlib.h>
+#include <X11/Xatom.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/keysym.h>
@@ -26,6 +27,7 @@ static bool g_should_exit = false;
 static short x11_key_to_cstrl_key[192];
 
 static Atom wm_delete_message;
+static Atom wm_fullscreen;
 
 void x11_key_to_cstrl_key_init(internal_state *state)
 {
@@ -138,6 +140,10 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     state->state_common.input.most_recent_key_pressed = CSTRL_KEY_NONE;
 
     XMapWindow(state->display, state->main_window);
+
+    // wm_fullscreen = XInternAtom(state->display, "_NET_WM_STATE_FULLSCREEN", True);
+    // XChangeProperty(state->display, state->main_window, XInternAtom(state->display, "_NET_WM_STATE", False), XA_ATOM,
+    //                 32, PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
     return true;
 }
 
