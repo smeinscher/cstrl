@@ -189,8 +189,14 @@ add_executable(cstrl-bpc-game
     games/bpc/main.c
     games/bpc/game/game.c
     games/bpc/game/game.h
-    games/bpc/game/objects/cup.c
-    games/bpc/game/objects/cup.h
+    games/bpc/game/entities/cup.c
+    games/bpc/game/entities/cup.h
+    games/bpc/game/entities/player.c
+    games/bpc/game/entities/player.h
+    games/bpc/game/scenes/scenes.c
+    games/bpc/game/scenes/scenes.h
+    games/bpc/game/scenes/scene_manager.c
+    games/bpc/game/scenes/scene_manager.h
 )
 
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)

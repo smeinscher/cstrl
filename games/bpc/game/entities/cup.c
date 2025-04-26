@@ -45,7 +45,7 @@ int cups_shot_test(cups_t *cups, vec2 hit_position)
 {
     for (int i = 0; i < TOTAL_CUP_COUNT; i++)
     {
-        if (cstrl_vec2_length(cstrl_vec2_sub(cups->position[i], hit_position)) < CUP_SIZE / 3.0f)
+        if (cstrl_vec2_length(cstrl_vec2_sub(cups->position[i], hit_position)) < CUP_SIZE / 4.0f)
         {
             if (cstrl_da_int_find_first(&cups->freed, i) != CSTRL_DA_INT_ITEM_NOT_FOUND)
             {

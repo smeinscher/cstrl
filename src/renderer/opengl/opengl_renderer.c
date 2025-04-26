@@ -307,8 +307,7 @@ CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, f
         }
         else
         {
-            glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float),
-                            positions + start_index);
+            glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), positions);
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);

@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 #define TOTAL_CUP_COUNT 20
-#define CUP_SIZE 25.0f
+#define CUP_SIZE 29.0f
 
 typedef struct cups_t
 {
