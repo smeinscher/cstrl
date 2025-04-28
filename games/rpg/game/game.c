@@ -21,7 +21,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
 GAME_API bool rpg_game_init()
 {
     if (!cstrl_platform_init(&platform_state, WINDOW_TITLE, (1920 - WINDOW_WIDTH) / 2, (1080 - WINDOW_HEIGHT) / 2,
-                             WINDOW_WIDTH, WINDOW_HEIGHT))
+                             WINDOW_WIDTH, WINDOW_HEIGHT, false))
     {
         cstrl_platform_shutdown(&platform_state);
         return false;

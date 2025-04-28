@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 #define TOTAL_CUP_COUNT 20
-#define CUP_SIZE 29.0f
+#define CUP_SIZE 9.0f
 
 typedef struct cups_t
 {
@@ -17,7 +17,9 @@ typedef struct cups_t
 
 bool cups_init(cups_t *cups);
 
-int cups_shot_test(cups_t *cups, vec2 hit_position);
+int cups_shot_test(cups_t *cups, float ball_size, vec2 hit_position, float *distance_from_center);
+
+void cups_make(cups_t *cups, int cup_id);
 
 void cups_free(cups_t *cups);
 

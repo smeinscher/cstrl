@@ -272,7 +272,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
 }
 
 CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y,
-                                   int width, int height)
+                                   int width, int height, bool fullscreen)
 {
     platform_state->internal_state = malloc(sizeof(internal_state));
     internal_state *state = platform_state->internal_state;
@@ -297,17 +297,40 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
         return false;
     }
 
-    unsigned int window_style =
-        WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
-    unsigned int window_ex_style = WS_EX_APPWINDOW;
+    unsigned int window_style;
+    unsigned int window_ex_style;
+    if (fullscreen)
+    {
+        window_style = WS_POPUP | WS_MAXIMIZE;
+        window_ex_style = 0;
+    }
+    else
+    {
+        window_style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
+        window_ex_style = WS_EX_APPWINDOW;
+    }
 
     RECT border_rect = {0};
     AdjustWindowRectEx(&border_rect, window_style, 0, window_ex_style);
 
-    int window_x = x + border_rect.left;
-    int window_y = y + border_rect.top;
-    int window_width = width + border_rect.right - border_rect.left;
-    int window_height = height + border_rect.bottom - border_rect.top;
+    int window_x;
+    int window_y;
+    int window_width;
+    int window_height;
+    if (fullscreen)
+    {
+        window_x = 0;
+        window_y = 0;
+        window_width = 1920;
+        window_height = 1080;
+    }
+    else
+    {
+        window_x = x + border_rect.left;
+        window_y = y + border_rect.top;
+        window_width = width + border_rect.right - border_rect.left;
+        window_height = height + border_rect.bottom - border_rect.top;
+    }
 
     HWND hwnd = CreateWindowExA(window_ex_style, "cstrl_window_class", application_name, window_style, window_x,
                                 window_y, window_width, window_height, 0, 0, state->h_instance, 0);
@@ -350,8 +373,8 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
 
     state->state_common.input.cursor_shown = true;
 
-    state->state_common.window_width = width;
-    state->state_common.window_height = height;
+    state->state_common.window_width = window_width;
+    state->state_common.window_height = window_height;
 
     ShowWindow(state->hwnd, SW_SHOW);
 

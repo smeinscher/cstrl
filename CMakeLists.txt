@@ -189,6 +189,8 @@ add_executable(cstrl-bpc-game
     games/bpc/main.c
     games/bpc/game/game.c
     games/bpc/game/game.h
+    games/bpc/game/entities/ball.c
+    games/bpc/game/entities/ball.h
     games/bpc/game/entities/cup.c
     games/bpc/game/entities/cup.h
     games/bpc/game/entities/player.c

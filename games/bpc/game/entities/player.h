@@ -15,22 +15,10 @@ typedef struct player_stats_t
     int defence;
 } player_stats_t;
 
-typedef CSTRL_PACKED_ENUM
-{
-    PLAYER1_TURN,
-    PLAYER2_TURN,
-    PLAYER3_TURN,
-    PLAYER4_TURN,
-    MAX_PLAYER_TURN
-} player_active_state_t;
+typedef CSTRL_PACKED_ENUM{PLAYER1_TURN, PLAYER2_TURN, PLAYER3_TURN, PLAYER4_TURN,
+                          MAX_PLAYER_TURN} player_active_state_t;
 
-typedef CSTRL_PACKED_ENUM
-{
-    AIM_TARGET,
-    AIM_METER,
-    SHOOTING,
-    TURN_END
-} player_turn_state_t;
+typedef CSTRL_PACKED_ENUM{AIM_TARGET, AIM_METER, STARTED_SHOT, SHOOTING, TURN_END} player_turn_state_t;
 
 enum possible_players
 {
@@ -40,6 +28,9 @@ enum possible_players
     PLAYER4 = 0x8
 };
 
+typedef CSTRL_PACKED_ENUM{EYE_TO_EYE_STAGE, MAIN_GAME_STAGE, REBUTTAL_STAGE, OVERTIME_STAGE,
+                          GAME_OVER_STAGE} player_base_game_state_t;
+
 typedef struct players_t
 {
     player_stats_t stats[MAX_PLAYER_COUNT];
@@ -48,6 +39,7 @@ typedef struct players_t
     bool active[MAX_PLAYER_COUNT];
     player_active_state_t current_player_turn;
     player_turn_state_t current_turn_state;
+    player_base_game_state_t base_game_state;
 
 } players_t;
 

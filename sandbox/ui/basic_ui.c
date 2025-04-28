@@ -24,7 +24,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
 int basic_ui()
 {
     cstrl_platform_state platform_state;
-    if (!cstrl_platform_init(&platform_state, "cstrl ui test", 560, 240, 1280, 720))
+    if (!cstrl_platform_init(&platform_state, "cstrl ui test", 560, 240, 1280, 720, false))
     {
         cstrl_platform_shutdown(&platform_state);
         return 1;
@@ -53,7 +53,8 @@ int basic_ui()
 
     cstrl_shader shader =
         cstrl_load_shaders_from_files("resources/shaders/default.vert", "resources/shaders/default.frag");
-    cstrl_texture texture = cstrl_texture_generate_from_path("resources/textures/background.png");
+    cstrl_texture texture =
+        cstrl_texture_generate_from_path("resources/textures/background.png", CSTRL_TEXTURE_FILTER_LINEAR);
     cstrl_camera *camera = cstrl_camera_create(1280, 720, true);
     cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     cstrl_set_uniform_mat4(shader.program, "view", camera->view);

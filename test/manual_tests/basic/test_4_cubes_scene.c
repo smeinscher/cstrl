@@ -165,7 +165,7 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
 int test_4_cubes_scene()
 {
     cstrl_platform_state state;
-    if (!cstrl_platform_init(&state, "cstrl window test", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&state, "cstrl window test", 560, 240, 800, 600, false))
     {
         cstrl_platform_shutdown(&state);
         return cstrl_test_failure;
@@ -253,7 +253,8 @@ int test_4_cubes_scene()
     g_main_camera = cstrl_camera_create(800, 600, false);
     g_main_camera->position = (vec3){0.0f, 0.0f, 5.0f};
     cstrl_shader shader = cstrl_load_shaders_from_source(basic_3d_vertex_shader, basic_3d_fragment_shader);
-    cstrl_texture texture = cstrl_texture_generate_from_path("resources/textures/wall.jpg");
+    cstrl_texture texture =
+        cstrl_texture_generate_from_path("resources/textures/wall.jpg", CSTRL_TEXTURE_FILTER_LINEAR);
 
     double previous_time = cstrl_platform_get_absolute_time();
     double lag = 0.0;

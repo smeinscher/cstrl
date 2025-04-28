@@ -29,19 +29,17 @@ void players_init(players_t *players, bool playing_doubles, int human_players)
 
     players->current_player_turn = PLAYER1_TURN;
     players->current_turn_state = AIM_TARGET;
+    players->base_game_state = EYE_TO_EYE_STAGE;
 }
 
 void players_rerun_turn(players_t *players)
 {
-    printf("Rerun turn\n");
     if (players->current_player_turn != PLAYER1_TURN)
     {
-        printf("Player 1\n");
         players->current_player_turn = PLAYER1_TURN;
     }
     else
     {
-        printf("Player 3\n");
         players->current_player_turn = PLAYER3_TURN;
     }
     if (!players->human[players->current_player_turn])
@@ -56,26 +54,23 @@ void players_rerun_turn(players_t *players)
 
 void players_advance_turn_state(players_t *players)
 {
+    players->current_turn_state++;
     if (players->current_turn_state == TURN_END)
     {
-        players->current_player_turn++;
-        if (players->current_player_turn == MAX_PLAYER_TURN)
+        if (players->base_game_state != EYE_TO_EYE_STAGE)
         {
-            players->current_player_turn = PLAYER1_TURN;
-        }
-        if (!players->human[players->current_player_turn])
-        {
-            players->current_turn_state = SHOOTING;
+            players->current_player_turn++;
+            if (players->current_player_turn == MAX_PLAYER_TURN)
+            {
+                players->current_player_turn = PLAYER1_TURN;
+            }
+            players->current_turn_state = players->human[players->current_player_turn] ? AIM_TARGET : STARTED_SHOT;
         }
         else
         {
-            players->current_turn_state = AIM_TARGET;
+            players->current_player_turn = (players->current_player_turn + 1) % 2;
+            players->current_turn_state = players->human[players->current_player_turn] ? AIM_TARGET : STARTED_SHOT;
+            printf("player turn: %d\n", players->current_player_turn);
         }
     }
-    else
-    {
-        players->current_turn_state++;
-    }
-    printf("Current Turn State: %d\n", players->current_turn_state);
-    printf("Current Player Turn: %d\n", players->current_player_turn);
 }

@@ -1,15 +1,18 @@
 #include "scenes.h"
+#include "../entities/ball.h"
 #include "../entities/cup.h"
 #include "../entities/player.h"
 #include "cstrl/cstrl_camera.h"
-#include "cstrl/cstrl_defines.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
+#include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_ui.h"
 #include "cstrl/cstrl_util.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+
+#define BASE_SCREEN_DIMENSION_X 320
+#define BASE_SCREEN_DIMENSION_Y 180
 
 static cstrl_platform_state *g_platform_state;
 
@@ -71,9 +74,10 @@ void scenes_init(cstrl_platform_state *platform_state)
     cstrl_renderer_add_uvs(g_cursor_render_data, cursor_uvs);
     cstrl_renderer_add_colors(g_cursor_render_data, cursor_colors);
 
-    g_cursor_texture = cstrl_texture_generate_from_path("resources/textures/beer_pong/cursor.png");
+    g_cursor_texture =
+        cstrl_texture_generate_from_path("resources/textures/beer_pong/cursor.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
-    g_main_camera = cstrl_camera_create(1280, 720, true);
+    g_main_camera = cstrl_camera_create(BASE_SCREEN_DIMENSION_X, BASE_SCREEN_DIMENSION_Y, true);
     cstrl_camera_update(g_main_camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
     cstrl_set_uniform_mat4(g_default_shader.program, "view", g_main_camera->view);
     cstrl_set_uniform_mat4(g_default_shader.program, "projection", g_main_camera->projection);
@@ -113,29 +117,34 @@ void main_menu_scene_shutdown()
 /*
  *
  *  MAIN GAME SCENE
- *
  */
 
-#define BALL_SIZE 12.5f
-#define CURSOR_SIZE 25.0f
-#define TARGET_SIZE 12.5f
-#define METER_SIZE_X 6.75f
-#define METER_SIZE_Y 75.0f
-#define METER_BAR_SIZE_X 12.5f
-#define METER_BAR_SIZE_Y 4.0f
+#define CURSOR_SIZE 8.0f
+#define TARGET_SIZE 3.0f
+#define METER_SIZE_X 2.0f
+#define METER_SIZE_Y 20.0f
+#define METER_BAR_SIZE_X 3.125f
+#define METER_BAR_SIZE_Y 1.0f
 
-#define PLAYER_SHOT_BOUND_MIN_X 256
-#define PLAYER_SHOT_BOUND_MAX_X 420
-#define PLAYER_SHOT_BOUND_MIN_Y 264
-#define PLAYER_SHOT_BOUND_MAX_Y 456
+#define PLAYER_SHOT_BOUND_MIN_X 40
+#define PLAYER_SHOT_BOUND_MAX_X 90
+#define PLAYER_SHOT_BOUND_MIN_Y 60
+#define PLAYER_SHOT_BOUND_MAX_Y 120
+
+#define TEAM1_SECTION_MIN_X 230
+#define TEAM1_SECTION_MAX_X 280
+#define TEAM1_SECTION_MIN_Y 60
+#define TEAM1_SECTION_MAX_Y 120
+#define TEAM2_SECTION_MIN_X 40
+#define TEAM2_SECTION_MAX_X 90
+#define TEAM2_SECTION_MIN_Y 60
+#define TEAM2_SECTION_MAX_Y 120
+
+#define MAKE_RADIUS (CUP_SIZE / 5.0f)
+#define MAKE_RADIUS_BOUNCE (CUP_SIZE / 6.0f)
 
 static int g_mouse_x;
 static int g_mouse_y;
-
-static CSTRL_PACKED_ENUM{EYE_TO_EYE_STAGE, MAIN_GAME_STAGE, REBUTTAL_STAGE, OVERTIME_STAGE,
-                         GAME_OVER_STAGE} g_base_game_state;
-
-static CSTRL_PACKED_ENUM{TEAM1_AIMING, TEAM1_SHOOTING, TEAM2_AIMING, TEAM2_SHOOTING, TEAM_TURNS_PROCESSED} g_team_state;
 
 static cstrl_render_data *g_background_render_data;
 static cstrl_render_data *g_cup_render_data;
@@ -152,13 +161,18 @@ static cstrl_texture g_meter_bar_texture;
 
 static cups_t g_cups;
 static players_t g_players;
+static balls_t g_balls;
 
 static vec2 g_team1_start;
 static vec2 g_team2_start;
 static vec2 g_ball_position;
+static float g_ball_angle;
 static vec2 g_target_position;
+static vec2 g_ball_origin;
 static float g_target_error;
 static float g_ball_progression;
+static float g_ball_speed = INITIAL_BALL_SPEED;
+static float g_bounce_length = INITIAL_BOUNCE_DISTANCE;
 
 static bool g_cleared_target_and_meter = false;
 static bool g_cleared_ball = false;
@@ -178,6 +192,10 @@ static cstrl_ui_layout g_sub_layout;
 
 static bool g_mouse_in_shot_area = false;
 
+static bool g_paused = false;
+
+static da_int g_hit_cups;
+
 static void main_game_key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
     if (key == CSTRL_KEY_ESCAPE)
@@ -188,8 +206,8 @@ static void main_game_key_callback(cstrl_platform_state *state, int key, int sca
 
 static void main_game_mouse_position_callback(cstrl_platform_state *state, int xpos, int ypos)
 {
-    g_mouse_x = xpos;
-    g_mouse_y = ypos;
+    g_mouse_x = xpos / 4;
+    g_mouse_y = ypos / 4;
 }
 
 static void main_game_mouse_button_callback(cstrl_platform_state *state, int button, int action, int mods)
@@ -198,9 +216,13 @@ static void main_game_mouse_button_callback(cstrl_platform_state *state, int but
     {
         if (action == CSTRL_ACTION_PRESS && g_mouse_in_shot_area)
         {
-            if (g_players.human[g_players.current_player_turn] && g_players.current_turn_state != SHOOTING)
+            if (g_players.human[g_players.current_player_turn] && g_players.current_turn_state != STARTED_SHOT)
             {
                 players_advance_turn_state(&g_players);
+                if (g_players.current_turn_state == STARTED_SHOT)
+                {
+                    g_cleared_target_and_meter = false;
+                }
             }
         }
     }
@@ -208,13 +230,10 @@ static void main_game_mouse_button_callback(cstrl_platform_state *state, int but
 
 void main_game_scene_init(void *user_data)
 {
-    g_base_game_state = MAIN_GAME_STAGE;
     cstrl_platform_set_key_callback(g_platform_state, main_game_key_callback);
     cstrl_platform_set_mouse_position_callback(g_platform_state, main_game_mouse_position_callback);
     cstrl_platform_set_mouse_button_callback(g_platform_state, main_game_mouse_button_callback);
 
-    int window_width, window_height;
-    cstrl_platform_get_window_size(g_platform_state, &window_width, &window_height);
     g_background_render_data = cstrl_renderer_create_render_data();
     // x0 = 256.0f;
     // y0 = 264.0f;
@@ -222,8 +241,8 @@ void main_game_scene_init(void *user_data)
     // y1 = 456.0f;
     float x0 = 0.0f;
     float y0 = 0.0f;
-    float x1 = (float)window_width;
-    float y1 = (float)window_height;
+    float x1 = BASE_SCREEN_DIMENSION_X;
+    float y1 = BASE_SCREEN_DIMENSION_Y;
     float table_positions[] = {x0, y1, x1, y0, x0, y0, x0, y1, x1, y0, x1, y1};
     float table_uvs[] = {
         0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
@@ -240,7 +259,8 @@ void main_game_scene_init(void *user_data)
     cstrl_renderer_add_uvs(g_background_render_data, table_uvs);
     cstrl_renderer_add_colors(g_background_render_data, table_colors);
 
-    g_background_texture = cstrl_texture_generate_from_path("resources/textures/beer_pong/dorm_room.png");
+    g_background_texture =
+        cstrl_texture_generate_from_path("resources/textures/beer_pong/bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
     g_cup_render_data = cstrl_renderer_create_render_data();
     cups_init(&g_cups);
@@ -292,36 +312,41 @@ void main_game_scene_init(void *user_data)
     cstrl_renderer_add_uvs(g_cup_render_data, cup_uvs);
     cstrl_renderer_add_colors(g_cup_render_data, cup_colors);
 
-    g_cup_texture = cstrl_texture_generate_from_path("resources/textures/beer_pong/cup.png");
+    g_cup_texture =
+        cstrl_texture_generate_from_path("resources/textures/beer_pong/cup.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
     g_ball_render_data = cstrl_renderer_create_render_data();
-    float ball_positions[12] = {0};
-    float ball_uvs[12];
-    ball_uvs[0] = 0.0f;
-    ball_uvs[1] = 1.0f;
-    ball_uvs[2] = 1.0f;
-    ball_uvs[3] = 0.0f;
-    ball_uvs[4] = 0.0f;
-    ball_uvs[5] = 0.0f;
-    ball_uvs[6] = 0.0f;
-    ball_uvs[7] = 1.0f;
-    ball_uvs[8] = 1.0f;
-    ball_uvs[9] = 0.0f;
-    ball_uvs[10] = 1.0f;
-    ball_uvs[11] = 1.0f;
-    float ball_colors[24];
-    for (int i = 0; i < 6; i++)
+    float ball_positions[MAX_BALLS * 12] = {0};
+    float ball_uvs[MAX_BALLS * 12];
+    for (int i = 0; i < MAX_BALLS; i++)
+    {
+        ball_uvs[i * 12] = 0.0f;
+        ball_uvs[i * 12 + 1] = 1.0f;
+        ball_uvs[i * 12 + 2] = 1.0f;
+        ball_uvs[i * 12 + 3] = 0.0f;
+        ball_uvs[i * 12 + 4] = 0.0f;
+        ball_uvs[i * 12 + 5] = 0.0f;
+        ball_uvs[i * 12 + 6] = 0.0f;
+        ball_uvs[i * 12 + 7] = 1.0f;
+        ball_uvs[i * 12 + 8] = 1.0f;
+        ball_uvs[i * 12 + 9] = 0.0f;
+        ball_uvs[i * 12 + 10] = 1.0f;
+        ball_uvs[i * 12 + 11] = 1.0f;
+    }
+    float ball_colors[MAX_BALLS * 24];
+    for (int i = 0; i < MAX_BALLS * 6; i++)
     {
         ball_colors[i * 4] = 1.0f;
         ball_colors[i * 4 + 1] = 1.0f;
         ball_colors[i * 4 + 2] = 1.0f;
         ball_colors[i * 4 + 3] = 1.0f;
     }
-    cstrl_renderer_add_positions(g_ball_render_data, ball_positions, 2, 6);
+    cstrl_renderer_add_positions(g_ball_render_data, ball_positions, 2, MAX_BALLS * 6);
     cstrl_renderer_add_uvs(g_ball_render_data, ball_uvs);
     cstrl_renderer_add_colors(g_ball_render_data, ball_colors);
 
-    g_ball_texture = cstrl_texture_generate_from_path("resources/textures/beer_pong/ball.png");
+    g_ball_texture =
+        cstrl_texture_generate_from_path("resources/textures/beer_pong/ball.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
     g_target_render_data = cstrl_renderer_create_render_data();
     float target_positions[12] = {0};
@@ -351,7 +376,8 @@ void main_game_scene_init(void *user_data)
     cstrl_renderer_add_uvs(g_target_render_data, target_uvs);
     cstrl_renderer_add_colors(g_target_render_data, target_colors);
 
-    g_target_texture = cstrl_texture_generate_from_path("resources/textures/beer_pong/target.png");
+    g_target_texture =
+        cstrl_texture_generate_from_path("resources/textures/beer_pong/target.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
     g_meter_render_data = cstrl_renderer_create_render_data();
     float meter_positions[12] = {0};
@@ -380,7 +406,8 @@ void main_game_scene_init(void *user_data)
     cstrl_renderer_add_uvs(g_meter_render_data, meter_uvs);
     cstrl_renderer_add_colors(g_meter_render_data, meter_colors);
 
-    g_meter_texture = cstrl_texture_generate_from_path("resources/textures/beer_pong/meter.png");
+    g_meter_texture =
+        cstrl_texture_generate_from_path("resources/textures/beer_pong/meter.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
     g_meter_bar_render_data = cstrl_renderer_create_render_data();
     float meter_bar_positions[12] = {0};
@@ -409,24 +436,26 @@ void main_game_scene_init(void *user_data)
     cstrl_renderer_add_uvs(g_meter_bar_render_data, meter_bar_uvs);
     cstrl_renderer_add_colors(g_meter_bar_render_data, meter_bar_colors);
 
-    g_meter_bar_texture = cstrl_texture_generate_from_path("resources/textures/beer_pong/meter_bar.png");
+    g_meter_bar_texture =
+        cstrl_texture_generate_from_path("resources/textures/beer_pong/meter_bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
     players_init(&g_players, true, PLAYER1);
-    g_team_state = TEAM1_AIMING;
+    balls_init(&g_balls);
 
-    float player_size_x = 68.0f;
-    float player_size_y = 126.0f;
-    float playerx0 = 165.0f;
-    float playery0 = (float)window_height / 2.0f - player_size_y / 2.0f;
+    float player_size_x = 17.0f;
+    float player_size_y = 31.5;
+    float playerx0 = 30.0f;
+    float playery0 = (float)BASE_SCREEN_DIMENSION_Y / 2.0f - player_size_y / 2.0f;
     float playerx1 = playerx0 + player_size_x;
-    float playery1 = (float)window_height / 2.0f + player_size_y / 2.0f;
-    playerx0 = 1115.0f;
+    float playery1 = (float)BASE_SCREEN_DIMENSION_Y / 2.0f + player_size_y / 2.0f;
+    playerx0 = 290.0f;
     playerx1 = playerx0 - player_size_x;
 
-    g_team1_start = (vec2){playerx0 + player_size_x / 2.0f, playery0 + player_size_y / 2.0f};
-    g_team2_start = (vec2){165.0f + player_size_x / 2.0f, playery0 + player_size_y / 2.0f};
-    g_ball_position =
-        (vec2){(float)window_width / 2.0f - BALL_SIZE / 2.0f, (float)window_height / 2.0f - BALL_SIZE / 2.0f};
+    g_team1_start = (vec2){290.0f, playery0 + player_size_y / 2.0f};
+    g_team2_start = (vec2){30.0f, playery0 + player_size_y / 2.0f};
+    g_ball_position = (vec2){(float)BASE_SCREEN_DIMENSION_X / 2.0f - BALL_SIZE / 2.0f,
+                             (float)BASE_SCREEN_DIMENSION_Y / 2.0f - BALL_SIZE / 2.0f};
+    g_ball_angle = 0.0f;
 
     cstrl_ui_init(&g_ui_context, g_platform_state);
 
@@ -441,54 +470,86 @@ void main_game_scene_init(void *user_data)
     g_sub_layout.border.color = (cstrl_ui_color){0.0, 0.0f, 0.0f, 1.0f};
     g_sub_layout.color = (cstrl_ui_color){0.75f, 0.18f, 0.19f, 1.0f};
     g_sub_layout.font_color = (cstrl_ui_color){0.0f, 0.0f, 0.0f, 1.0f};
+
+    cstrl_da_int_init(&g_hit_cups, 4);
 }
 
-static void main_game_scene_main_game_stage_update()
+static void main_game_scene_ball_shot_update()
 {
     if (g_players.current_turn_state == SHOOTING)
     {
-        vec2 origin = g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN
-                          ? g_team1_start
-                          : g_team2_start;
         vec2 target_position_mod = g_target_position;
-        target_position_mod.y += g_target_error * 50.0f;
-        g_ball_progression += 10.0f / cstrl_vec2_length(cstrl_vec2_sub(target_position_mod, origin));
-        g_ball_position = cstrl_vec2_add(cstrl_vec2_mult_scalar(origin, (1.0f - g_ball_progression)),
-                                         cstrl_vec2_mult_scalar(target_position_mod, g_ball_progression));
+        target_position_mod.y += g_target_error * 12.5f;
+        g_ball_angle =
+            acos(cstrl_vec2_dot(cstrl_vec2_normalize(g_ball_origin), cstrl_vec2_normalize(target_position_mod)));
+        g_ball_progression += g_ball_speed / cstrl_vec2_length(cstrl_vec2_sub(target_position_mod, g_ball_origin));
+        g_ball_position =
+            cstrl_vec2_add(cstrl_vec2_mult_scalar(g_ball_origin, (1.0f - cstrl_min(1.0f, g_ball_progression))),
+                           cstrl_vec2_mult_scalar(target_position_mod, cstrl_min(1.0f, g_ball_progression)));
         if (g_ball_progression > 1.0f)
         {
-            g_ball_progression = 0.0f;
-            g_ball_position = (vec2){-100.0f, -100.0f};
-            g_cleared_target_and_meter = false;
-            g_cleared_ball = false;
-            g_shot_end_time = cstrl_platform_get_absolute_time();
-            g_next_turn = false;
-            int made_cup = cups_shot_test(&g_cups, target_position_mod);
-            if (made_cup >= 0)
+            float distance_from_center = CUP_SIZE;
+            int hit_cup = cups_shot_test(&g_cups, BALL_SIZE, target_position_mod, &distance_from_center);
+            if (cstrl_da_int_find_first(&g_hit_cups, hit_cup) == CSTRL_DA_INT_ITEM_NOT_FOUND)
             {
-                if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN)
-                {
-                    g_team1_score++;
-                }
-                else
-                {
-                    g_team2_score++;
-                }
-                if (g_team1_score == 10 || g_team2_score == 10)
-                {
-                    g_reset_game_update = true;
-                    g_reset_game_render = true;
-                    printf("Final Score\n");
-                }
-                printf("Team 1: %d; Team 2: %d\n", g_team1_score, g_team2_score);
-                float cup_positions[12] = {0};
-                cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, made_cup * 12, 12);
+                cstrl_da_int_push_back(&g_hit_cups, hit_cup);
+            }
+            if (distance_from_center >= (g_hit_cups.size == 0 ? MAKE_RADIUS : MAKE_RADIUS_BOUNCE) && hit_cup != -1)
+            {
+                g_ball_origin = g_ball_position;
+                g_bounce_length -= (float)(rand() % (int)INITIAL_BOUNCE_DISTANCE * 10) / 10.0f;
+                g_bounce_length = cstrl_max(g_bounce_length, 2.0f);
+                g_target_position =
+                    g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN
+                        ? cstrl_vec2_sub(g_target_position, (vec2){g_bounce_length * cos(g_ball_angle),
+                                                                   g_bounce_length * sin(g_ball_angle)})
+                        : cstrl_vec2_add(g_target_position, (vec2){g_bounce_length * cos(g_ball_angle),
+                                                                   g_bounce_length * sin(g_ball_angle)});
+                g_ball_progression = 0.0f;
+                g_target_error = 0.0f;
+                g_ball_speed -= (float)(rand() % 1000) / 1000.0f;
+                g_ball_speed = cstrl_max(g_ball_speed, 1.0f);
             }
             else
             {
-                g_round_made_both_cups = false;
+                if (distance_from_center < (g_hit_cups.size == 0 ? MAKE_RADIUS : MAKE_RADIUS_BOUNCE))
+                {
+                    float cup_positions[12] = {0};
+                    for (int i = 0; i < g_hit_cups.size; i++)
+                    {
+                        cups_make(&g_cups, g_hit_cups.array[i]);
+                        cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, g_hit_cups.array[i] * 12, 12);
+                        if (g_players.current_player_turn == PLAYER1_TURN ||
+                            g_players.current_player_turn == PLAYER2_TURN)
+                        {
+                            g_team1_score++;
+                        }
+                        else
+                        {
+                            g_team2_score++;
+                        }
+                    }
+                    if (g_team1_score == 10 || g_team2_score == 10)
+                    {
+                        g_reset_game_update = true;
+                        g_reset_game_render = true;
+                        printf("Final Score\n");
+                    }
+                    printf("Team 1: %d; Team 2: %d\n", g_team1_score, g_team2_score);
+                }
+                else
+                {
+                    g_round_made_both_cups = false;
+                }
+                cstrl_da_int_clear(&g_hit_cups);
+                g_ball_progression = 0.0f;
+                g_cleared_ball = false;
+                g_shot_end_time = cstrl_platform_get_absolute_time();
+                g_next_turn = false;
+                g_ball_speed = INITIAL_BALL_SPEED;
+                g_bounce_length = INITIAL_BOUNCE_DISTANCE;
+                players_advance_turn_state(&g_players);
             }
-            players_advance_turn_state(&g_players);
         }
     }
     else if (!g_next_turn && cstrl_platform_get_absolute_time() - g_shot_end_time > 2.0)
@@ -511,29 +572,186 @@ static void main_game_scene_main_game_stage_update()
             } while (cstrl_da_int_find_first(&g_cups.freed, selected_cup) != CSTRL_DA_INT_ITEM_NOT_FOUND);
             g_target_position = g_cups.position[selected_cup];
             g_target_error = (float)(rand() % 1000 - 500) / 1000.0f;
+            g_ball_origin =
+                g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN
+                    ? g_team1_start
+                    : g_team2_start;
         }
         g_next_turn = true;
     }
 }
 
-void main_game_scene_update()
+static void main_game_scene_shoot_ball(bool human, int team)
 {
-    if (g_mouse_x < PLAYER_SHOT_BOUND_MAX_X && g_mouse_x > PLAYER_SHOT_BOUND_MIN_X &&
-        g_mouse_y < PLAYER_SHOT_BOUND_MAX_Y && g_mouse_y > PLAYER_SHOT_BOUND_MIN_Y)
+    if (!human)
     {
-        g_mouse_in_shot_area = true;
+        int selected_cup;
+        do
+        {
+            selected_cup = rand() % 10 + (team * 10);
+        } while (cstrl_da_int_find_first(&g_cups.freed, selected_cup) != CSTRL_DA_INT_ITEM_NOT_FOUND);
+        vec2 target_position = g_cups.position[selected_cup];
+        vec2 target_error = cstrl_vec2_mult_scalar(
+            (vec2){(float)(rand() % 1000 - 500) / 1000.0f, (float)(rand() % 1000 - 500) / 1000.0f}, 12.5f);
+        balls_shoot(&g_balls, target_position, team == 0 ? g_team1_start : g_team2_start, target_error,
+                    INITIAL_BALL_SPEED, team);
     }
     else
     {
-        g_mouse_in_shot_area = false;
+        balls_shoot(&g_balls, g_target_position, team == 0 ? g_team1_start : g_team2_start,
+                    (vec2){0.0f, g_target_error * 12.5f}, INITIAL_BALL_SPEED, team);
     }
-    switch (g_base_game_state)
+}
+
+static void main_game_scene_eye_to_eye_stage_update()
+{
+    if (g_players.current_turn_state == STARTED_SHOT)
     {
-    case MAIN_GAME_STAGE:
-        main_game_scene_main_game_stage_update();
-        break;
-    default:
-        break;
+        if (g_players.current_player_turn == PLAYER1_TURN)
+        {
+            main_game_scene_shoot_ball(g_players.human[0], 0);
+            main_game_scene_shoot_ball(g_players.human[2], 1);
+        }
+        else
+        {
+            main_game_scene_shoot_ball(g_players.human[1], 0);
+            main_game_scene_shoot_ball(g_players.human[3], 1);
+        }
+        players_advance_turn_state(&g_players);
+    }
+    if (g_players.current_turn_state == SHOOTING)
+    {
+        balls_update(&g_balls, &g_cups);
+        int completed_shots = 0;
+        bool team1_make = false;
+        bool team2_make = false;
+        for (int i = 0; i < MAX_BALLS; i++)
+        {
+            if (g_balls.shot_complete[i])
+            {
+                completed_shots++;
+                if (g_balls.cup_made[i] >= 0)
+                {
+                    if (g_balls.team[i] == 0)
+                    {
+                        team1_make = true;
+                    }
+                    else
+                    {
+                        team2_make = true;
+                    }
+                }
+            }
+        }
+        if (completed_shots >= 2)
+        {
+            printf("done\n");
+            if (team1_make && !team2_make)
+            {
+                printf("Team 1 Wins\n");
+                g_players.current_turn_state = g_players.human[0] ? AIM_TARGET : STARTED_SHOT;
+                g_players.current_player_turn = PLAYER1_TURN;
+                g_players.base_game_state = MAIN_GAME_STAGE;
+            }
+            else if (team2_make && !team1_make)
+            {
+                printf("Team 2 Wins\n");
+                g_players.current_turn_state = g_players.human[2] ? AIM_TARGET : STARTED_SHOT;
+                g_players.current_player_turn = PLAYER3_TURN;
+                g_players.base_game_state = MAIN_GAME_STAGE;
+            }
+            else
+            {
+                players_advance_turn_state(&g_players);
+            }
+            balls_clear(&g_balls);
+        }
+    }
+}
+
+static void main_game_scene_main_game_stage_update()
+{
+    if (g_players.current_turn_state == STARTED_SHOT)
+    {
+        main_game_scene_shoot_ball(g_players.human[g_players.current_player_turn],
+                                   g_players.current_player_turn < PLAYER3_TURN ? 0 : 1);
+        players_advance_turn_state(&g_players);
+        if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN)
+        {
+            g_round_made_both_cups = true;
+        }
+    }
+    if (g_players.current_turn_state == SHOOTING)
+    {
+        balls_update(&g_balls, &g_cups);
+        if (g_balls.shot_complete[0])
+        {
+            if (g_balls.cup_made[0] >= 0)
+            {
+                float cup_positions[12] = {0};
+                for (int i = 0; i < g_balls.cups_hit[0].size; i++)
+                {
+                    cups_make(&g_cups, g_balls.cups_hit[0].array[i]);
+                    cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, g_balls.cups_hit[0].array[i] * 12,
+                                                    12);
+                    if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN)
+                    {
+                        g_team1_score++;
+                    }
+                    else
+                    {
+                        g_team2_score++;
+                    }
+                }
+                if (g_team1_score == 10 || g_team2_score == 10)
+                {
+                    g_reset_game_update = true;
+                    g_reset_game_render = true;
+                    printf("Final Score\n");
+                }
+                printf("Team 1: %d; Team 2: %d\n", g_team1_score, g_team2_score);
+            }
+            else
+            {
+                g_round_made_both_cups = false;
+            }
+            players_advance_turn_state(&g_players);
+            if (g_round_made_both_cups &&
+                (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN))
+            {
+                players_rerun_turn(&g_players);
+                g_round_made_both_cups = true;
+            }
+            g_cleared_ball = false;
+            balls_clear(&g_balls);
+        }
+    }
+}
+
+void main_game_scene_update()
+{
+    if (!g_paused)
+    {
+        if (g_mouse_x < PLAYER_SHOT_BOUND_MAX_X && g_mouse_x > PLAYER_SHOT_BOUND_MIN_X &&
+            g_mouse_y < PLAYER_SHOT_BOUND_MAX_Y && g_mouse_y > PLAYER_SHOT_BOUND_MIN_Y)
+        {
+            g_mouse_in_shot_area = true;
+        }
+        else
+        {
+            g_mouse_in_shot_area = false;
+        }
+        switch (g_players.base_game_state)
+        {
+        case EYE_TO_EYE_STAGE:
+            main_game_scene_eye_to_eye_stage_update();
+            break;
+        case MAIN_GAME_STAGE:
+            main_game_scene_main_game_stage_update();
+            break;
+        default:
+            break;
+        }
     }
     if (g_reset_game_update)
     {
@@ -541,11 +759,14 @@ void main_game_scene_update()
         cups_free(&g_cups);
         cups_init(&g_cups);
         g_players.current_player_turn = PLAYER1_TURN;
-        g_players.current_turn_state = AIM_TARGET;
+        g_players.current_turn_state = g_players.human[PLAYER1_TURN] ? AIM_TARGET : SHOOTING;
+        g_players.base_game_state = EYE_TO_EYE_STAGE;
         g_team1_score = 0;
         g_team2_score = 0;
         g_next_turn = true;
+        g_cleared_target_and_meter = false;
         g_reset_game_update = false;
+        balls_clear(&g_balls);
     }
 }
 
@@ -585,14 +806,18 @@ static void main_game_scene_main_game_stage_render()
             float target_positions[12] = {0};
             if (g_mouse_in_shot_area)
             {
-                float target_offset_x = (float)cos(cstrl_platform_get_absolute_time() * 12.0f) * 12.0f;
-                float target_offset_y = (float)sin(cstrl_platform_get_absolute_time() * 12.0f) * 12.0f;
+                float target_offset_x = (float)cos(cstrl_platform_get_absolute_time() * 16.0f) * 4.0f;
+                float target_offset_y = (float)sin(cstrl_platform_get_absolute_time() * 16.0f) * 4.0f;
                 float targetx0 = (float)g_mouse_x - TARGET_SIZE / 2.0f + target_offset_x;
                 float targety0 = (float)g_mouse_y - TARGET_SIZE / 2.0f + target_offset_y;
                 float targetx1 = (float)g_mouse_x + TARGET_SIZE / 2.0f + target_offset_x;
                 float targety1 = (float)g_mouse_y + TARGET_SIZE / 2.0f + target_offset_y;
                 g_target_position.x = targetx0 + TARGET_SIZE / 2.0f;
                 g_target_position.y = targety0 + TARGET_SIZE / 2.0f;
+                g_ball_origin =
+                    g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN
+                        ? g_team1_start
+                        : g_team2_start;
                 target_positions[0] = targetx0;
                 target_positions[1] = targety1;
                 target_positions[2] = targetx1;
@@ -630,7 +855,7 @@ static void main_game_scene_main_game_stage_render()
                 meter_positions[9] = metery0;
                 meter_positions[10] = meterx1;
                 meter_positions[11] = metery1;
-                g_target_error = (float)sin(cstrl_platform_get_absolute_time() * 7.0f);
+                g_target_error = (float)sin(cstrl_platform_get_absolute_time() * 9.0f);
                 float meter_bar_offset_y = (g_target_error + 1.0f) / 2.0f * METER_SIZE_Y - METER_SIZE_Y / 2.0f;
                 float meter_barx0 = (float)g_mouse_x - METER_BAR_SIZE_X / 2.0f;
                 float meter_bary0 = (float)g_mouse_y - METER_BAR_SIZE_Y / 2.0f + meter_bar_offset_y;
@@ -653,7 +878,7 @@ static void main_game_scene_main_game_stage_render()
             cstrl_renderer_modify_positions(g_meter_bar_render_data, meter_bar_positions, 0, 12);
         }
     }
-    if (g_players.current_turn_state == SHOOTING)
+    if (g_players.current_turn_state >= SHOOTING)
     {
         if (!g_cleared_target_and_meter)
         {
@@ -667,24 +892,51 @@ static void main_game_scene_main_game_stage_render()
             cstrl_renderer_modify_positions(g_meter_bar_render_data, meter_bar_positions, 0, 12);
             g_cleared_target_and_meter = true;
         }
-        float ball_positions[12];
-        float ballx0 = g_ball_position.x - BALL_SIZE / 2.0f;
-        float bally0 = g_ball_position.y - BALL_SIZE / 2.0f;
-        float ballx1 = g_ball_position.x + BALL_SIZE / 2.0f;
-        float bally1 = g_ball_position.y + BALL_SIZE / 2.0f;
-        ball_positions[0] = ballx0;
-        ball_positions[1] = bally1;
-        ball_positions[2] = ballx1;
-        ball_positions[3] = bally0;
-        ball_positions[4] = ballx0;
-        ball_positions[5] = bally0;
-        ball_positions[6] = ballx0;
-        ball_positions[7] = bally1;
-        ball_positions[8] = ballx1;
-        ball_positions[9] = bally0;
-        ball_positions[10] = ballx1;
-        ball_positions[11] = bally1;
-        cstrl_renderer_modify_positions(g_ball_render_data, ball_positions, 0, 12);
+        for (int i = 0; i < MAX_BALLS; i++)
+        {
+            if (!g_balls.active[i])
+            {
+                continue;
+            }
+            float ball_positions[12];
+            float ballx0_origin = -BALL_SIZE / 2.0f;
+            float bally0_origin = -BALL_SIZE / 2.0f;
+            float ballx1_origin = BALL_SIZE / 2.0f;
+            float bally1_origin = -BALL_SIZE / 2.0f;
+            float ballx2_origin = -BALL_SIZE / 2.0f;
+            float bally2_origin = BALL_SIZE / 2.0f;
+            float ballx3_origin = BALL_SIZE / 2.0f;
+            float bally3_origin = BALL_SIZE / 2.0f;
+            float ballx0 =
+                ballx0_origin * cos(g_ball_angle) - bally0_origin * sin(g_ball_angle) + g_balls.position[i].x;
+            float bally0 =
+                bally0_origin * cos(g_ball_angle) + ballx0_origin * sin(g_ball_angle) + g_balls.position[i].y;
+            float ballx1 =
+                ballx1_origin * cos(g_ball_angle) - bally1_origin * sin(g_ball_angle) + g_balls.position[i].x;
+            float bally1 =
+                bally1_origin * cos(g_ball_angle) + ballx1_origin * sin(g_ball_angle) + g_balls.position[i].y;
+            float ballx2 =
+                ballx2_origin * cos(g_ball_angle) - bally2_origin * sin(g_ball_angle) + g_balls.position[i].x;
+            float bally2 =
+                bally2_origin * cos(g_ball_angle) + ballx2_origin * sin(g_ball_angle) + g_balls.position[i].y;
+            float ballx3 =
+                ballx3_origin * cos(g_ball_angle) - bally3_origin * sin(g_ball_angle) + g_balls.position[i].x;
+            float bally3 =
+                bally3_origin * cos(g_ball_angle) + ballx3_origin * sin(g_ball_angle) + g_balls.position[i].y;
+            ball_positions[0] = ballx2;
+            ball_positions[1] = bally2;
+            ball_positions[2] = ballx1;
+            ball_positions[3] = bally1;
+            ball_positions[4] = ballx0;
+            ball_positions[5] = bally0;
+            ball_positions[6] = ballx2;
+            ball_positions[7] = bally2;
+            ball_positions[8] = ballx1;
+            ball_positions[9] = bally1;
+            ball_positions[10] = ballx3;
+            ball_positions[11] = bally3;
+            cstrl_renderer_modify_positions(g_ball_render_data, ball_positions, i * 12, 12);
+        }
     }
 
     cstrl_use_shader(g_default_shader);
@@ -706,15 +958,27 @@ static void main_game_scene_main_game_stage_render()
     cstrl_ui_begin(&g_ui_context);
     int window_width, window_height;
     cstrl_platform_get_window_size(g_platform_state, &window_width, &window_height);
-    if (cstrl_ui_container_begin(&g_ui_context, "Other", 5, 0, window_height - 200, window_width, 200, GEN_ID(0), true,
-                                 false, 2, &g_base_layout))
+    if (cstrl_ui_container_begin(&g_ui_context, "Options", 7, 0, window_height - 200, window_width, 200, GEN_ID(0),
+                                 true, false, 2, &g_base_layout))
     {
         if (cstrl_ui_button(&g_ui_context, "Reset", 5, 10, 50, 150, 50, GEN_ID(0), &g_sub_layout))
         {
             g_reset_game_update = true;
             g_reset_game_render = true;
         }
+        if (cstrl_ui_button(&g_ui_context, "Pause", 5, 10, 110, 150, 50, GEN_ID(0), &g_sub_layout))
+        {
+            g_paused = !g_paused;
+        }
         cstrl_ui_container_end(&g_ui_context);
+    }
+    if (g_paused)
+    {
+
+        if (cstrl_ui_container_begin(&g_ui_context, "Paused", 6, window_width / 2 - 25, window_height / 2 - 50, 100, 50,
+                                     GEN_ID(0), true, false, 2, &g_base_layout))
+        {
+        }
     }
     cstrl_ui_end(&g_ui_context);
 
@@ -725,8 +989,9 @@ static void main_game_scene_main_game_stage_render()
 
 void main_game_scene_render()
 {
-    switch (g_base_game_state)
+    switch (g_players.base_game_state)
     {
+    case EYE_TO_EYE_STAGE:
     case MAIN_GAME_STAGE:
         main_game_scene_main_game_stage_render();
         break;
@@ -757,6 +1022,17 @@ void main_game_scene_render()
             cup_positions[i * 12 + 11] = y1;
         }
         cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, 0, 240);
+
+        float target_positions[12] = {0};
+        cstrl_renderer_modify_positions(g_target_render_data, target_positions, 0, 12);
+
+        float meter_positions[12] = {0};
+        cstrl_renderer_modify_positions(g_meter_render_data, meter_positions, 0, 12);
+
+        float meter_bar_positions[12] = {0};
+        cstrl_renderer_modify_positions(g_meter_bar_render_data, meter_bar_positions, 0, 12);
+        g_cleared_target_and_meter = true;
+
         g_reset_game_render = false;
     }
 }
