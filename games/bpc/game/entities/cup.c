@@ -2,6 +2,7 @@
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
+#include <stdio.h>
 
 bool cups_init(cups_t *cups)
 {
@@ -43,8 +44,9 @@ int cups_shot_test(cups_t *cups, float ball_size, vec2 hit_position, float *dist
     for (int i = 0; i < TOTAL_CUP_COUNT; i++)
     {
         float length = cstrl_vec2_length(cstrl_vec2_sub(cups->position[i], hit_position));
-        if (length <= CUP_SIZE / 2.0f + ball_size / 2.0f)
+        if (length <= CUP_SIZE / 2.0f /*+ ball_size / 2.0f*/)
         {
+            printf("hit cup %d\n", i);
             if (cstrl_da_int_find_first(&cups->freed, i) != CSTRL_DA_INT_ITEM_NOT_FOUND)
             {
                 continue;

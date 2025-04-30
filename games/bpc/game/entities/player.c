@@ -28,33 +28,25 @@ void players_init(players_t *players, bool playing_doubles, int human_players)
     }
 
     players->current_player_turn = PLAYER1_TURN;
-    players->current_turn_state = AIM_TARGET;
+    if (human_players != 0)
+    {
+        players->current_turn_state = AIM_TARGET;
+    }
+    else
+    {
+        players->current_turn_state = STARTED_SHOT;
+    }
     players->base_game_state = EYE_TO_EYE_STAGE;
 }
 
 void players_rerun_turn(players_t *players)
 {
-    if (players->current_player_turn != PLAYER1_TURN)
-    {
-        players->current_player_turn = PLAYER1_TURN;
-    }
-    else
-    {
-        players->current_player_turn = PLAYER3_TURN;
-    }
-    if (!players->human[players->current_player_turn])
-    {
-        players->current_turn_state = SHOOTING;
-    }
-    else
-    {
-        players->current_turn_state = AIM_TARGET;
-    }
+    players->current_player_turn = players->current_player_turn != PLAYER4_TURN ? PLAYER1_TURN : PLAYER3_TURN;
+    players->current_turn_state = players->human[players->current_player_turn] ? AIM_TARGET : STARTED_SHOT;
 }
 
 void players_advance_turn_state(players_t *players)
 {
-    players->current_turn_state++;
     if (players->current_turn_state == TURN_END)
     {
         if (players->base_game_state != EYE_TO_EYE_STAGE)
@@ -70,7 +62,10 @@ void players_advance_turn_state(players_t *players)
         {
             players->current_player_turn = (players->current_player_turn + 1) % 2;
             players->current_turn_state = players->human[players->current_player_turn] ? AIM_TARGET : STARTED_SHOT;
-            printf("player turn: %d\n", players->current_player_turn);
         }
+    }
+    else
+    {
+        players->current_turn_state++;
     }
 }

@@ -28,7 +28,7 @@ enum possible_players
     PLAYER4 = 0x8
 };
 
-typedef CSTRL_PACKED_ENUM{EYE_TO_EYE_STAGE, MAIN_GAME_STAGE, REBUTTAL_STAGE, OVERTIME_STAGE,
+typedef CSTRL_PACKED_ENUM{TRANSITION_STAGE, EYE_TO_EYE_STAGE, MAIN_GAME_STAGE, REBUTTAL_STAGE, OVERTIME_STAGE,
                           GAME_OVER_STAGE} player_base_game_state_t;
 
 typedef struct players_t

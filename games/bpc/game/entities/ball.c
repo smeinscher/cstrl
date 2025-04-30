@@ -39,9 +39,9 @@ void balls_shoot(balls_t *balls, vec2 target, vec2 origin, vec2 error, float spe
     balls->speed[g_current_ball_index] = speed;
     balls->angle[g_current_ball_index] =
         acos(cstrl_vec2_dot(cstrl_vec2_normalize(origin), cstrl_vec2_normalize(balls->target[g_current_ball_index])));
-    balls->shot_complete[g_current_ball_index] = false;
     balls->cup_made[g_current_ball_index] = -1;
     balls->team[g_current_ball_index] = team;
+    balls->shot_complete[g_current_ball_index] = false;
     balls->active[g_current_ball_index++] = true;
 }
 
@@ -65,7 +65,7 @@ void balls_update(balls_t *balls, cups_t *cups)
                 {
                     cstrl_da_int_push_back(&balls->cups_hit[i], cup_hit);
                 }
-                if (balls->cup_hit_distance[i] < CUP_SIZE / 5.0f)
+                if (balls->cup_hit_distance[i] < CUP_SIZE / 2.0f)
                 {
                     balls->cup_made[i] = cup_hit;
                     balls->shot_complete[i] = true;
@@ -94,6 +94,9 @@ void balls_clear(balls_t *balls)
     for (int i = 0; i < MAX_BALLS; i++)
     {
         balls->active[i] = false;
+        balls->shot_complete[i] = false;
+        cstrl_da_int_clear(&balls->cups_hit[i]);
+        balls->cup_made[i] = -1;
     }
     g_current_ball_index = 0;
 }
