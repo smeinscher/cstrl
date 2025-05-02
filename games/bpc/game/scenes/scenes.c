@@ -165,28 +165,16 @@ static balls_t g_balls;
 
 static vec2 g_team1_start;
 static vec2 g_team2_start;
-static vec2 g_ball_position;
-static float g_ball_angle;
 static vec2 g_target_position;
 static vec2 g_ball_origin;
 static float g_target_error;
-static float g_ball_progression;
-static float g_ball_speed = INITIAL_BALL_SPEED;
-static float g_bounce_length = INITIAL_BOUNCE_DISTANCE;
 
 static bool g_cleared_target_and_meter = false;
 static bool g_cleared_ball = false;
-static double g_shot_end_time = 0.0;
-static bool g_next_turn = true;
 static bool g_reset_game_update = false;
 static bool g_reset_game_render = false;
 static bool g_overtime_init_update = false;
 static bool g_overtime_init_render = false;
-
-static int g_team1_score = 0;
-static int g_team2_score = 0;
-
-static bool g_round_made_both_cups = true;
 
 static cstrl_ui_context g_ui_context;
 static cstrl_ui_layout g_base_layout;
@@ -196,16 +184,9 @@ static bool g_mouse_in_shot_area = false;
 
 static bool g_paused = false;
 
-static da_int g_hit_cups;
-
 static int g_tick_counter = 0;
 
 static bool g_transition = false;
-
-static int g_team1_shots_attempted = 0;
-static int g_team1_shots_made = 0;
-static int g_team2_shots_attempted = 0;
-static int g_team2_shots_made = 0;
 
 static void main_game_key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -467,9 +448,6 @@ void main_game_scene_init(void *user_data)
 
     g_team1_start = (vec2){290.0f, playery0 + player_size_y / 2.0f};
     g_team2_start = (vec2){30.0f, playery0 + player_size_y / 2.0f};
-    g_ball_position = (vec2){(float)BASE_SCREEN_DIMENSION_X / 2.0f - BALL_SIZE / 2.0f,
-                             (float)BASE_SCREEN_DIMENSION_Y / 2.0f - BALL_SIZE / 2.0f};
-    g_ball_angle = 0.0f;
 
     cstrl_ui_init(&g_ui_context, g_platform_state);
 
@@ -484,8 +462,6 @@ void main_game_scene_init(void *user_data)
     g_sub_layout.border.color = (cstrl_ui_color){0.0, 0.0f, 0.0f, 1.0f};
     g_sub_layout.color = (cstrl_ui_color){0.75f, 0.18f, 0.19f, 1.0f};
     g_sub_layout.font_color = (cstrl_ui_color){0.0f, 0.0f, 0.0f, 1.0f};
-
-    cstrl_da_int_init(&g_hit_cups, 4);
 }
 
 static void main_game_scene_shoot_ball(bool human, int team)
@@ -611,73 +587,25 @@ static void main_game_scene_main_game_stage_update()
         main_game_scene_shoot_ball(g_players.human[g_players.current_player_turn],
                                    g_players.current_player_turn < PLAYER3_TURN ? 0 : 1);
         players_advance_turn_state(&g_players);
-        if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN)
-        {
-            g_round_made_both_cups = true;
-        }
         break;
     case SHOOTING:
         balls_update(&g_balls, &g_cups);
         if (g_balls.shot_complete[0])
         {
-            if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN)
-            {
-                g_team1_shots_attempted++;
-            }
-            else
-            {
-                g_team2_shots_attempted++;
-            }
             if (g_balls.cup_made[0] >= 0)
             {
-                if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN)
-                {
-                    g_team1_shots_made++;
-                }
-                else
-                {
-                    g_team2_shots_made++;
-                }
                 float cup_positions[12] = {0};
                 for (int i = 0; i < g_balls.cups_hit[0].size; i++)
                 {
                     cups_make(&g_cups, g_balls.cups_hit[0].array[i]);
                     cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, g_balls.cups_hit[0].array[i] * 12,
                                                     12);
-                    if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN)
-                    {
-                        g_team1_score++;
-                    }
-                    else
-                    {
-                        g_team2_score++;
-                    }
-                }
-                if (g_players.base_game_state != REBUTTAL_STAGE &&
-                    (g_team1_score == (g_players.base_game_state != OVERTIME_STAGE ? 10 : 6) ||
-                     g_team2_score == (g_players.base_game_state != OVERTIME_STAGE ? 10 : 6)))
-                {
-                    printf("Rebuttal...\n");
-                    g_players.base_game_state = REBUTTAL_STAGE;
-                    g_players.current_player_turn = g_team1_score > g_team2_score ? PLAYER4_TURN : PLAYER2_TURN;
-                    g_round_made_both_cups = true;
-                }
-                else if (g_players.base_game_state == REBUTTAL_STAGE && g_team1_score == g_team2_score)
-                {
-                    printf("Overtime...\n");
-                    g_overtime_init_update = true;
-                    g_overtime_init_render = true;
-                    g_round_made_both_cups = false;
-                    if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN)
-                    {
-                        g_players.current_player_turn++;
-                    }
                 }
             }
-            else
-            {
-                g_round_made_both_cups = false;
-            }
+            player_shot_state_t shot_state = g_balls.cup_made[0] == -1       ? MISS_SHOT
+                                             : g_balls.cups_hit[0].size == 1 ? MAKE_SHOT
+                                                                             : BOUNCE_SHOT;
+            players_complete_shot(&g_players, shot_state, g_balls.cup_made[0] == -1 ? 0 : g_balls.cups_hit[0].size);
             players_advance_turn_state(&g_players);
             g_cleared_ball = false;
             balls_clear(&g_balls);
@@ -689,24 +617,7 @@ static void main_game_scene_main_game_stage_update()
         if (g_tick_counter > 60)
 #endif
         {
-            if (g_round_made_both_cups &&
-                (g_players.current_player_turn == PLAYER2_TURN || g_players.current_player_turn == PLAYER4_TURN))
-            {
-                players_rerun_turn(&g_players);
-            }
-            else
-            {
-                if (g_players.base_game_state != REBUTTAL_STAGE ||
-                    (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN))
-                {
-                    players_advance_turn_state(&g_players);
-                }
-                else
-                {
-                    g_reset_game_update = true;
-                    g_reset_game_render = true;
-                }
-            }
+            players_advance_turn_state(&g_players);
             g_tick_counter = 0;
         }
         break;
@@ -732,9 +643,18 @@ void main_game_scene_update()
             main_game_scene_eye_to_eye_stage_update();
             break;
         case MAIN_GAME_STAGE:
-        case REBUTTAL_STAGE:
+        case REBUTTAL_ATTEMPT1_STAGE:
+        case REBUTTAL_ATTEMPT2_STAGE:
         case OVERTIME_STAGE:
             main_game_scene_main_game_stage_update();
+            break;
+        case OVERTIME_TRANSITION_STAGE:
+            g_overtime_init_update = true;
+            g_overtime_init_render = true;
+            break;
+        case GAME_OVER_STAGE:
+            g_reset_game_update = true;
+            g_reset_game_render = true;
             break;
         default:
             break;
@@ -745,9 +665,6 @@ void main_game_scene_update()
         cups_free(&g_cups);
         cups_init(&g_cups, true);
         g_players.base_game_state = OVERTIME_STAGE;
-        g_team1_score = 0;
-        g_team2_score = 0;
-        g_next_turn = true;
         g_cleared_target_and_meter = false;
         g_reset_game_update = false;
         balls_clear(&g_balls);
@@ -755,17 +672,10 @@ void main_game_scene_update()
     }
     if (g_reset_game_update)
     {
-        printf("Team 1 Shot Percentage: %f\n", (float)g_team1_shots_made / (float)g_team1_shots_attempted);
-        printf("Team 2 Shot Percentage: %f\n", (float)g_team2_shots_made / (float)g_team2_shots_attempted);
         printf("Resetting Update...\n");
         cups_free(&g_cups);
         cups_init(&g_cups, false);
-        g_players.current_player_turn = PLAYER1_TURN;
-        g_players.current_turn_state = g_players.human[PLAYER1_TURN] ? AIM_TARGET : STARTED_SHOT;
-        g_players.base_game_state = EYE_TO_EYE_STAGE;
-        g_team1_score = 0;
-        g_team2_score = 0;
-        g_next_turn = true;
+        players_reset(&g_players);
         g_cleared_target_and_meter = false;
         g_reset_game_update = false;
         balls_clear(&g_balls);
