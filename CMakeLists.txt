@@ -209,6 +209,9 @@ add_executable(cstrl-bpc-game
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
 target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT)
 target_compile_options(cstrl-rpg-game PRIVATE -DCSTRL_RPG_GAME_EXPORT)
+if (SIMULATION)
+    target_compile_options(cstrl-bpc-game PRIVATE -DSIMULATION)
+endif ()
 
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES})
 if (X11_FOUND)

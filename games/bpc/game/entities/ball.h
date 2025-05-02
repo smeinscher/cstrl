@@ -7,7 +7,11 @@
 
 #define BALL_SIZE 4.0f
 
+#ifndef SIMULATION
 #define INITIAL_BALL_SPEED 2.0f
+#else
+#define INITIAL_BALL_SPEED 20.0f
+#endif
 #define INITIAL_BOUNCE_DISTANCE 20
 
 typedef struct balls_t

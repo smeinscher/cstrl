@@ -37,7 +37,7 @@ int bpc_game_run()
     // playerx0 = 1115.0f;
     // playerx1 = playerx0 - player_size_x;
 
-    double previous_frame_time = 0.0;
+    double previous_frame_time = cstrl_platform_get_absolute_time();
     double frame_lag = 0.0;
     while (!cstrl_platform_should_exit())
     {

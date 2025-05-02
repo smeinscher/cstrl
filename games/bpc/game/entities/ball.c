@@ -38,7 +38,9 @@ void balls_shoot(balls_t *balls, vec2 target, vec2 origin, vec2 error, float spe
         cstrl_vec2_normalize(cstrl_vec2_sub(balls->target[g_current_ball_index], origin));
     balls->speed[g_current_ball_index] = speed;
     balls->angle[g_current_ball_index] =
-        acos(cstrl_vec2_dot(cstrl_vec2_normalize(origin), cstrl_vec2_normalize(balls->target[g_current_ball_index])));
+        team == 0
+            ? atan2(origin.y - balls->target[g_current_ball_index].y, origin.x - balls->target[g_current_ball_index].x)
+            : atan2(balls->target[g_current_ball_index].y - origin.y, balls->target[g_current_ball_index].x - origin.x);
     balls->cup_made[g_current_ball_index] = -1;
     balls->team[g_current_ball_index] = team;
     balls->shot_complete[g_current_ball_index] = false;
@@ -58,6 +60,7 @@ void balls_update(balls_t *balls, cups_t *cups)
         if (cstrl_vec2_length(cstrl_vec2_sub(balls->position[i], balls->origin[i])) >=
             cstrl_vec2_length(cstrl_vec2_sub(balls->target[i], balls->origin[i])))
         {
+            balls->position[i] = balls->target[i];
             int cup_hit = cups_shot_test(cups, BALL_SIZE, balls->position[i], &balls->cup_hit_distance[i]);
             if (cup_hit >= 0)
             {
@@ -65,7 +68,7 @@ void balls_update(balls_t *balls, cups_t *cups)
                 {
                     cstrl_da_int_push_back(&balls->cups_hit[i], cup_hit);
                 }
-                if (balls->cup_hit_distance[i] < CUP_SIZE / 2.0f)
+                if (balls->cup_hit_distance[i] < CUP_SIZE / 5.0f)
                 {
                     balls->cup_made[i] = cup_hit;
                     balls->shot_complete[i] = true;

@@ -180,6 +180,8 @@ static double g_shot_end_time = 0.0;
 static bool g_next_turn = true;
 static bool g_reset_game_update = false;
 static bool g_reset_game_render = false;
+static bool g_overtime_init_update = false;
+static bool g_overtime_init_render = false;
 
 static int g_team1_score = 0;
 static int g_team2_score = 0;
@@ -199,6 +201,11 @@ static da_int g_hit_cups;
 static int g_tick_counter = 0;
 
 static bool g_transition = false;
+
+static int g_team1_shots_attempted = 0;
+static int g_team1_shots_made = 0;
+static int g_team2_shots_attempted = 0;
+static int g_team2_shots_made = 0;
 
 static void main_game_key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -234,6 +241,9 @@ static void main_game_mouse_button_callback(cstrl_platform_state *state, int but
 
 void main_game_scene_init(void *user_data)
 {
+#ifdef SIMULATION
+    printf("Simulation Mode\n");
+#endif
     cstrl_platform_set_key_callback(g_platform_state, main_game_key_callback);
     cstrl_platform_set_mouse_position_callback(g_platform_state, main_game_mouse_position_callback);
     cstrl_platform_set_mouse_button_callback(g_platform_state, main_game_mouse_button_callback);
@@ -267,7 +277,7 @@ void main_game_scene_init(void *user_data)
         cstrl_texture_generate_from_path("resources/textures/beer_pong/bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
     g_cup_render_data = cstrl_renderer_create_render_data();
-    cups_init(&g_cups);
+    cups_init(&g_cups, false);
     float cup_positions[240];
     for (int i = 0; i < 20; i++)
     {
@@ -443,7 +453,7 @@ void main_game_scene_init(void *user_data)
     g_meter_bar_texture =
         cstrl_texture_generate_from_path("resources/textures/beer_pong/meter_bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
-    players_init(&g_players, true, PLAYER1);
+    players_init(&g_players, true, 0);
     balls_init(&g_balls);
 
     float player_size_x = 17.0f;
@@ -478,113 +488,6 @@ void main_game_scene_init(void *user_data)
     cstrl_da_int_init(&g_hit_cups, 4);
 }
 
-static void main_game_scene_ball_shot_update()
-{
-    if (g_players.current_turn_state == SHOOTING)
-    {
-        vec2 target_position_mod = g_target_position;
-        target_position_mod.y += g_target_error * 12.5f;
-        g_ball_angle =
-            acos(cstrl_vec2_dot(cstrl_vec2_normalize(g_ball_origin), cstrl_vec2_normalize(target_position_mod)));
-        g_ball_progression += g_ball_speed / cstrl_vec2_length(cstrl_vec2_sub(target_position_mod, g_ball_origin));
-        g_ball_position =
-            cstrl_vec2_add(cstrl_vec2_mult_scalar(g_ball_origin, (1.0f - cstrl_min(1.0f, g_ball_progression))),
-                           cstrl_vec2_mult_scalar(target_position_mod, cstrl_min(1.0f, g_ball_progression)));
-        if (g_ball_progression > 1.0f)
-        {
-            float distance_from_center = CUP_SIZE;
-            int hit_cup = cups_shot_test(&g_cups, BALL_SIZE, target_position_mod, &distance_from_center);
-            if (cstrl_da_int_find_first(&g_hit_cups, hit_cup) == CSTRL_DA_INT_ITEM_NOT_FOUND)
-            {
-                cstrl_da_int_push_back(&g_hit_cups, hit_cup);
-            }
-            if (distance_from_center >= (g_hit_cups.size == 0 ? MAKE_RADIUS : MAKE_RADIUS_BOUNCE) && hit_cup != -1)
-            {
-                g_ball_origin = g_ball_position;
-                g_bounce_length -= (float)(rand() % (int)INITIAL_BOUNCE_DISTANCE * 10) / 10.0f;
-                g_bounce_length = cstrl_max(g_bounce_length, 2.0f);
-                g_target_position =
-                    g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN
-                        ? cstrl_vec2_sub(g_target_position, (vec2){g_bounce_length * cos(g_ball_angle),
-                                                                   g_bounce_length * sin(g_ball_angle)})
-                        : cstrl_vec2_add(g_target_position, (vec2){g_bounce_length * cos(g_ball_angle),
-                                                                   g_bounce_length * sin(g_ball_angle)});
-                g_ball_progression = 0.0f;
-                g_target_error = 0.0f;
-                g_ball_speed -= (float)(rand() % 1000) / 1000.0f;
-                g_ball_speed = cstrl_max(g_ball_speed, 1.0f);
-            }
-            else
-            {
-                if (distance_from_center < (g_hit_cups.size == 0 ? MAKE_RADIUS : MAKE_RADIUS_BOUNCE))
-                {
-                    float cup_positions[12] = {0};
-                    for (int i = 0; i < g_hit_cups.size; i++)
-                    {
-                        cups_make(&g_cups, g_hit_cups.array[i]);
-                        cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, g_hit_cups.array[i] * 12, 12);
-                        if (g_players.current_player_turn == PLAYER1_TURN ||
-                            g_players.current_player_turn == PLAYER2_TURN)
-                        {
-                            g_team1_score++;
-                        }
-                        else
-                        {
-                            g_team2_score++;
-                        }
-                    }
-                    if (g_team1_score == 10 || g_team2_score == 10)
-                    {
-                        g_reset_game_update = true;
-                        g_reset_game_render = true;
-                        printf("Final Score\n");
-                    }
-                    printf("Team 1: %d; Team 2: %d\n", g_team1_score, g_team2_score);
-                }
-                else
-                {
-                    g_round_made_both_cups = false;
-                }
-                cstrl_da_int_clear(&g_hit_cups);
-                g_ball_progression = 0.0f;
-                g_cleared_ball = false;
-                g_shot_end_time = cstrl_platform_get_absolute_time();
-                g_next_turn = false;
-                g_ball_speed = INITIAL_BALL_SPEED;
-                g_bounce_length = INITIAL_BOUNCE_DISTANCE;
-                players_advance_turn_state(&g_players);
-            }
-        }
-    }
-    else if (!g_next_turn && cstrl_platform_get_absolute_time() - g_shot_end_time > 2.0)
-    {
-        players_advance_turn_state(&g_players);
-        if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN)
-        {
-            if (g_round_made_both_cups)
-            {
-                players_rerun_turn(&g_players);
-            }
-            g_round_made_both_cups = true;
-        }
-        if (!g_players.human[g_players.current_player_turn])
-        {
-            int selected_cup;
-            do
-            {
-                selected_cup = rand() % 10 + (g_players.current_player_turn < PLAYER3_TURN ? 0 : 10);
-            } while (cstrl_da_int_find_first(&g_cups.freed, selected_cup) != CSTRL_DA_INT_ITEM_NOT_FOUND);
-            g_target_position = g_cups.position[selected_cup];
-            g_target_error = (float)(rand() % 1000 - 500) / 1000.0f;
-            g_ball_origin =
-                g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN
-                    ? g_team1_start
-                    : g_team2_start;
-        }
-        g_next_turn = true;
-    }
-}
-
 static void main_game_scene_shoot_ball(bool human, int team)
 {
     if (!human)
@@ -596,7 +499,7 @@ static void main_game_scene_shoot_ball(bool human, int team)
         } while (cstrl_da_int_find_first(&g_cups.freed, selected_cup) != CSTRL_DA_INT_ITEM_NOT_FOUND);
         vec2 target_position = g_cups.position[selected_cup];
         vec2 target_error = cstrl_vec2_mult_scalar(
-            (vec2){(float)(rand() % 1000 - 500) / 1000.0f, (float)(rand() % 1000 - 500) / 1000.0f}, 12.5f);
+            (vec2){(float)(rand() % 1000 - 500) / 2000.0f, (float)(rand() % 1000 - 500) / 2000.0f}, 12.5f);
         balls_shoot(&g_balls, target_position, team == 0 ? g_team1_start : g_team2_start, target_error,
                     INITIAL_BALL_SPEED, team);
     }
@@ -652,19 +555,18 @@ static void main_game_scene_eye_to_eye_stage_update()
         }
         if (completed_shots >= 2)
         {
-            printf("done\n");
             if (team1_make && !team2_make)
             {
-                printf("Team 1 Wins\n");
+                printf("Team 1 Wins First Turn\n");
                 g_players.current_turn_state = TURN_END;
-                g_players.current_player_turn = PLAYER2_TURN;
+                g_players.current_player_turn = PLAYER1_TURN;
                 g_transition = true;
             }
             else if (team2_make && !team1_make)
             {
-                printf("Team 2 Wins\n");
+                printf("Team 2 Wins First Turn\n");
                 g_players.current_turn_state = TURN_END;
-                g_players.current_player_turn = PLAYER4_TURN;
+                g_players.current_player_turn = PLAYER3_TURN;
                 g_transition = true;
             }
             else
@@ -675,13 +577,17 @@ static void main_game_scene_eye_to_eye_stage_update()
         }
         break;
     case TURN_END:
+#ifndef SIMULATION
         g_tick_counter++;
         if (g_tick_counter > 60)
+#endif
         {
             if (g_transition)
             {
                 printf("Main Game Stage\n");
                 g_players.base_game_state = MAIN_GAME_STAGE;
+                g_players.current_turn_state =
+                    g_players.human[g_players.current_player_turn] ? AIM_TARGET : STARTED_SHOT;
                 g_transition = false;
             }
             else
@@ -714,12 +620,27 @@ static void main_game_scene_main_game_stage_update()
         balls_update(&g_balls, &g_cups);
         if (g_balls.shot_complete[0])
         {
+            if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN)
+            {
+                g_team1_shots_attempted++;
+            }
+            else
+            {
+                g_team2_shots_attempted++;
+            }
             if (g_balls.cup_made[0] >= 0)
             {
+                if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER2_TURN)
+                {
+                    g_team1_shots_made++;
+                }
+                else
+                {
+                    g_team2_shots_made++;
+                }
                 float cup_positions[12] = {0};
                 for (int i = 0; i < g_balls.cups_hit[0].size; i++)
                 {
-                    printf("cup made: %d\n", g_balls.cups_hit[0].array[i]);
                     cups_make(&g_cups, g_balls.cups_hit[0].array[i]);
                     cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, g_balls.cups_hit[0].array[i] * 12,
                                                     12);
@@ -732,13 +653,22 @@ static void main_game_scene_main_game_stage_update()
                         g_team2_score++;
                     }
                 }
-                if (g_team1_score == 10 || g_team2_score == 10)
+                if (g_players.base_game_state != REBUTTAL_STAGE &&
+                    (g_team1_score == (g_players.base_game_state != OVERTIME_STAGE ? 10 : 6) ||
+                     g_team2_score == (g_players.base_game_state != OVERTIME_STAGE ? 10 : 6)))
                 {
-                    g_reset_game_update = true;
-                    g_reset_game_render = true;
-                    printf("Final Score\n");
+                    printf("Rebuttal...\n");
+                    g_players.base_game_state = REBUTTAL_STAGE;
+                    g_players.current_player_turn = g_team1_score > g_team2_score ? PLAYER4_TURN : PLAYER2_TURN;
+                    g_round_made_both_cups = true;
                 }
-                printf("Team 1: %d; Team 2: %d\n", g_team1_score, g_team2_score);
+                else if (g_players.base_game_state == REBUTTAL_STAGE && g_team1_score == g_team2_score)
+                {
+                    printf("Overtime...\n");
+                    g_overtime_init_update = true;
+                    g_overtime_init_render = true;
+                    g_round_made_both_cups = false;
+                }
             }
             else
             {
@@ -750,19 +680,28 @@ static void main_game_scene_main_game_stage_update()
         }
         break;
     case TURN_END:
+#ifndef SIMULATION
         g_tick_counter++;
         if (g_tick_counter > 60)
+#endif
         {
-            printf("Turn End\n");
             if (g_round_made_both_cups &&
                 (g_players.current_player_turn == PLAYER2_TURN || g_players.current_player_turn == PLAYER4_TURN))
             {
                 players_rerun_turn(&g_players);
-                g_round_made_both_cups = true;
             }
             else
             {
-                players_advance_turn_state(&g_players);
+                if (g_players.base_game_state != REBUTTAL_STAGE ||
+                    (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN))
+                {
+                    players_advance_turn_state(&g_players);
+                }
+                else
+                {
+                    g_reset_game_update = true;
+                    g_reset_game_render = true;
+                }
             }
             g_tick_counter = 0;
         }
@@ -789,17 +728,34 @@ void main_game_scene_update()
             main_game_scene_eye_to_eye_stage_update();
             break;
         case MAIN_GAME_STAGE:
+        case REBUTTAL_STAGE:
+        case OVERTIME_STAGE:
             main_game_scene_main_game_stage_update();
             break;
         default:
             break;
         }
     }
+    if (g_overtime_init_update)
+    {
+        cups_free(&g_cups);
+        cups_init(&g_cups, true);
+        g_players.base_game_state = OVERTIME_STAGE;
+        g_team1_score = 0;
+        g_team2_score = 0;
+        g_next_turn = true;
+        g_cleared_target_and_meter = false;
+        g_reset_game_update = false;
+        balls_clear(&g_balls);
+        g_overtime_init_update = false;
+    }
     if (g_reset_game_update)
     {
+        printf("Team 1 Shot Percentage: %f\n", (float)g_team1_shots_made / (float)g_team1_shots_attempted);
+        printf("Team 2 Shot Percentage: %f\n", (float)g_team2_shots_made / (float)g_team2_shots_attempted);
         printf("Resetting Update...\n");
         cups_free(&g_cups);
-        cups_init(&g_cups);
+        cups_init(&g_cups, false);
         g_players.current_player_turn = PLAYER1_TURN;
         g_players.current_turn_state = g_players.human[PLAYER1_TURN] ? AIM_TARGET : STARTED_SHOT;
         g_players.base_game_state = EYE_TO_EYE_STAGE;
@@ -815,7 +771,8 @@ void main_game_scene_update()
 static void main_game_scene_main_game_stage_render()
 {
     float cursor_positions[12] = {0};
-    if (!g_mouse_in_shot_area || !g_players.human[g_players.current_player_turn])
+    if (!g_players.human[g_players.current_player_turn] || !g_mouse_in_shot_area ||
+        g_players.current_turn_state >= STARTED_SHOT)
     {
         float cursorx0 = (float)g_mouse_x - CURSOR_SIZE / 2.0f;
         float cursory0 = (float)g_mouse_y - CURSOR_SIZE / 2.0f;
@@ -848,8 +805,8 @@ static void main_game_scene_main_game_stage_render()
             float target_positions[12] = {0};
             if (g_mouse_in_shot_area)
             {
-                float target_offset_x = (float)cos(cstrl_platform_get_absolute_time() * 16.0f) * 4.0f;
-                float target_offset_y = (float)sin(cstrl_platform_get_absolute_time() * 16.0f) * 4.0f;
+                float target_offset_x = (float)cos(cstrl_platform_get_absolute_time() * 20.0f) * 4.0f;
+                float target_offset_y = (float)sin(cstrl_platform_get_absolute_time() * 20.0f) * 4.0f;
                 float targetx0 = (float)g_mouse_x - TARGET_SIZE / 2.0f + target_offset_x;
                 float targety0 = (float)g_mouse_y - TARGET_SIZE / 2.0f + target_offset_y;
                 float targetx1 = (float)g_mouse_x + TARGET_SIZE / 2.0f + target_offset_x;
@@ -897,7 +854,7 @@ static void main_game_scene_main_game_stage_render()
                 meter_positions[9] = metery0;
                 meter_positions[10] = meterx1;
                 meter_positions[11] = metery1;
-                g_target_error = (float)sin(cstrl_platform_get_absolute_time() * 9.0f);
+                g_target_error = (float)sin(cstrl_platform_get_absolute_time() * 14.0f);
                 float meter_bar_offset_y = (g_target_error + 1.0f) / 2.0f * METER_SIZE_Y - METER_SIZE_Y / 2.0f;
                 float meter_barx0 = (float)g_mouse_x - METER_BAR_SIZE_X / 2.0f;
                 float meter_bary0 = (float)g_mouse_y - METER_BAR_SIZE_Y / 2.0f + meter_bar_offset_y;
@@ -950,21 +907,21 @@ static void main_game_scene_main_game_stage_render()
             float ballx3_origin = BALL_SIZE / 2.0f;
             float bally3_origin = BALL_SIZE / 2.0f;
             float ballx0 =
-                ballx0_origin * cos(g_ball_angle) - bally0_origin * sin(g_ball_angle) + g_balls.position[i].x;
+                ballx0_origin * cosf(g_balls.angle[i]) - bally0_origin * sinf(g_balls.angle[i]) + g_balls.position[i].x;
             float bally0 =
-                bally0_origin * cos(g_ball_angle) + ballx0_origin * sin(g_ball_angle) + g_balls.position[i].y;
+                bally0_origin * cosf(g_balls.angle[i]) + ballx0_origin * sinf(g_balls.angle[i]) + g_balls.position[i].y;
             float ballx1 =
-                ballx1_origin * cos(g_ball_angle) - bally1_origin * sin(g_ball_angle) + g_balls.position[i].x;
+                ballx1_origin * cosf(g_balls.angle[i]) - bally1_origin * sinf(g_balls.angle[i]) + g_balls.position[i].x;
             float bally1 =
-                bally1_origin * cos(g_ball_angle) + ballx1_origin * sin(g_ball_angle) + g_balls.position[i].y;
+                bally1_origin * cosf(g_balls.angle[i]) + ballx1_origin * sinf(g_balls.angle[i]) + g_balls.position[i].y;
             float ballx2 =
-                ballx2_origin * cos(g_ball_angle) - bally2_origin * sin(g_ball_angle) + g_balls.position[i].x;
+                ballx2_origin * cosf(g_balls.angle[i]) - bally2_origin * sinf(g_balls.angle[i]) + g_balls.position[i].x;
             float bally2 =
-                bally2_origin * cos(g_ball_angle) + ballx2_origin * sin(g_ball_angle) + g_balls.position[i].y;
+                bally2_origin * cosf(g_balls.angle[i]) + ballx2_origin * sinf(g_balls.angle[i]) + g_balls.position[i].y;
             float ballx3 =
-                ballx3_origin * cos(g_ball_angle) - bally3_origin * sin(g_ball_angle) + g_balls.position[i].x;
+                ballx3_origin * cosf(g_balls.angle[i]) - bally3_origin * sinf(g_balls.angle[i]) + g_balls.position[i].x;
             float bally3 =
-                bally3_origin * cos(g_ball_angle) + ballx3_origin * sin(g_ball_angle) + g_balls.position[i].y;
+                bally3_origin * cosf(g_balls.angle[i]) + ballx3_origin * sinf(g_balls.angle[i]) + g_balls.position[i].y;
             ball_positions[0] = ballx2;
             ball_positions[1] = bally2;
             ball_positions[2] = ballx1;
@@ -1031,14 +988,46 @@ static void main_game_scene_main_game_stage_render()
 
 void main_game_scene_render()
 {
-    switch (g_players.base_game_state)
+    main_game_scene_main_game_stage_render();
+    if (g_overtime_init_render)
     {
-    case EYE_TO_EYE_STAGE:
-    case MAIN_GAME_STAGE:
-        main_game_scene_main_game_stage_render();
-        break;
-    default:
-        break;
+        float cup_positions[240] = {0};
+        for (int i = 4; i < 20; i++)
+        {
+            if (i > 9 && i < 14)
+            {
+                continue;
+            }
+            float x0 = g_cups.position[i].x - CUP_SIZE / 2.0f;
+            float y0 = g_cups.position[i].y - CUP_SIZE / 2.0f;
+            float x1 = g_cups.position[i].x + CUP_SIZE / 2.0f;
+            float y1 = g_cups.position[i].y + CUP_SIZE / 2.0f;
+            cup_positions[i * 12] = x0;
+            cup_positions[i * 12 + 1] = y1;
+            cup_positions[i * 12 + 2] = x1;
+            cup_positions[i * 12 + 3] = y0;
+            cup_positions[i * 12 + 4] = x0;
+            cup_positions[i * 12 + 5] = y0;
+            cup_positions[i * 12 + 6] = x0;
+            cup_positions[i * 12 + 7] = y1;
+            cup_positions[i * 12 + 8] = x1;
+            cup_positions[i * 12 + 9] = y0;
+            cup_positions[i * 12 + 10] = x1;
+            cup_positions[i * 12 + 11] = y1;
+        }
+        cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, 0, 240);
+
+        float target_positions[12] = {0};
+        cstrl_renderer_modify_positions(g_target_render_data, target_positions, 0, 12);
+
+        float meter_positions[12] = {0};
+        cstrl_renderer_modify_positions(g_meter_render_data, meter_positions, 0, 12);
+
+        float meter_bar_positions[12] = {0};
+        cstrl_renderer_modify_positions(g_meter_bar_render_data, meter_bar_positions, 0, 12);
+        g_cleared_target_and_meter = true;
+
+        g_overtime_init_render = false;
     }
     if (g_reset_game_render)
     {

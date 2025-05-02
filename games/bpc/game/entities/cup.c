@@ -2,9 +2,8 @@
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
-#include <stdio.h>
 
-bool cups_init(cups_t *cups)
+bool cups_init(cups_t *cups, bool overtime)
 {
     float cup_start_x0 = 48.0f;
     float cup_start_x1 = 272.0f;
@@ -36,26 +35,44 @@ bool cups_init(cups_t *cups)
 
     cstrl_da_int_init(&cups->freed, 10);
 
+    if (overtime)
+    {
+        cstrl_da_int_push_back(&cups->freed, 0);
+        cstrl_da_int_push_back(&cups->freed, 1);
+        cstrl_da_int_push_back(&cups->freed, 2);
+        cstrl_da_int_push_back(&cups->freed, 3);
+
+        cstrl_da_int_push_back(&cups->freed, 10);
+        cstrl_da_int_push_back(&cups->freed, 11);
+        cstrl_da_int_push_back(&cups->freed, 12);
+        cstrl_da_int_push_back(&cups->freed, 13);
+    }
+
     return true;
 }
 
 int cups_shot_test(cups_t *cups, float ball_size, vec2 hit_position, float *distance_from_center)
 {
+    float min_length = cstrl_infinity;
+    int selected_cup = -1;
     for (int i = 0; i < TOTAL_CUP_COUNT; i++)
     {
         float length = cstrl_vec2_length(cstrl_vec2_sub(cups->position[i], hit_position));
-        if (length <= CUP_SIZE / 2.0f /*+ ball_size / 2.0f*/)
+        if (length <= CUP_SIZE / 2.0f + ball_size / 2.0f)
         {
-            printf("hit cup %d\n", i);
             if (cstrl_da_int_find_first(&cups->freed, i) != CSTRL_DA_INT_ITEM_NOT_FOUND)
             {
                 continue;
             }
-            *distance_from_center = length;
-            return i;
+            if (length < min_length)
+            {
+                min_length = length;
+                selected_cup = i;
+            }
         }
     }
-    return -1;
+    *distance_from_center = min_length;
+    return selected_cup;
 }
 
 void cups_make(cups_t *cups, int cup_id)

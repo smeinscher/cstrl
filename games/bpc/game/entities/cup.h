@@ -15,7 +15,7 @@ typedef struct cups_t
     da_int freed;
 } cups_t;
 
-bool cups_init(cups_t *cups);
+bool cups_init(cups_t *cups, bool overtime);
 
 int cups_shot_test(cups_t *cups, float ball_size, vec2 hit_position, float *distance_from_center);
 
