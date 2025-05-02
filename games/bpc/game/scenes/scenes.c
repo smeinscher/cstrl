@@ -453,7 +453,7 @@ void main_game_scene_init(void *user_data)
     g_meter_bar_texture =
         cstrl_texture_generate_from_path("resources/textures/beer_pong/meter_bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
-    players_init(&g_players, true, 0);
+    players_init(&g_players, true, PLAYER1);
     balls_init(&g_balls);
 
     float player_size_x = 17.0f;
@@ -668,6 +668,10 @@ static void main_game_scene_main_game_stage_update()
                     g_overtime_init_update = true;
                     g_overtime_init_render = true;
                     g_round_made_both_cups = false;
+                    if (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN)
+                    {
+                        g_players.current_player_turn++;
+                    }
                 }
             }
             else
