@@ -20,6 +20,14 @@ find_package(OpenGL)
 
 find_package(Vulkan)
 
+if (WIN32)
+    set(OPENAL_SDK "C:/Program Files (x86)/OpenAL 1.1 SDK")
+else ()
+    set(OPENAL_SDK "")
+endif ()
+include_directories("${OPENAL_SDK}/include")
+link_directories("${OPENAL_SDK}/libs/Win64")
+
 find_package(X11 QUIET)
 
 add_library(log_c STATIC
@@ -94,6 +102,8 @@ add_library(cstrl SHARED
         src/debug/assert.c
         src/platform/platform_em_web.c
         src/renderer/opengl/opengl_platform_em_web.c
+        src/audio/openal/openal_audio.c
+        include/cstrl/cstrl_audio.h
 )
 
 add_executable(cstrl-test
@@ -213,7 +223,7 @@ if (SIMULATION)
     target_compile_options(cstrl-bpc-game PRIVATE -DSIMULATION)
 endif ()
 
-target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES})
+target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES} OpenAL32.lib)
 if (X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)
 endif ()

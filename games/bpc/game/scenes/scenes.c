@@ -434,7 +434,7 @@ void main_game_scene_init(void *user_data)
     g_meter_bar_texture =
         cstrl_texture_generate_from_path("resources/textures/beer_pong/meter_bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
-    players_init(&g_players, true, PLAYER1);
+    players_init(&g_players, true, 0);
     balls_init(&g_balls);
 
     float player_size_x = 17.0f;

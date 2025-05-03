@@ -1,4 +1,5 @@
 #include "game.h"
+#include "cstrl/cstrl_audio.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 #include "scenes/scene_manager.h"
@@ -19,6 +20,29 @@ int bpc_game_run()
         cstrl_platform_shutdown(&platform_state);
         return 1;
     }
+
+    if (!cstrl_audio_init())
+    {
+        cstrl_platform_shutdown(&platform_state);
+        return 2;
+    }
+    sound_t theme_sound;
+    if (!cstrl_audio_load_ogg("resources/sounds/hangout.ogg", &theme_sound))
+    {
+        cstrl_platform_shutdown(&platform_state);
+        cstrl_audio_shutdown();
+        return 3;
+    }
+    source_t theme_source;
+    if (!cstrl_audio_create_source(&theme_source))
+    {
+        cstrl_platform_shutdown(&platform_state);
+        cstrl_audio_unload(&theme_sound);
+        cstrl_audio_shutdown();
+        return 4;
+    }
+
+    cstrl_audio_play(&theme_source, &theme_sound, true);
 
     srand(cstrl_platform_get_absolute_time());
 
@@ -61,6 +85,9 @@ int bpc_game_run()
     scenes_clean();
 
     cstrl_renderer_shutdown(&platform_state);
+    cstrl_audio_stop(&theme_source);
+    cstrl_audio_unload(&theme_sound);
+    cstrl_audio_shutdown();
     cstrl_platform_shutdown(&platform_state);
 
     return 0;
