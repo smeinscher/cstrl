@@ -3,6 +3,7 @@
 
 #include "cstrl/cstrl_math.h"
 #include "cup.h"
+#include "player.h"
 #define MAX_BALLS 2
 
 #define BALL_SIZE 4.0f
@@ -36,7 +37,7 @@ void balls_init(balls_t *balls);
 
 void balls_shoot(balls_t *balls, vec2 target, vec2 origin, vec2 error, float speed, int team);
 
-void balls_update(balls_t *balls, cups_t *cups);
+void balls_update(balls_t *balls, cups_t *cups, players_t *players);
 
 void balls_clear(balls_t *balls);
 

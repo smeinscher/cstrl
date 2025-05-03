@@ -1,8 +1,6 @@
 #include "ball.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_util.h"
-#include "cup.h"
-#include <stdio.h>
 #include <stdlib.h>
 
 static int g_current_ball_index = 0;
@@ -47,7 +45,7 @@ void balls_shoot(balls_t *balls, vec2 target, vec2 origin, vec2 error, float spe
     balls->active[g_current_ball_index++] = true;
 }
 
-void balls_update(balls_t *balls, cups_t *cups)
+void balls_update(balls_t *balls, cups_t *cups, players_t *players)
 {
     for (int i = 0; i < MAX_BALLS; i++)
     {
@@ -68,7 +66,9 @@ void balls_update(balls_t *balls, cups_t *cups)
                 {
                     cstrl_da_int_push_back(&balls->cups_hit[i], cup_hit);
                 }
-                if (balls->cup_hit_distance[i] < CUP_SIZE / 5.0f)
+                float t = (float)players->stats[players->current_player_turn].accuracy / 100.0f;
+                float d = (1.0f - t) * 5.0f + t * 3.5f;
+                if (balls->cup_hit_distance[i] < CUP_SIZE / d)
                 {
                     balls->cup_made[i] = cup_hit;
                     balls->shot_complete[i] = true;

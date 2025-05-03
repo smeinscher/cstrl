@@ -438,7 +438,7 @@ void main_game_scene_init(void *user_data)
     balls_init(&g_balls);
 
     float player_size_x = 17.0f;
-    float player_size_y = 31.5;
+    float player_size_y = 31.5f;
     float playerx0 = 30.0f;
     float playery0 = (float)BASE_SCREEN_DIMENSION_Y / 2.0f - player_size_y / 2.0f;
     float playerx1 = playerx0 + player_size_x;
@@ -474,15 +474,17 @@ static void main_game_scene_shoot_ball(bool human, int team)
             selected_cup = rand() % 10 + (team * 10);
         } while (cstrl_da_int_find_first(&g_cups.freed, selected_cup) != CSTRL_DA_INT_ITEM_NOT_FOUND);
         vec2 target_position = g_cups.position[selected_cup];
+        float t = (float)g_players.stats[g_players.current_player_turn].focus / 100.0f;
+        float scale = (1.0f - t) * 6.5f + t * 4.0f;
         vec2 target_error = cstrl_vec2_mult_scalar(
-            (vec2){(float)(rand() % 1000 - 500) / 2000.0f, (float)(rand() % 1000 - 500) / 2000.0f}, 12.5f);
+            (vec2){(float)(rand() % 1000 - 500) / 500.0f, (float)(rand() % 1000 - 500) / 500.0f}, scale);
         balls_shoot(&g_balls, target_position, team == 0 ? g_team1_start : g_team2_start, target_error,
                     INITIAL_BALL_SPEED, team);
     }
     else
     {
         balls_shoot(&g_balls, g_target_position, team == 0 ? g_team1_start : g_team2_start,
-                    (vec2){0.0f, g_target_error * 12.5f}, INITIAL_BALL_SPEED, team);
+                    (vec2){0.0f, g_target_error * 12.5}, INITIAL_BALL_SPEED, team);
     }
 }
 
@@ -507,7 +509,7 @@ static void main_game_scene_eye_to_eye_stage_update()
         players_advance_turn_state(&g_players);
         break;
     case SHOOTING:
-        balls_update(&g_balls, &g_cups);
+        balls_update(&g_balls, &g_cups, &g_players);
         int completed_shots = 0;
         bool team1_make = false;
         bool team2_make = false;
@@ -589,7 +591,7 @@ static void main_game_scene_main_game_stage_update()
         players_advance_turn_state(&g_players);
         break;
     case SHOOTING:
-        balls_update(&g_balls, &g_cups);
+        balls_update(&g_balls, &g_cups, &g_players);
         if (g_balls.shot_complete[0])
         {
             if (g_balls.cup_made[0] >= 0)
@@ -719,8 +721,11 @@ static void main_game_scene_main_game_stage_render()
             float target_positions[12] = {0};
             if (g_mouse_in_shot_area)
             {
-                float target_offset_x = (float)cos(cstrl_platform_get_absolute_time() * 20.0f) * 4.0f;
-                float target_offset_y = (float)sin(cstrl_platform_get_absolute_time() * 20.0f) * 4.0f;
+                float t = (float)g_players.stats[g_players.current_player_turn].focus / 100.0f;
+                float distance = (1.0f - t) * 4.0f + t * 3.0f;
+                float speed = (1.0f - t) * 20.0f + t * 12.0f;
+                float target_offset_x = (float)cos(cstrl_platform_get_absolute_time() * speed) * distance;
+                float target_offset_y = (float)sin(cstrl_platform_get_absolute_time() * speed) * distance;
                 float targetx0 = (float)g_mouse_x - TARGET_SIZE / 2.0f + target_offset_x;
                 float targety0 = (float)g_mouse_y - TARGET_SIZE / 2.0f + target_offset_y;
                 float targetx1 = (float)g_mouse_x + TARGET_SIZE / 2.0f + target_offset_x;
@@ -768,7 +773,9 @@ static void main_game_scene_main_game_stage_render()
                 meter_positions[9] = metery0;
                 meter_positions[10] = meterx1;
                 meter_positions[11] = metery1;
-                g_target_error = (float)sin(cstrl_platform_get_absolute_time() * 14.0f);
+                float t = (float)g_players.stats[g_players.current_player_turn].focus / 100.0f;
+                float speed = (1.0f - t) * 14.0f + t * 8.0f;
+                g_target_error = (float)sin(cstrl_platform_get_absolute_time() * speed);
                 float meter_bar_offset_y = (g_target_error + 1.0f) / 2.0f * METER_SIZE_Y - METER_SIZE_Y / 2.0f;
                 float meter_barx0 = (float)g_mouse_x - METER_BAR_SIZE_X / 2.0f;
                 float meter_bary0 = (float)g_mouse_y - METER_BAR_SIZE_Y / 2.0f + meter_bar_offset_y;

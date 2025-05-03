@@ -47,6 +47,15 @@ void players_init(players_t *players, bool playing_doubles, int human_players)
     // TODO: do this a different way
     players->team1_cups_remaining = 10;
     players->team2_cups_remaining = 10;
+
+    for (int i = 0; i < MAX_PLAYER_COUNT; i++)
+    {
+        players->stats[i].accuracy = 100;
+        players->stats[i].focus = 100;
+        players->stats[i].tolerance = 0;
+        players->stats[i].charisma = 0;
+        players->stats[i].defence = 0;
+    }
 }
 
 void players_advance_turn_state(players_t *players)
@@ -86,7 +95,6 @@ void players_advance_turn_state(players_t *players)
             break;
         }
         case REBUTTAL_ATTEMPT1_STAGE:
-            printf("Rebuttal Attempt 1\n");
         case REBUTTAL_ATTEMPT2_STAGE: {
             if (players->team1_cups_remaining == 0 && players->team2_cups_remaining == 0)
             {
@@ -108,20 +116,17 @@ void players_advance_turn_state(players_t *players)
                     break;
                 }
             }
+            if (players->current_player_turn == PLAYER1_TURN || players->current_player_turn == PLAYER3_TURN)
+            {
+                players->current_player_turn++;
+            }
+            else if (players->current_player_turn == PLAYER2_TURN)
+            {
+                players->current_player_turn = PLAYER1_TURN;
+            }
             else
             {
-                if (players->current_player_turn == PLAYER1_TURN || players->current_player_turn == PLAYER3_TURN)
-                {
-                    players->current_player_turn++;
-                }
-                else if (players->current_player_turn == PLAYER2_TURN)
-                {
-                    players->current_player_turn = PLAYER1_TURN;
-                }
-                else
-                {
-                    players->current_player_turn = PLAYER3_TURN;
-                }
+                players->current_player_turn = PLAYER3_TURN;
             }
             players->base_game_state = REBUTTAL_ATTEMPT2_STAGE;
             players->current_turn_state = players->human[players->current_player_turn] ? AIM_TARGET : STARTED_SHOT;
