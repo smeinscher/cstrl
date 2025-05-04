@@ -52,6 +52,9 @@ typedef struct players_t
     // TODO: do this a different way
     int team1_cups_remaining;
     int team2_cups_remaining;
+    int team1_reracks_remaining;
+    int team2_reracks_remaining;
+    bool first_turn;
     player_active_state_t current_player_turn;
     player_turn_state_t current_turn_state;
     player_base_game_state_t base_game_state;

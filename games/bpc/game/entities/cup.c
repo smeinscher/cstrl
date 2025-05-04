@@ -2,6 +2,7 @@
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
+#include <stdio.h>
 
 bool cups_init(cups_t *cups, bool overtime)
 {
@@ -35,6 +36,10 @@ bool cups_init(cups_t *cups, bool overtime)
 
     cstrl_da_int_init(&cups->freed, 10);
 
+    for (int i = 0; i < TOTAL_CUP_COUNT; i++)
+    {
+        cups->active[i] = true;
+    }
     if (overtime)
     {
         cstrl_da_int_push_back(&cups->freed, 0);
@@ -46,6 +51,16 @@ bool cups_init(cups_t *cups, bool overtime)
         cstrl_da_int_push_back(&cups->freed, 11);
         cstrl_da_int_push_back(&cups->freed, 12);
         cstrl_da_int_push_back(&cups->freed, 13);
+
+        cups->active[0] = false;
+        cups->active[1] = false;
+        cups->active[2] = false;
+        cups->active[3] = false;
+
+        cups->active[10] = false;
+        cups->active[11] = false;
+        cups->active[12] = false;
+        cups->active[13] = false;
     }
 
     return true;
@@ -78,6 +93,166 @@ int cups_shot_test(cups_t *cups, float ball_size, vec2 hit_position, float *dist
 void cups_make(cups_t *cups, int cup_id)
 {
     cstrl_da_int_push_back(&cups->freed, cup_id);
+    cups->active[cup_id] = false;
+}
+
+int cups_count_active_by_team(cups_t *cups, int team)
+{
+    int count = 0;
+    for (int i = (team == 0 ? 0 : 10); i < (team == 0 ? 10 : 20); i++)
+    {
+        if (cups->active[i])
+        {
+            count++;
+        }
+    }
+    return count;
+}
+
+bool cups_can_rerack(cups_t *cups, int team)
+{
+    int count = cups_count_active_by_team(cups, team);
+    if (count != 1 && count != 3 && count != 4 && count != 6)
+    {
+        return false;
+    }
+    int start = team == 0 ? 0 : 10;
+    switch (count)
+    {
+    case 1:
+        return !cups->active[start + 9];
+    case 3:
+        return !(cups->active[start + 9] && cups->active[start + 8] && cups->active[start + 7]);
+    case 4:
+        return !(cups->active[start + 9] && cups->active[start + 8] && cups->active[start + 7] &&
+                 cups->active[start + 5]);
+    case 6:
+        return !(cups->active[start + 9] && cups->active[start + 8] && cups->active[start + 7] &&
+                 cups->active[start + 6] && cups->active[start + 5] && cups->active[start + 4]);
+    default:
+        return false;
+    }
+    return true;
+}
+
+bool cups_rerack(cups_t *cups, int team)
+{
+    int count = cups_count_active_by_team(cups, team);
+    if (!cups_can_rerack(cups, team))
+    {
+        printf("Can't rerack, count: %d\n", count);
+        return false;
+    }
+    for (int i = (team == 0 ? 0 : 10); i < (team == 0 ? 10 : 20); i++)
+    {
+        if (cstrl_da_int_find_first(&cups->freed, i) == CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_push_back(&cups->freed, i);
+            cups->active[i] = false;
+        }
+    }
+    switch (count)
+    {
+    case 1: {
+        cups->active[team == 0 ? 9 : 19] = true;
+        int index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 9 : 19);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        break;
+    }
+    case 3: {
+        cups->active[team == 0 ? 9 : 19] = true;
+        cups->active[team == 0 ? 8 : 18] = true;
+        cups->active[team == 0 ? 7 : 17] = true;
+        int index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 9 : 19);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 8 : 18);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 7 : 17);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        break;
+    }
+    case 4: {
+        cups->active[team == 0 ? 9 : 19] = true;
+        cups->active[team == 0 ? 8 : 18] = true;
+        cups->active[team == 0 ? 7 : 17] = true;
+        cups->active[team == 0 ? 5 : 15] = true;
+        int index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 9 : 19);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 8 : 18);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 7 : 17);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 5 : 15);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        break;
+    }
+    case 6: {
+        cups->active[team == 0 ? 9 : 19] = true;
+        cups->active[team == 0 ? 8 : 18] = true;
+        cups->active[team == 0 ? 7 : 17] = true;
+        cups->active[team == 0 ? 6 : 16] = true;
+        cups->active[team == 0 ? 5 : 15] = true;
+        cups->active[team == 0 ? 4 : 14] = true;
+        int index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 9 : 19);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 8 : 18);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 7 : 17);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 6 : 16);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 5 : 15);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 4 : 14);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+    return true;
 }
 
 void cups_free(cups_t *cups)

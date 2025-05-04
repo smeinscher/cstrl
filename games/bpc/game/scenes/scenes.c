@@ -85,7 +85,7 @@ void scenes_init(cstrl_platform_state *platform_state)
     cstrl_set_uniform_mat4(g_default_shader.program, "view", g_main_camera->view);
     cstrl_set_uniform_mat4(g_default_shader.program, "projection", g_main_camera->projection);
 
-    if (!cstrl_audio_load_ogg("resources/sounds/potential.ogg", &g_theme_sound))
+    if (!cstrl_audio_load_ogg("resources/sounds/hangout.ogg", &g_theme_sound))
     {
         printf("Failed to load theme song. Oof!\n");
     }
@@ -168,6 +168,7 @@ void main_menu_scene_init(void *user_data)
     cstrl_platform_set_mouse_button_callback(g_platform_state, gameplay_mouse_button_callback);
 
     gameplay_init(BASE_SCREEN_DIMENSION_X, BASE_SCREEN_DIMENSION_Y, &g_default_shader, false);
+
     cstrl_audio_play(&g_theme_source, &g_theme_sound, true);
 }
 

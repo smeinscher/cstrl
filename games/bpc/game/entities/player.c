@@ -47,6 +47,9 @@ void players_init(players_t *players, bool playing_doubles, int human_players)
     // TODO: do this a different way
     players->team1_cups_remaining = 10;
     players->team2_cups_remaining = 10;
+    players->team1_reracks_remaining = 2;
+    players->team2_reracks_remaining = 2;
+    players->first_turn = true;
 
     for (int i = 0; i < MAX_PLAYER_COUNT; i++)
     {
@@ -70,6 +73,10 @@ void players_advance_turn_state(players_t *players)
             break;
         case MAIN_GAME_STAGE:
         case OVERTIME_STAGE: {
+            if (players->current_player_turn == PLAYER2_TURN || players->current_player_turn == PLAYER4_TURN)
+            {
+                players->first_turn = true;
+            }
             int index0 = players->metrics[players->current_player_turn].shot_history.size - 1;
             int index1 = players->metrics[players->current_player_turn - 1].shot_history.size - 1;
             if (players->team1_cups_remaining <= 0 || players->team2_cups_remaining <= 0)
@@ -90,6 +97,7 @@ void players_advance_turn_state(players_t *players)
             {
                 printf("Balls back\n");
                 players->current_player_turn--;
+                players->first_turn = false;
             }
             players->current_turn_state = players->human[players->current_player_turn] ? AIM_TARGET : STARTED_SHOT;
             break;
@@ -105,6 +113,9 @@ void players_advance_turn_state(players_t *players)
                 players->current_turn_state = players->human[players->current_player_turn] ? AIM_TARGET : STARTED_SHOT;
                 players->team1_cups_remaining = 6;
                 players->team2_cups_remaining = 6;
+                players->team1_reracks_remaining = 1;
+                players->team2_reracks_remaining = 1;
+                players->first_turn = true;
                 break;
             }
             int index = players->metrics[players->current_player_turn].shot_history.size - 1;
@@ -167,5 +178,8 @@ void players_reset(players_t *players)
     players->current_turn_state = players->human[PLAYER1_TURN] ? AIM_TARGET : STARTED_SHOT;
     players->team1_cups_remaining = 10;
     players->team2_cups_remaining = 10;
+    players->team1_reracks_remaining = 2;
+    players->team2_reracks_remaining = 2;
+    players->first_turn = true;
     players->base_game_state = EYE_TO_EYE_STAGE;
 }

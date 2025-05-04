@@ -21,6 +21,12 @@ int cups_shot_test(cups_t *cups, float ball_size, vec2 hit_position, float *dist
 
 void cups_make(cups_t *cups, int cup_id);
 
+int cups_count_active_by_team(cups_t *cups, int team);
+
+bool cups_can_rerack(cups_t *cups, int team);
+
+bool cups_rerack(cups_t *cups, int team);
+
 void cups_free(cups_t *cups);
 
 #endif // CUP_H

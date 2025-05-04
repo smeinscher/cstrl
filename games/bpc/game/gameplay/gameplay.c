@@ -3,6 +3,7 @@
 #include "../entities/cup.h"
 #include "../entities/player.h"
 #include "cstrl/cstrl_renderer.h"
+#include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,6 +70,7 @@ static bool g_overtime_init_render = false;
 static bool g_mouse_in_shot_area = false;
 static bool g_paused = false;
 static bool g_transition = false;
+static bool g_rerack = false;
 
 static int g_tick_counter = 0;
 
@@ -77,6 +79,29 @@ void gameplay_key_callback(cstrl_platform_state *state, int key, int scancode, i
     if (key == CSTRL_KEY_ESCAPE)
     {
         cstrl_platform_set_should_exit(true);
+    }
+    else if (key == CSTRL_KEY_R && action == CSTRL_ACTION_PRESS)
+    {
+        if (g_players.first_turn && g_players.human[g_players.current_player_turn])
+        {
+            int reracks_left = g_players.current_player_turn == PLAYER1_TURN ? g_players.team1_reracks_remaining
+                                                                             : g_players.team2_reracks_remaining;
+            if (reracks_left > 0 && g_players.human[g_players.current_player_turn])
+            {
+                if (cups_rerack(&g_cups, g_players.current_player_turn == PLAYER1_TURN ? 0 : 1))
+                {
+                    g_rerack = true;
+                    if (g_players.current_player_turn == PLAYER1_TURN)
+                    {
+                        g_players.team1_reracks_remaining--;
+                    }
+                    else
+                    {
+                        g_players.team2_reracks_remaining--;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -460,6 +485,23 @@ static void main_game_stage_update()
     case AIM_METER:
         break;
     case STARTED_SHOT:
+        if (g_players.first_turn && !g_players.human[g_players.current_player_turn] &&
+            (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN))
+        {
+            int reracks_left = g_players.current_player_turn == PLAYER1_TURN ? g_players.team1_reracks_remaining
+                                                                             : g_players.team2_reracks_remaining;
+            if (reracks_left > 0 && cups_rerack(&g_cups, g_players.current_player_turn == PLAYER1_TURN ? 0 : 1))
+            {
+                if (g_players.current_player_turn == PLAYER1_TURN)
+                {
+                    g_players.team1_reracks_remaining--;
+                }
+                else
+                {
+                    g_players.team2_reracks_remaining--;
+                }
+            }
+        }
         shoot_ball(g_players.human[g_players.current_player_turn],
                    g_players.current_player_turn < PLAYER3_TURN ? 0 : 1);
         players_advance_turn_state(&g_players);
@@ -541,9 +583,9 @@ void gameplay_update()
         cups_init(&g_cups, true);
         g_players.base_game_state = OVERTIME_STAGE;
         g_cleared_target_and_meter = false;
-        g_reset_game_update = false;
         balls_clear(&g_balls);
         g_cleared_balls = false;
+
         g_overtime_init_update = false;
     }
     if (g_reset_game_update)
@@ -553,10 +595,11 @@ void gameplay_update()
         cups_init(&g_cups, false);
         players_reset(&g_players);
         g_cleared_target_and_meter = false;
-        g_reset_game_update = false;
         balls_clear(&g_balls);
         g_cleared_balls = false;
         g_tick_counter = 0.0f;
+
+        g_reset_game_update = false;
     }
 }
 
@@ -733,12 +776,12 @@ static void main_game_stage_render()
 void gameplay_render()
 {
     main_game_stage_render();
-    if (g_overtime_init_render)
+    if (g_rerack || g_reset_game_render || g_overtime_init_render)
     {
         float cup_positions[240] = {0};
-        for (int i = 4; i < 20; i++)
+        for (int i = 0; i < 20; i++)
         {
-            if (i > 9 && i < 14)
+            if (!g_cups.active[i] || (g_overtime_init_render && (i < 4 || (i > 9 && i < 14))))
             {
                 continue;
             }
@@ -760,6 +803,9 @@ void gameplay_render()
             cup_positions[i * 12 + 11] = y1;
         }
         cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, 0, 240);
+    }
+    if (g_overtime_init_render)
+    {
 
         float target_positions[12] = {0};
         cstrl_renderer_modify_positions(g_target_render_data, target_positions, 0, 12);
@@ -776,27 +822,6 @@ void gameplay_render()
     if (g_reset_game_render)
     {
         printf("Resetting Render...\n");
-        float cup_positions[240];
-        for (int i = 0; i < 20; i++)
-        {
-            float x0 = g_cups.position[i].x - CUP_SIZE / 2.0f;
-            float y0 = g_cups.position[i].y - CUP_SIZE / 2.0f;
-            float x1 = g_cups.position[i].x + CUP_SIZE / 2.0f;
-            float y1 = g_cups.position[i].y + CUP_SIZE / 2.0f;
-            cup_positions[i * 12] = x0;
-            cup_positions[i * 12 + 1] = y1;
-            cup_positions[i * 12 + 2] = x1;
-            cup_positions[i * 12 + 3] = y0;
-            cup_positions[i * 12 + 4] = x0;
-            cup_positions[i * 12 + 5] = y0;
-            cup_positions[i * 12 + 6] = x0;
-            cup_positions[i * 12 + 7] = y1;
-            cup_positions[i * 12 + 8] = x1;
-            cup_positions[i * 12 + 9] = y0;
-            cup_positions[i * 12 + 10] = x1;
-            cup_positions[i * 12 + 11] = y1;
-        }
-        cstrl_renderer_modify_positions(g_cup_render_data, cup_positions, 0, 240);
 
         float target_positions[12] = {0};
         cstrl_renderer_modify_positions(g_target_render_data, target_positions, 0, 12);
