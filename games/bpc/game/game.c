@@ -26,40 +26,13 @@ int bpc_game_run()
         cstrl_platform_shutdown(&platform_state);
         return 2;
     }
-    sound_t theme_sound;
-    if (!cstrl_audio_load_ogg("resources/sounds/hangout.ogg", &theme_sound))
-    {
-        cstrl_platform_shutdown(&platform_state);
-        cstrl_audio_shutdown();
-        return 3;
-    }
-    source_t theme_source;
-    if (!cstrl_audio_create_source(&theme_source))
-    {
-        cstrl_platform_shutdown(&platform_state);
-        cstrl_audio_unload(&theme_sound);
-        cstrl_audio_shutdown();
-        return 4;
-    }
-
-    cstrl_audio_play(&theme_source, &theme_sound, true);
 
     srand(cstrl_platform_get_absolute_time());
 
     cstrl_renderer_init(&platform_state);
 
     scenes_init(&platform_state);
-    scene_set(MAIN_GAME_SCENE, NULL);
-
-    // float player_size_x = 68.0f;
-    // float player_size_y = 126.0f;
-    // float playerx0 = 165.0f;
-    // float playery0 = WINDOW_HEIGHT / 2.0f - player_size_y / 2.0f;
-    // float playerx1 = playerx0 + player_size_x;
-    // float playery1 = WINDOW_HEIGHT / 2.0f + player_size_y / 2.0f;
-
-    // playerx0 = 1115.0f;
-    // playerx1 = playerx0 - player_size_x;
+    scene_set(LOGO_SCENE, NULL);
 
     double previous_frame_time = cstrl_platform_get_absolute_time();
     double frame_lag = 0.0;
@@ -85,8 +58,6 @@ int bpc_game_run()
     scenes_clean();
 
     cstrl_renderer_shutdown(&platform_state);
-    cstrl_audio_stop(&theme_source);
-    cstrl_audio_unload(&theme_sound);
     cstrl_audio_shutdown();
     cstrl_platform_shutdown(&platform_state);
 

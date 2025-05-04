@@ -6,12 +6,18 @@
 
 typedef CSTRL_PACKED_ENUM
 {
-    PRACTICE_GAME_MODE,
-    CASUAL_GAME_MODE,
-    LEAGUE_GAME_MODE
+    QUICK_PLAY_GAME_MODE
 } game_mode_t;
 
 void scenes_init(cstrl_platform_state *platform_state);
+
+void logo_scene_init(void *user_data);
+
+void logo_scene_update();
+
+void logo_scene_render();
+
+void logo_scene_shutdown();
 
 void main_menu_scene_init(void *user_data);
 

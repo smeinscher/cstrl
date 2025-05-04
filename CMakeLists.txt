@@ -211,6 +211,8 @@ add_executable(cstrl-bpc-game
     games/bpc/game/scenes/scenes.h
     games/bpc/game/scenes/scene_manager.c
     games/bpc/game/scenes/scene_manager.h
+    games/bpc/game/gameplay/gameplay.c
+    games/bpc/game/gameplay/gameplay.h
 )
 
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
@@ -221,9 +223,6 @@ add_executable(cstrl-bpc-game
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
 target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT)
 target_compile_options(cstrl-rpg-game PRIVATE -DCSTRL_RPG_GAME_EXPORT)
-if (SIMULATION)
-    target_compile_options(cstrl-bpc-game PRIVATE -DSIMULATION)
-endif ()
 
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES} ${OPENAL_LIBRARY})
 if (X11_FOUND)

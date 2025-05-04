@@ -6,7 +6,7 @@ fi
 mkdir build-${1,};
 cd build-${1,};
 # cmake -G Ninja -DCMAKE_C_COMPILER="clang" -DCMAKE_BUILD_TYPE="$1" -DRENDER_API="OPENGL" ..;
-cmake -G Ninja -DCMAKE_C_COMPILER="clang" -DCMAKE_BUILD_TYPE="$1" -DRENDER_API="$2" -DSIMULATION=OFF ..;
+cmake -G Ninja -DCMAKE_C_COMPILER="clang" -DCMAKE_BUILD_TYPE="$1" -DRENDER_API="$2" ..;
 ninja;
 
 cd ..;

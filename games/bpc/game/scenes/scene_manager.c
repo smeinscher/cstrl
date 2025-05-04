@@ -9,6 +9,12 @@ void scene_set(game_scene_t game_scene, void *user_data)
 {
     switch (game_scene)
     {
+    case LOGO_SCENE:
+        logo_scene_init(user_data);
+        g_current_scene_update = logo_scene_update;
+        g_current_scene_render = logo_scene_render;
+        g_current_scene_shutdown = logo_scene_shutdown;
+        break;
     case MAIN_MENU_SCENE:
         main_menu_scene_init(user_data);
         g_current_scene_update = main_menu_scene_update;

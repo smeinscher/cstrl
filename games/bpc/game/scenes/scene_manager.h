@@ -5,6 +5,7 @@
 typedef CSTRL_PACKED_ENUM
 {
     INIT_SCENE,
+    LOGO_SCENE,
     MAIN_MENU_SCENE,
     MAIN_GAME_SCENE
 } game_scene_t;
