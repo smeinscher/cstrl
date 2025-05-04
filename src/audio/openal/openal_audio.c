@@ -1,7 +1,12 @@
 #include "cstrl/cstrl_audio.h"
 #include "log.c/log.h"
+#ifdef CSTRL_PLATFORM_WINDOWS
 #include <al.h>
 #include <alc.h>
+#else
+#include <AL/al.h>
+#include <AL/alc.h>
+#endif
 #define STB_VORBIS_IMPLEMENTATION
 #include <stb/stb_vorbis.c>
 

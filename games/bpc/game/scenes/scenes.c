@@ -170,7 +170,7 @@ static vec2 g_ball_origin;
 static float g_target_error;
 
 static bool g_cleared_target_and_meter = false;
-static bool g_cleared_ball = false;
+static bool g_cleared_balls = false;
 static bool g_reset_game_update = false;
 static bool g_reset_game_render = false;
 static bool g_overtime_init_update = false;
@@ -475,7 +475,7 @@ static void main_game_scene_shoot_ball(bool human, int team)
         } while (cstrl_da_int_find_first(&g_cups.freed, selected_cup) != CSTRL_DA_INT_ITEM_NOT_FOUND);
         vec2 target_position = g_cups.position[selected_cup];
         float t = (float)g_players.stats[g_players.current_player_turn].focus / 100.0f;
-        float scale = (1.0f - t) * 6.5f + t * 4.0f;
+        float scale = (1.0f - t) * 6.5f + t * 3.0f;
         vec2 target_error = cstrl_vec2_mult_scalar(
             (vec2){(float)(rand() % 1000 - 500) / 500.0f, (float)(rand() % 1000 - 500) / 500.0f}, scale);
         balls_shoot(&g_balls, target_position, team == 0 ? g_team1_start : g_team2_start, target_error,
@@ -551,7 +551,6 @@ static void main_game_scene_eye_to_eye_stage_update()
             {
                 players_advance_turn_state(&g_players);
             }
-            balls_clear(&g_balls);
         }
         break;
     case TURN_END:
@@ -572,6 +571,8 @@ static void main_game_scene_eye_to_eye_stage_update()
             {
                 players_advance_turn_state(&g_players);
             }
+            balls_clear(&g_balls);
+            g_cleared_balls = false;
             g_tick_counter = 0;
         }
         break;
@@ -609,8 +610,7 @@ static void main_game_scene_main_game_stage_update()
                                                                              : BOUNCE_SHOT;
             players_complete_shot(&g_players, shot_state, g_balls.cup_made[0] == -1 ? 0 : g_balls.cups_hit[0].size);
             players_advance_turn_state(&g_players);
-            g_cleared_ball = false;
-            balls_clear(&g_balls);
+            g_cleared_balls = false;
         }
         break;
     case TURN_END:
@@ -620,6 +620,8 @@ static void main_game_scene_main_game_stage_update()
 #endif
         {
             players_advance_turn_state(&g_players);
+            balls_clear(&g_balls);
+            g_cleared_balls = false;
             g_tick_counter = 0;
         }
         break;
@@ -670,6 +672,7 @@ void main_game_scene_update()
         g_cleared_target_and_meter = false;
         g_reset_game_update = false;
         balls_clear(&g_balls);
+        g_cleared_balls = false;
         g_overtime_init_update = false;
     }
     if (g_reset_game_update)
@@ -681,6 +684,8 @@ void main_game_scene_update()
         g_cleared_target_and_meter = false;
         g_reset_game_update = false;
         balls_clear(&g_balls);
+        g_cleared_balls = false;
+        g_tick_counter = 0.0f;
     }
 }
 
@@ -708,16 +713,16 @@ static void main_game_scene_main_game_stage_render()
         cursor_positions[11] = cursory1;
     }
     cstrl_renderer_modify_positions(g_cursor_render_data, cursor_positions, 0, 12);
+    if (!g_cleared_balls)
+    {
+        float ball_positions[12 * MAX_BALLS] = {0};
+        cstrl_renderer_modify_positions(g_ball_render_data, ball_positions, 0, 12 * MAX_BALLS);
+        g_cleared_balls = true;
+    }
     if (g_players.human[g_players.current_player_turn])
     {
         if (g_players.current_turn_state == AIM_TARGET)
         {
-            if (!g_cleared_ball)
-            {
-                float ball_positions[12] = {0};
-                cstrl_renderer_modify_positions(g_ball_render_data, ball_positions, 0, 12);
-                g_cleared_ball = true;
-            }
             float target_positions[12] = {0};
             if (g_mouse_in_shot_area)
             {
@@ -818,7 +823,7 @@ static void main_game_scene_main_game_stage_render()
             {
                 continue;
             }
-            float ball_positions[12];
+            float ball_positions[12] = {0};
             float ballx0_origin = -BALL_SIZE / 2.0f;
             float bally0_origin = -BALL_SIZE / 2.0f;
             float ballx1_origin = BALL_SIZE / 2.0f;
