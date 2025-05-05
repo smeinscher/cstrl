@@ -2,6 +2,7 @@
 #include "../entities/ball.h"
 #include "../entities/cup.h"
 #include "../entities/player.h"
+#include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
@@ -74,6 +75,9 @@ static bool g_rerack = false;
 
 static int g_tick_counter = 0;
 
+static int g_team1_wins = 0;
+static int g_team2_wins = 0;
+
 void gameplay_key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
     if (key == CSTRL_KEY_ESCAPE)
@@ -144,6 +148,7 @@ void gameplay_get_mouse_position(int *mouse_x, int *mouse_y)
 void gameplay_init(int base_screen_x, int base_screen_y, cstrl_shader *default_shader, bool simulation)
 {
     g_default_shader = default_shader;
+    g_simulation = simulation;
     g_background_render_data = cstrl_renderer_create_render_data();
     float x0 = 0.0f;
     float y0 = 0.0f;
@@ -345,7 +350,7 @@ void gameplay_init(int base_screen_x, int base_screen_y, cstrl_shader *default_s
     g_meter_bar_texture =
         cstrl_texture_generate_from_path("resources/textures/beer_pong/meter_bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
-    players_init(&g_players, true, 0);
+    players_init(&g_players, true, !g_simulation ? PLAYER1 : 0);
     balls_init(&g_balls);
 
     float player_size_x = 17.0f;
@@ -364,27 +369,83 @@ void gameplay_init(int base_screen_x, int base_screen_y, cstrl_shader *default_s
     g_mouse_y = base_screen_y / 2;
 }
 
+static int shot_heuristic(int team)
+{
+    int selected_cup = -1;
+    if (g_players.base_game_state == EYE_TO_EYE_STAGE)
+    {
+        int middle_or_front_cup = rand() % 2;
+        if (middle_or_front_cup == 0)
+        {
+            selected_cup = 9 + team * 10;
+        }
+        else
+        {
+            selected_cup = 5 + team * 10;
+        }
+        return selected_cup;
+    }
+    da_int active_cups;
+    cstrl_da_int_init(&active_cups, 10);
+    cups_get_active_cups_by_team(&g_cups, &active_cups, team);
+    if (active_cups.size == 0)
+    {
+        printf("Active cups is empty\n");
+        return -1;
+    }
+    da_int desired_values;
+    cstrl_da_int_init(&desired_values, active_cups.size);
+    float weight_total = 0.0f;
+    for (int i = 0; i < active_cups.size; i++)
+    {
+        weight_total += cups_get_priority(&g_cups, active_cups.array[i], team);
+        cstrl_da_int_push_back(&desired_values, (int)(weight_total * 1000.0f));
+    }
+    int random_number = rand() % (int)(weight_total * 1000.0f);
+
+    for (int i = 0; i < desired_values.size; i++)
+    {
+        if (desired_values.array[i] > random_number)
+        {
+            selected_cup = active_cups.array[i];
+            break;
+        }
+    }
+
+    cstrl_da_int_free(&active_cups);
+    cstrl_da_int_free(&desired_values);
+
+    return selected_cup;
+}
+
 static void shoot_ball(bool human, int team)
 {
     if (!human)
     {
-        int selected_cup;
-        do
+        int selected_cup = shot_heuristic(team);
+        while (selected_cup == -1)
         {
-            selected_cup = rand() % 10 + (team * 10);
-        } while (cstrl_da_int_find_first(&g_cups.freed, selected_cup) != CSTRL_DA_INT_ITEM_NOT_FOUND);
+            printf("Selected Cup is -1\n");
+            selected_cup = shot_heuristic(team);
+        }
         vec2 target_position = g_cups.position[selected_cup];
         float t = (float)g_players.stats[g_players.current_player_turn].focus / 100.0f;
-        float scale = (1.0f - t) * 6.5f + t * 3.0f;
+        float scale = (1.0f - t) * 3.0f + t * 2.5f;
+        float length = cstrl_vec2_length(cstrl_vec2_sub(target_position, team == 0 ? g_team1_start : g_team2_start));
+        t = (length - 212.0f) / 32.0f;
+        float modifier = (1.0f - t) * 1.0f + t * 1.25f;
         vec2 target_error = cstrl_vec2_mult_scalar(
-            (vec2){(float)(rand() % 1000 - 500) / 500.0f, (float)(rand() % 1000 - 500) / 500.0f}, scale);
+            (vec2){(float)(rand() % 1000 - 500) / 500.0f, (float)(rand() % 1000 - 500) / 500.0f}, scale * modifier);
         balls_shoot(&g_balls, target_position, team == 0 ? g_team1_start : g_team2_start, target_error,
-                    INITIAL_BALL_SPEED, team);
+                    !g_simulation ? INITIAL_BALL_SPEED : SIMULATION_BALL_SPEED, team);
     }
     else
     {
+        float length = cstrl_vec2_length(cstrl_vec2_sub(g_target_position, team == 0 ? g_team1_start : g_team2_start));
+        float t = (length - 212.0f) / 32.0f;
+        float modifier = (1.0f - t) * 1.0f + t * 1.25f;
         balls_shoot(&g_balls, g_target_position, team == 0 ? g_team1_start : g_team2_start,
-                    (vec2){0.0f, g_target_error * 12.5}, INITIAL_BALL_SPEED, team);
+                    (vec2){0.0f, g_target_error * 12.0f * modifier}, INITIAL_BALL_SPEED, team);
     }
 }
 
@@ -455,7 +516,7 @@ static void eye_to_eye_stage_update()
         break;
     case TURN_END:
         g_tick_counter++;
-        if (g_tick_counter > 60)
+        if (g_simulation || g_tick_counter > 60)
         {
             if (g_transition)
             {
@@ -492,6 +553,7 @@ static void main_game_stage_update()
                                                                              : g_players.team2_reracks_remaining;
             if (reracks_left > 0 && cups_rerack(&g_cups, g_players.current_player_turn == PLAYER1_TURN ? 0 : 1))
             {
+                g_rerack = true;
                 if (g_players.current_player_turn == PLAYER1_TURN)
                 {
                     g_players.team1_reracks_remaining--;
@@ -530,7 +592,7 @@ static void main_game_stage_update()
         break;
     case TURN_END:
         g_tick_counter++;
-        if (g_tick_counter > 60)
+        if (g_simulation || g_tick_counter > 60)
         {
             players_advance_turn_state(&g_players);
             balls_clear(&g_balls);
@@ -570,6 +632,16 @@ void gameplay_update()
             g_overtime_init_render = true;
             break;
         case GAME_OVER_STAGE:
+            if (g_players.team1_cups_remaining == 0)
+            {
+                printf("Team 1 Wins!!!\n");
+                g_team1_wins++;
+            }
+            else
+            {
+                printf("Team 2 Wins!!!\n");
+                g_team2_wins++;
+            }
             g_reset_game_update = true;
             g_reset_game_render = true;
             break;
@@ -839,6 +911,13 @@ void gameplay_render()
 
 void gameplay_shutdown()
 {
+    printf("Team 1 Wins: %d\n", g_team1_wins);
+    printf("Team 2 Wins: %d\n", g_team2_wins);
+    for (int i = 0; i < 4; i++)
+    {
+        printf("Player %d Shot Percentage: %f\n", i,
+               (float)g_players.metrics[i].successful_shots / (float)g_players.metrics[i].attempted_shots);
+    }
     cstrl_renderer_free_render_data(g_background_render_data);
     cstrl_renderer_free_render_data(g_cup_render_data);
     cstrl_renderer_free_render_data(g_ball_render_data);

@@ -4,6 +4,8 @@
 #include "cstrl/cstrl_util.h"
 #include <stdio.h>
 
+const float g_cup_priority[] = {0.05, 0.1, 0.1, 0.05, 0.15f, 0.4f, 0.15f, 0.2f, 0.2f, 0.4f};
+
 bool cups_init(cups_t *cups, bool overtime)
 {
     float cup_start_x0 = 48.0f;
@@ -94,6 +96,55 @@ void cups_make(cups_t *cups, int cup_id)
 {
     cstrl_da_int_push_back(&cups->freed, cup_id);
     cups->active[cup_id] = false;
+}
+
+float cups_get_priority(cups_t *cups, int cup_id, int team)
+{
+    return g_cup_priority[cup_id - team * 10];
+}
+
+void cups_get_active_cups_by_team(cups_t *cups, da_int *active_cups, int team)
+{
+    if (cups->active[team * 10 + 9])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 9);
+    }
+    if (cups->active[team * 10 + 8])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 8);
+    }
+    if (cups->active[team * 10 + 7])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 7);
+    }
+    if (cups->active[team * 10 + 5])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 5);
+    }
+    if (cups->active[team * 10 + 6])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 6);
+    }
+    if (cups->active[team * 10 + 4])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 4);
+    }
+    if (cups->active[team * 10 + 2])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 2);
+    }
+    if (cups->active[team * 10 + 1])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 1);
+    }
+    if (cups->active[team * 10 + 0])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 0);
+    }
+    if (cups->active[team * 10 + 3])
+    {
+        cstrl_da_int_push_back(active_cups, team * 10 + 3);
+    }
 }
 
 int cups_count_active_by_team(cups_t *cups, int team)

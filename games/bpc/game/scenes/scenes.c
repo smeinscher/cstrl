@@ -27,7 +27,7 @@ static source_t g_theme_source;
 void scenes_init(cstrl_platform_state *platform_state)
 {
     g_platform_state = platform_state;
-    cstrl_platform_set_show_cursor(g_platform_state, false);
+    // cstrl_platform_set_show_cursor(g_platform_state, false);
     g_default_shader =
         cstrl_load_shaders_from_files("resources/shaders/default.vert", "resources/shaders/default.frag");
     int window_width, window_height;
@@ -167,7 +167,7 @@ void main_menu_scene_init(void *user_data)
     cstrl_platform_set_mouse_position_callback(g_platform_state, gameplay_mouse_position_callback);
     cstrl_platform_set_mouse_button_callback(g_platform_state, gameplay_mouse_button_callback);
 
-    gameplay_init(BASE_SCREEN_DIMENSION_X, BASE_SCREEN_DIMENSION_Y, &g_default_shader, false);
+    gameplay_init(BASE_SCREEN_DIMENSION_X, BASE_SCREEN_DIMENSION_Y, &g_default_shader, true);
 
     cstrl_audio_play(&g_theme_source, &g_theme_sound, true);
 }

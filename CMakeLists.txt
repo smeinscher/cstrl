@@ -32,7 +32,7 @@ endif ()
 
 find_package(X11 QUIET)
 
-add_library(log_c STATIC
+add_library(log_c SHARED
         extern/log.c/log.c
         extern/log.c/log.h)
 target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
@@ -162,7 +162,7 @@ add_executable(cstrl-sandbox
 )
 
 add_executable(cstrl-moon-game-executable
-    games/moon_game/main.c
+        games/moon_game/main.c
 )
 
 add_library(cstrl-moon-game SHARED
@@ -189,30 +189,30 @@ add_library(cstrl-moon-game SHARED
 )
 
 add_executable(cstrl-rpg-game-executable
-    games/rpg/main.c
+        games/rpg/main.c
 )
 
 add_library(cstrl-rpg-game SHARED
-    games/rpg/game/game.c
-    games/rpg/game/game.h
+        games/rpg/game/game.c
+        games/rpg/game/game.h
 )
 
 add_executable(cstrl-bpc-game
-    games/bpc/main.c
-    games/bpc/game/game.c
-    games/bpc/game/game.h
-    games/bpc/game/entities/ball.c
-    games/bpc/game/entities/ball.h
-    games/bpc/game/entities/cup.c
-    games/bpc/game/entities/cup.h
-    games/bpc/game/entities/player.c
-    games/bpc/game/entities/player.h
-    games/bpc/game/scenes/scenes.c
-    games/bpc/game/scenes/scenes.h
-    games/bpc/game/scenes/scene_manager.c
-    games/bpc/game/scenes/scene_manager.h
-    games/bpc/game/gameplay/gameplay.c
-    games/bpc/game/gameplay/gameplay.h
+        games/bpc/main.c
+        games/bpc/game/game.c
+        games/bpc/game/game.h
+        games/bpc/game/entities/ball.c
+        games/bpc/game/entities/ball.h
+        games/bpc/game/entities/cup.c
+        games/bpc/game/entities/cup.h
+        games/bpc/game/entities/player.c
+        games/bpc/game/entities/player.h
+        games/bpc/game/scenes/scenes.c
+        games/bpc/game/scenes/scenes.h
+        games/bpc/game/scenes/scene_manager.c
+        games/bpc/game/scenes/scene_manager.h
+        games/bpc/game/gameplay/gameplay.c
+        games/bpc/game/gameplay/gameplay.h
 )
 
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
@@ -236,7 +236,7 @@ if (UNIX)
 endif ()
 if (ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
-# else ()
+    # else ()
     # target_link_libraries(cstrl PRIVATE Vulkan::Vulkan)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log_c cstrl)

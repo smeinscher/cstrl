@@ -21,6 +21,10 @@ int cups_shot_test(cups_t *cups, float ball_size, vec2 hit_position, float *dist
 
 void cups_make(cups_t *cups, int cup_id);
 
+float cups_get_priority(cups_t *cups, int cup_id, int team);
+
+void cups_get_active_cups_by_team(cups_t *cups, da_int *active_cups, int team);
+
 int cups_count_active_by_team(cups_t *cups, int team);
 
 bool cups_can_rerack(cups_t *cups, int team);

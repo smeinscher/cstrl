@@ -55,6 +55,7 @@ int bpc_game_run()
         cstrl_renderer_swap_buffers(&platform_state);
     }
 
+    scene_shutdown();
     scenes_clean();
 
     cstrl_renderer_shutdown(&platform_state);

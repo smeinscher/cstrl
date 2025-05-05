@@ -103,6 +103,7 @@ void players_advance_turn_state(players_t *players)
             break;
         }
         case REBUTTAL_ATTEMPT1_STAGE:
+            players->first_turn = false;
         case REBUTTAL_ATTEMPT2_STAGE: {
             if (players->team1_cups_remaining == 0 && players->team2_cups_remaining == 0)
             {
