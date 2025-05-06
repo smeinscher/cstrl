@@ -85,6 +85,7 @@ void players_advance_turn_state(players_t *players)
                 players->current_player_turn =
                     players->current_player_turn < PLAYER3_TURN ? PLAYER3_TURN : PLAYER1_TURN;
                 players->base_game_state = REBUTTAL_ATTEMPT1_STAGE;
+                players->first_turn = true;
             }
             else if (players->current_player_turn % 2 == 0 ||
                      players->metrics[players->current_player_turn].shot_history.array[index0] == MISS_SHOT ||
@@ -183,4 +184,16 @@ void players_reset(players_t *players)
     players->team2_reracks_remaining = 2;
     players->first_turn = true;
     players->base_game_state = EYE_TO_EYE_STAGE;
+}
+
+void players_free(players_t *players)
+{
+    for (int i = 0; i < MAX_PLAYER_COUNT; i++)
+    {
+        cstrl_da_int_free(&players->metrics[i].shot_history);
+        players->metrics[i].cups_made = 0;
+        players->metrics[i].successful_shots = 0;
+        players->metrics[i].attempted_shots = 0;
+        players->metrics[i].drink_count = 0;
+    }
 }

@@ -38,4 +38,6 @@ void balls_update(balls_t *balls, cups_t *cups, players_t *players);
 
 void balls_clear(balls_t *balls);
 
+void balls_free(balls_t *balls);
+
 #endif

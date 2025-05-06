@@ -1,7 +1,6 @@
 #include "gameplay.h"
 #include "../entities/ball.h"
 #include "../entities/cup.h"
-#include "../entities/player.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
@@ -32,8 +31,6 @@
 #define MAKE_RADIUS (CUP_SIZE / 5.0f)
 #define MAKE_RADIUS_BOUNCE (CUP_SIZE / 6.0f)
 
-bool g_simulation;
-
 static int g_mouse_x = 0;
 static int g_mouse_y = 0;
 
@@ -62,21 +59,22 @@ static vec2 g_target_position;
 static vec2 g_ball_origin;
 static float g_target_error;
 
-static bool g_cleared_target_and_meter = false;
-static bool g_cleared_balls = false;
-static bool g_reset_game_update = false;
-static bool g_reset_game_render = false;
-static bool g_overtime_init_update = false;
-static bool g_overtime_init_render = false;
-static bool g_mouse_in_shot_area = false;
-static bool g_paused = false;
-static bool g_transition = false;
-static bool g_rerack = false;
+static bool g_simulation;
+static bool g_cleared_target_and_meter;
+static bool g_cleared_balls;
+static bool g_reset_game_update;
+static bool g_reset_game_render;
+static bool g_overtime_init_update;
+static bool g_overtime_init_render;
+static bool g_mouse_in_shot_area;
+static bool g_paused;
+static bool g_transition;
+static bool g_rerack;
 
-static int g_tick_counter = 0;
+static int g_tick_counter;
 
-static int g_team1_wins = 0;
-static int g_team2_wins = 0;
+static int g_team1_wins;
+static int g_team2_wins;
 
 void gameplay_key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -86,33 +84,13 @@ void gameplay_key_callback(cstrl_platform_state *state, int key, int scancode, i
     }
     else if (key == CSTRL_KEY_R && action == CSTRL_ACTION_PRESS)
     {
-        if (g_players.first_turn && g_players.human[g_players.current_player_turn])
-        {
-            int reracks_left = g_players.current_player_turn == PLAYER1_TURN ? g_players.team1_reracks_remaining
-                                                                             : g_players.team2_reracks_remaining;
-            if (reracks_left > 0 && g_players.human[g_players.current_player_turn])
-            {
-                if (cups_rerack(&g_cups, g_players.current_player_turn == PLAYER1_TURN ? 0 : 1))
-                {
-                    g_rerack = true;
-                    if (g_players.current_player_turn == PLAYER1_TURN)
-                    {
-                        g_players.team1_reracks_remaining--;
-                    }
-                    else
-                    {
-                        g_players.team2_reracks_remaining--;
-                    }
-                }
-            }
-        }
     }
 }
 
 void gameplay_mouse_position_callback(cstrl_platform_state *state, int xpos, int ypos)
 {
-    g_mouse_x = xpos / 4;
-    g_mouse_y = ypos / 4;
+    g_mouse_x = xpos / 6;
+    g_mouse_y = ypos / 6;
 }
 
 void gameplay_mouse_button_callback(cstrl_platform_state *state, int button, int action, int mods)
@@ -145,30 +123,105 @@ void gameplay_get_mouse_position(int *mouse_x, int *mouse_y)
     *mouse_y = g_mouse_y;
 }
 
-void gameplay_init(int base_screen_x, int base_screen_y, cstrl_shader *default_shader, bool simulation)
+void gameplay_toggle_pause()
+{
+    g_paused = !g_paused;
+}
+
+void gameplay_reset()
+{
+    g_reset_game_update = true;
+    g_reset_game_render = true;
+}
+
+int gameplay_get_current_player_turn()
+{
+    return g_players.current_player_turn;
+}
+
+player_stats_t gameplay_get_player_stats(int player_id)
+{
+    return g_players.stats[player_id];
+}
+
+player_metrics_t gameplay_get_player_metrics(int player_id)
+{
+    return g_players.metrics[player_id];
+}
+
+void gameplay_get_team_wins(int *team1, int *team2)
+{
+    *team1 = g_team1_wins;
+    *team2 = g_team2_wins;
+}
+
+bool gameplay_team_can_rerack(int team)
+{
+    return g_players.current_turn_state == AIM_TARGET && g_players.first_turn &&
+           g_players.current_player_turn == (team == 0 ? PLAYER1_TURN : PLAYER3_TURN) && cups_can_rerack(&g_cups, team);
+}
+
+void gameplay_team_rerack(int team)
+{
+    int reracks_left = g_players.current_player_turn == PLAYER1_TURN ? g_players.team1_reracks_remaining
+                                                                     : g_players.team2_reracks_remaining;
+    if (reracks_left > 0)
+    {
+        if (cups_rerack(&g_cups, g_players.current_player_turn == PLAYER1_TURN ? 0 : 1))
+        {
+            g_rerack = true;
+            if (g_players.current_player_turn == PLAYER1_TURN)
+            {
+                g_players.team1_reracks_remaining--;
+            }
+            else
+            {
+                g_players.team2_reracks_remaining--;
+            }
+        }
+    }
+}
+
+void gameplay_init(int base_screen_x, int base_screen_y, cstrl_shader *default_shader, bool simulation,
+                   int human_players, player_stats_t *stats)
 {
     g_default_shader = default_shader;
     g_simulation = simulation;
+    g_cleared_target_and_meter = false;
+    g_cleared_balls = false;
+    g_reset_game_update = false;
+    g_reset_game_render = false;
+    g_overtime_init_update = false;
+    g_overtime_init_render = false;
+    g_mouse_in_shot_area = false;
+    g_paused = false;
+    g_transition = false;
+    g_rerack = false;
+
+    g_tick_counter = 0;
+    g_team1_wins = 0;
+    g_team2_wins = 0;
+
     g_background_render_data = cstrl_renderer_create_render_data();
     float x0 = 0.0f;
     float y0 = 0.0f;
     float x1 = base_screen_x;
     float y1 = base_screen_y;
-    float table_positions[] = {x0, y1, x1, y0, x0, y0, x0, y1, x1, y0, x1, y1};
-    float table_uvs[] = {
+    float background_positions[] = {x0, y1, x1, y0, x0, y0, x0, y1, x1, y0, x1, y1};
+    float background_uvs[] = {
         0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
     };
-    float table_colors[24];
+    float background_colors[24];
     for (int i = 0; i < 6; i++)
     {
-        table_colors[i * 4] = 1.0f;
-        table_colors[i * 4 + 1] = 1.0f;
-        table_colors[i * 4 + 2] = 1.0f;
-        table_colors[i * 4 + 3] = 1.0f;
+        background_colors[i * 4] = 1.0f;
+        background_colors[i * 4 + 1] = 1.0f;
+        background_colors[i * 4 + 2] = 1.0f;
+        background_colors[i * 4 + 3] = 1.0f;
     }
-    cstrl_renderer_add_positions(g_background_render_data, table_positions, 2, 6);
-    cstrl_renderer_add_uvs(g_background_render_data, table_uvs);
-    cstrl_renderer_add_colors(g_background_render_data, table_colors);
+    cstrl_renderer_add_positions(g_background_render_data, background_positions, 2, 6);
+    cstrl_renderer_add_uvs(g_background_render_data, background_uvs);
+    cstrl_renderer_add_colors(g_background_render_data, background_colors);
 
     g_background_texture =
         cstrl_texture_generate_from_path("resources/textures/beer_pong/bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
@@ -350,7 +403,18 @@ void gameplay_init(int base_screen_x, int base_screen_y, cstrl_shader *default_s
     g_meter_bar_texture =
         cstrl_texture_generate_from_path("resources/textures/beer_pong/meter_bar.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
-    players_init(&g_players, true, !g_simulation ? PLAYER1 : 0);
+    players_init(&g_players, true, human_players);
+    if (stats != NULL)
+    {
+        for (int i = 0; i < MAX_PLAYER_COUNT; i++)
+        {
+            g_players.stats[i].accuracy = stats[i].accuracy;
+            g_players.stats[i].focus = stats[i].focus;
+            g_players.stats[i].defence = stats[i].defence;
+            g_players.stats[i].charisma = stats[i].charisma;
+            g_players.stats[i].tolerance = stats[i].tolerance;
+        }
+    }
     balls_init(&g_balls);
 
     float player_size_x = 17.0f;
@@ -401,8 +465,8 @@ static int shot_heuristic(int team)
         weight_total += cups_get_priority(&g_cups, active_cups.array[i], team);
         cstrl_da_int_push_back(&desired_values, (int)(weight_total * 1000.0f));
     }
-    int random_number = rand() % (int)(weight_total * 1000.0f);
 
+    int random_number = rand() % (int)(weight_total * 1000.0f);
     for (int i = 0; i < desired_values.size; i++)
     {
         if (desired_values.array[i] > random_number)
@@ -549,20 +613,7 @@ static void main_game_stage_update()
         if (g_players.first_turn && !g_players.human[g_players.current_player_turn] &&
             (g_players.current_player_turn == PLAYER1_TURN || g_players.current_player_turn == PLAYER3_TURN))
         {
-            int reracks_left = g_players.current_player_turn == PLAYER1_TURN ? g_players.team1_reracks_remaining
-                                                                             : g_players.team2_reracks_remaining;
-            if (reracks_left > 0 && cups_rerack(&g_cups, g_players.current_player_turn == PLAYER1_TURN ? 0 : 1))
-            {
-                g_rerack = true;
-                if (g_players.current_player_turn == PLAYER1_TURN)
-                {
-                    g_players.team1_reracks_remaining--;
-                }
-                else
-                {
-                    g_players.team2_reracks_remaining--;
-                }
-            }
+            gameplay_team_rerack(g_players.current_player_turn == PLAYER1_TURN ? 0 : 1);
         }
         shoot_ball(g_players.human[g_players.current_player_turn],
                    g_players.current_player_turn < PLAYER3_TURN ? 0 : 1);
@@ -692,7 +743,7 @@ static void main_game_stage_render()
             {
                 float t = (float)g_players.stats[g_players.current_player_turn].focus / 100.0f;
                 float distance = (1.0f - t) * 4.0f + t * 3.0f;
-                float speed = (1.0f - t) * 20.0f + t * 12.0f;
+                float speed = (1.0f - t) * 18.0f + t * 12.0f;
                 float target_offset_x = (float)cos(cstrl_platform_get_absolute_time() * speed) * distance;
                 float target_offset_y = (float)sin(cstrl_platform_get_absolute_time() * speed) * distance;
                 float targetx0 = (float)g_mouse_x - TARGET_SIZE / 2.0f + target_offset_x;
@@ -743,7 +794,7 @@ static void main_game_stage_render()
                 meter_positions[10] = meterx1;
                 meter_positions[11] = metery1;
                 float t = (float)g_players.stats[g_players.current_player_turn].focus / 100.0f;
-                float speed = (1.0f - t) * 14.0f + t * 8.0f;
+                float speed = (1.0f - t) * 13.0f + t * 8.0f;
                 g_target_error = (float)sin(cstrl_platform_get_absolute_time() * speed);
                 float meter_bar_offset_y = (g_target_error + 1.0f) / 2.0f * METER_SIZE_Y - METER_SIZE_Y / 2.0f;
                 float meter_barx0 = (float)g_mouse_x - METER_BAR_SIZE_X / 2.0f;
@@ -924,4 +975,8 @@ void gameplay_shutdown()
     cstrl_renderer_free_render_data(g_target_render_data);
     cstrl_renderer_free_render_data(g_meter_render_data);
     cstrl_renderer_free_render_data(g_meter_bar_render_data);
+
+    balls_free(&g_balls);
+    cups_free(&g_cups);
+    players_free(&g_players);
 }

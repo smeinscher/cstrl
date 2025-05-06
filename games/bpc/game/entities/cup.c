@@ -8,22 +8,22 @@ const float g_cup_priority[] = {0.05, 0.1, 0.1, 0.05, 0.15f, 0.4f, 0.15f, 0.2f, 
 
 bool cups_init(cups_t *cups, bool overtime)
 {
-    float cup_start_x0 = 48.0f;
+    float cup_start_x0 = 47.0f;
     float cup_start_x1 = 272.0f;
     float cup_start_y = 74.0f;
     float cup_x_offset = 7.0f;
     float cup_y_offset = 1.0f;
 
-    cups->position[0] = (vec2){48.0f + CUP_SIZE / 2.0f, 74.0f + CUP_SIZE / 2.0f};
-    cups->position[1] = (vec2){48.0f + CUP_SIZE / 2.0f, 82.0f + CUP_SIZE / 2.0f};
-    cups->position[2] = (vec2){48.0f + CUP_SIZE / 2.0f, 90.0f + CUP_SIZE / 2.0f};
-    cups->position[3] = (vec2){48.0f + CUP_SIZE / 2.0f, 98.0f + CUP_SIZE / 2.0f};
-    cups->position[4] = (vec2){55.0f + CUP_SIZE / 2.0f, 78.0f + CUP_SIZE / 2.0f};
-    cups->position[5] = (vec2){55.0f + CUP_SIZE / 2.0f, 86.0f + CUP_SIZE / 2.0f};
-    cups->position[6] = (vec2){55.0f + CUP_SIZE / 2.0f, 94.0f + CUP_SIZE / 2.0f};
-    cups->position[7] = (vec2){62.0f + CUP_SIZE / 2.0f, 82.0f + CUP_SIZE / 2.0f};
-    cups->position[8] = (vec2){62.0f + CUP_SIZE / 2.0f, 90.0f + CUP_SIZE / 2.0f};
-    cups->position[9] = (vec2){69.0f + CUP_SIZE / 2.0f, 86.0f + CUP_SIZE / 2.0f};
+    cups->position[0] = (vec2){47.0f + CUP_SIZE / 2.0f, 74.0f + CUP_SIZE / 2.0f};
+    cups->position[1] = (vec2){47.0f + CUP_SIZE / 2.0f, 82.0f + CUP_SIZE / 2.0f};
+    cups->position[2] = (vec2){47.0f + CUP_SIZE / 2.0f, 90.0f + CUP_SIZE / 2.0f};
+    cups->position[3] = (vec2){47.0f + CUP_SIZE / 2.0f, 98.0f + CUP_SIZE / 2.0f};
+    cups->position[4] = (vec2){54.0f + CUP_SIZE / 2.0f, 78.0f + CUP_SIZE / 2.0f};
+    cups->position[5] = (vec2){54.0f + CUP_SIZE / 2.0f, 86.0f + CUP_SIZE / 2.0f};
+    cups->position[6] = (vec2){54.0f + CUP_SIZE / 2.0f, 94.0f + CUP_SIZE / 2.0f};
+    cups->position[7] = (vec2){61.0f + CUP_SIZE / 2.0f, 82.0f + CUP_SIZE / 2.0f};
+    cups->position[8] = (vec2){61.0f + CUP_SIZE / 2.0f, 90.0f + CUP_SIZE / 2.0f};
+    cups->position[9] = (vec2){68.0f + CUP_SIZE / 2.0f, 86.0f + CUP_SIZE / 2.0f};
 
     cups->position[10] = (vec2){273.0f - CUP_SIZE / 2.0f, 74.0f + CUP_SIZE / 2.0f};
     cups->position[11] = (vec2){273.0f - CUP_SIZE / 2.0f, 82.0f + CUP_SIZE / 2.0f};
@@ -163,7 +163,7 @@ int cups_count_active_by_team(cups_t *cups, int team)
 bool cups_can_rerack(cups_t *cups, int team)
 {
     int count = cups_count_active_by_team(cups, team);
-    if (count != 1 && count != 3 && count != 4 && count != 6)
+    if (count > 6)
     {
         return false;
     }
@@ -172,11 +172,16 @@ bool cups_can_rerack(cups_t *cups, int team)
     {
     case 1:
         return !cups->active[start + 9];
+    case 2:
+        return !(cups->active[start + 9] && (cups->active[start + 8] || cups->active[start + 7]));
     case 3:
         return !(cups->active[start + 9] && cups->active[start + 8] && cups->active[start + 7]);
     case 4:
         return !(cups->active[start + 9] && cups->active[start + 8] && cups->active[start + 7] &&
                  cups->active[start + 5]);
+    case 5:
+        return !(cups->active[start + 9] && cups->active[start + 8] && cups->active[start + 7] &&
+                 cups->active[start + 6] && cups->active[start + 4]);
     case 6:
         return !(cups->active[start + 9] && cups->active[start + 8] && cups->active[start + 7] &&
                  cups->active[start + 6] && cups->active[start + 5] && cups->active[start + 4]);
@@ -207,6 +212,23 @@ bool cups_rerack(cups_t *cups, int team)
     case 1: {
         cups->active[team == 0 ? 9 : 19] = true;
         int index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 9 : 19);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        break;
+    }
+    case 2: {
+        cups->active[team == 0 ? 9 : 19] = true;
+        cups->active[team == 0 ? 8 : 18] = true;
+        cups->position[team == 0 ? 8 : 18].x -= team == 0 ? 1 : -1;
+        cups->position[team == 0 ? 8 : 18].y = cups->position[team == 0 ? 9 : 19].y;
+        int index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 9 : 19);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 8 : 18);
         if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
         {
             cstrl_da_int_remove(&cups->freed, index);
@@ -255,6 +277,39 @@ bool cups_rerack(cups_t *cups, int team)
             cstrl_da_int_remove(&cups->freed, index);
         }
         index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 5 : 15);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        break;
+    }
+    case 5: {
+        cups->active[team == 0 ? 9 : 19] = true;
+        cups->active[team == 0 ? 8 : 18] = true;
+        cups->active[team == 0 ? 7 : 17] = true;
+        cups->active[team == 0 ? 6 : 16] = true;
+        cups->active[team == 0 ? 4 : 14] = true;
+        int index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 9 : 19);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 8 : 18);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 7 : 17);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 6 : 16);
+        if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
+        {
+            cstrl_da_int_remove(&cups->freed, index);
+        }
+        index = cstrl_da_int_find_first(&cups->freed, team == 0 ? 4 : 14);
         if (index != CSTRL_DA_INT_ITEM_NOT_FOUND)
         {
             cstrl_da_int_remove(&cups->freed, index);

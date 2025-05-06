@@ -103,3 +103,12 @@ void balls_clear(balls_t *balls)
     }
     g_current_ball_index = 0;
 }
+
+void balls_free(balls_t *balls)
+{
+    for (int i = 0; i < MAX_BALLS; i++)
+    {
+        cstrl_da_int_free(&balls->cups_hit[i]);
+    }
+    g_current_ball_index = 0;
+}

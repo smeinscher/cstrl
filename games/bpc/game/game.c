@@ -7,15 +7,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static const int WINDOW_WIDTH = 1280;
-static const int WINDOW_HEIGHT = 720;
+static const int WINDOW_WIDTH = 1920;  // 1280;
+static const int WINDOW_HEIGHT = 1080; // 720;
 static const char *WINDOW_TITLE = "Beer Pong Champion";
 
 int bpc_game_run()
 {
     cstrl_platform_state platform_state;
     if (!cstrl_platform_init(&platform_state, WINDOW_TITLE, (1920 - WINDOW_WIDTH) / 2, (1080 - WINDOW_HEIGHT) / 2,
-                             WINDOW_WIDTH, WINDOW_HEIGHT, false))
+                             WINDOW_WIDTH, WINDOW_HEIGHT, true))
     {
         cstrl_platform_shutdown(&platform_state);
         return 1;

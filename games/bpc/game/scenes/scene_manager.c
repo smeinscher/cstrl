@@ -7,6 +7,7 @@ void (*g_current_scene_shutdown)(void) = NULL;
 
 void scene_set(game_scene_t game_scene, void *user_data)
 {
+    scene_shutdown();
     switch (game_scene)
     {
     case LOGO_SCENE:

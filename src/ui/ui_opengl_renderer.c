@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FONT_SIZE 24
+#define FONT_SIZE 48
 
 typedef struct cstrl_ui_internal_render_state
 {
@@ -127,7 +127,8 @@ void *cstrl_ui_renderer_init(cstrl_platform_state *platform_state)
     render_state->texture = cstrl_texture_generate_from_bitmap(texture, 1, 1, CSTRL_RGBA, CSTRL_RGBA);
 
     // The real mvp https://sinf.org/opengl-text-using-stb_truetype/
-    FILE *font_file = fopen("resources/fonts/SUSE/static/SUSE-Regular.ttf", "rb");
+    // FILE *font_file = fopen("resources/fonts/SUSE/static/SUSE-Regular.ttf", "rb");
+    FILE *font_file = fopen("resources/fonts/Jersey_20/Jersey20-Regular.ttf", "rb");
     fseek(font_file, 0, SEEK_END);
     long size = ftell(font_file);
     fseek(font_file, 0, SEEK_SET);

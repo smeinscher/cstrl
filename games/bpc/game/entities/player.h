@@ -68,4 +68,6 @@ void players_complete_shot(players_t *players, player_shot_state_t shot_state, i
 
 void players_reset(players_t *players);
 
+void players_free(players_t *players);
+
 #endif

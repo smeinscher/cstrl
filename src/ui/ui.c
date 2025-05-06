@@ -6,6 +6,7 @@
 #include "cstrl/cstrl_platform.h"
 #include "log.c/log.h"
 #include "ui_internal.h"
+#include <stdlib.h>
 #define _CRT_SECURE_NO_WARNINGS
 #include "cstrl/cstrl_ui.h"
 #include "cstrl/cstrl_util.h"
@@ -248,9 +249,24 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
                                ui_state->elements.elements[index].text.array,
                                ui_state->elements.elements[index].text.size);
 
+        int margin_x = 0;
+        int margin_y = 0;
+        if (ui_state->elements.elements[index].parent_index > -1 &&
+            ui_state->elements.elements[ui_state->elements.elements[index].parent_index].layout->child_alignment ==
+                CSTRL_UI_ALIGN_CENTER)
+        {
+            int text_width = cstrl_ui_text_width(context, ui_state->elements.elements[index].text.array,
+                                                 ui_state->elements.elements[index].text.size, 1.0f);
+            int text_height = cstrl_ui_text_height(context, ui_state->elements.elements[index].text.array,
+                                                   ui_state->elements.elements[index].text.size, 1.0f);
+            margin_x = ((x1 - x0) - text_width) / 2;
+            margin_y = ((y1 - y0) - text_height + text_height / 2) / 2;
+        }
+
         cstrl_ui_renderer_add_font(context->internal_render_state, ui_state->elements.elements[index].text.array, 0,
-                                   ui_state->elements.elements[index].text.size, x0 + 10, y0 + 20, layout->font_color.r,
-                                   layout->font_color.r, layout->font_color.b, layout->font_color.a);
+                                   ui_state->elements.elements[index].text.size, x0 + margin_x, y0 + margin_y,
+                                   layout->font_color.r, layout->font_color.g, layout->font_color.b,
+                                   layout->font_color.a);
         cstrl_string_free(&ui_state->elements.elements[index].text);
         cstrl_ui_renderer_draw_rects(context->internal_render_state);
         cstrl_ui_renderer_draw_font(context->internal_render_state);
@@ -293,16 +309,31 @@ CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int obj
     return true;
 }
 
-CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, float scale)
+CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, int text_length, float scale)
 {
     int width = 0;
 
-    for (int i = 0; text[i] != '\0'; i++)
+    for (int i = 0; i < text_length; i++)
     {
         stbtt_packedchar c = cstrl_ui_renderer_get_char_data(context->internal_render_state)[(int)text[i]];
         width += c.xadvance;
     }
     return (float)width * scale;
+}
+
+CSTRL_API float cstrl_ui_text_height(cstrl_ui_context *context, const char *text, int text_length, float scale)
+{
+    int height = 0;
+    for (int i = 0; i < text_length; i++)
+    {
+        stbtt_packedchar c = cstrl_ui_renderer_get_char_data(context->internal_render_state)[(int)text[i]];
+        int tmp_height = c.y1 - c.y0;
+        if (tmp_height > height)
+        {
+            height = tmp_height;
+        }
+    }
+    return (float)height * scale;
 }
 
 static void expand_elements_if_needed(cstrl_ui_internal_state *ui_state)
@@ -519,9 +550,12 @@ CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int
 }
 
 CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int text_length, int x, int y, int w, int h,
-                             int id, cstrl_ui_alignment alignment)
+                             int id, cstrl_ui_alignment alignment, cstrl_ui_layout *layout)
 {
-    return false;
+    cstrl_ui_internal_state *ui_state = context->internal_ui_state;
+    int index = ui_state->elements.element_count;
+    build_child_rect(ui_state, index, text, text_length, x, y, 0, 0, id, layout);
+    return true;
 }
 
 CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x,
