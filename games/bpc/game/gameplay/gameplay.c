@@ -157,7 +157,8 @@ void gameplay_get_team_wins(int *team1, int *team2)
 
 bool gameplay_team_can_rerack(int team)
 {
-    return g_players.current_turn_state == AIM_TARGET && g_players.first_turn &&
+    int reracks_left = team == 0 ? g_players.team1_reracks_remaining : g_players.team2_reracks_remaining;
+    return reracks_left > 0 && g_players.current_turn_state == AIM_TARGET && g_players.first_turn &&
            g_players.current_player_turn == (team == 0 ? PLAYER1_TURN : PLAYER3_TURN) && cups_can_rerack(&g_cups, team);
 }
 

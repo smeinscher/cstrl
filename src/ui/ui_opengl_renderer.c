@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FONT_SIZE 48
+#define FONT_SIZE 36
 
 typedef struct cstrl_ui_internal_render_state
 {

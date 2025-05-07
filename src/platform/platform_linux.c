@@ -141,9 +141,16 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
 
     XMapWindow(state->display, state->main_window);
 
-    // wm_fullscreen = XInternAtom(state->display, "_NET_WM_STATE_FULLSCREEN", True);
-    // XChangeProperty(state->display, state->main_window, XInternAtom(state->display, "_NET_WM_STATE", False), XA_ATOM,
-    //                 32, PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
+    if (fullscreen)
+    {
+        wm_fullscreen = XInternAtom(state->display, "_NET_WM_STATE_FULLSCREEN", True);
+        XChangeProperty(state->display, state->main_window, XInternAtom(state->display, "_NET_WM_STATE", False),
+                        XA_ATOM, 32, PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
+    }
+    else
+    {
+        wm_fullscreen = XInternAtom(state->display, "_NET_WM_STATE_FULLSCREEN", False);
+    }
     return true;
 }
 

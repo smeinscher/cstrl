@@ -42,7 +42,8 @@ static cstrl_ui_layout g_ui_menu_button_layout;
 static player_stats_t g_player_stats[MAX_PLAYER_COUNT];
 static int g_selected_player = 0;
 
-static CSTRL_PACKED_ENUM{OPTIONS_MENU_STATE, STATS_MENU_STATE, NO_MENU_STATE} g_menu_state = NO_MENU_STATE;
+static CSTRL_PACKED_ENUM{OPTIONS_MENU_STATE, SIMULATION_STATS_MENU_STATE, QUICK_GAME_STATS_MENU_STATE,
+                         NO_MENU_STATE} g_menu_state = NO_MENU_STATE;
 
 typedef struct main_game_user_data_t
 {
@@ -141,7 +142,7 @@ void scenes_init(cstrl_platform_state *platform_state)
     cstrl_set_uniform_mat4(g_default_shader.program, "view", g_main_camera->view);
     cstrl_set_uniform_mat4(g_default_shader.program, "projection", g_main_camera->projection);
 
-    if (!cstrl_audio_load_ogg("resources/sounds/potential.ogg", &g_theme_sound))
+    if (!cstrl_audio_load_ogg("resources/sounds/hangout.ogg", &g_theme_sound))
     {
         printf("Failed to load theme song. Oof!\n");
     }
@@ -304,11 +305,11 @@ void main_menu_scene_render()
     {
         if (cstrl_ui_button(&g_ui_context, "Quick Game", 10, 360, 75, 240, 100, GEN_ID(0), &g_ui_button_layout))
         {
-            g_menu_state = STATS_MENU_STATE;
+            g_menu_state = QUICK_GAME_STATS_MENU_STATE;
         }
         if (cstrl_ui_button(&g_ui_context, "Simulation", 10, 840, 75, 240, 100, GEN_ID(0), &g_ui_button_layout))
         {
-            g_menu_state = STATS_MENU_STATE;
+            g_menu_state = SIMULATION_STATS_MENU_STATE;
         }
         if (cstrl_ui_button(&g_ui_context, "Options", 7, 1320, 75, 240, 100, GEN_ID(0), &g_ui_button_layout))
         {
@@ -328,18 +329,30 @@ void main_menu_scene_render()
             cstrl_ui_container_end(&g_ui_context);
         }
     }
-    else if (g_menu_state == STATS_MENU_STATE)
+    else if (g_menu_state == SIMULATION_STATS_MENU_STATE || g_menu_state == QUICK_GAME_STATS_MENU_STATE)
     {
         if (cstrl_ui_container_begin(&g_ui_context, "", 0, width / 2 - 200, height / 2 - 300, 400, 600, GEN_ID(0), true,
                                      false, 2, &g_ui_menu_layout))
         {
+            const int bsize = 30;
             int acc_text_width = cstrl_ui_text_width(&g_ui_context, "ACC", 3, 1.0f);
-            int prev_text_height = cstrl_ui_text_height(&g_ui_context, "ACC", 3, 1.0f);
-            cstrl_ui_text(&g_ui_context, "ACC", 3, 10 + acc_text_width / 2, 30, 60, 60, GEN_ID(0),
-                          CSTRL_UI_ALIGN_CENTER, &g_ui_menu_button_layout);
+            int next_item_x = 10 + acc_text_width / 2;
+            int prev_text_height = cstrl_ui_text_height(&g_ui_context, "ACC", 3, 1.0f) + 20;
+            cstrl_ui_text(&g_ui_context, "ACC", 3, next_item_x, 30, 60, 60, GEN_ID(0), CSTRL_UI_ALIGN_CENTER,
+                          &g_ui_menu_button_layout);
+            next_item_x += bsize;
             if (g_player_stats[g_selected_player].accuracy > 0)
             {
-                if (cstrl_ui_button(&g_ui_context, "-", 1, acc_text_width + 20, 20, 30, 30, GEN_ID(0),
+                if (cstrl_ui_button(&g_ui_context, "--", 2, next_item_x, 20, bsize, bsize, GEN_ID(0),
+                                    &g_ui_menu_button_layout))
+                {
+                    g_player_stats[g_selected_player].accuracy -= 10;
+                    if (g_player_stats[g_selected_player].accuracy < 0)
+                    {
+                        g_player_stats[g_selected_player].accuracy = 0;
+                    }
+                }
+                if (cstrl_ui_button(&g_ui_context, "-", 1, next_item_x + bsize, 20, bsize, bsize, GEN_ID(0),
                                     &g_ui_menu_button_layout))
                 {
                     g_player_stats[g_selected_player].accuracy--;
@@ -349,23 +362,45 @@ void main_menu_scene_render()
             sprintf(buffer, "%3d", g_player_stats[g_selected_player].accuracy);
             int text_width = cstrl_ui_text_width(&g_ui_context, buffer, 3, 1.0f);
             int text_height = cstrl_ui_text_height(&g_ui_context, buffer, 3, 1.0f);
-            cstrl_ui_text(&g_ui_context, buffer, 3, 120 - text_width / 2 + acc_text_width, 20 + text_height / 2, 60, 60,
+            next_item_x += bsize * 2 + bsize / 2;
+            cstrl_ui_text(&g_ui_context, buffer, 3, next_item_x + text_width / 2, 20 + text_height / 2, 60, 60,
                           GEN_ID(0), CSTRL_UI_ALIGN_CENTER, &g_ui_menu_button_layout);
+            next_item_x += bsize * 2;
             if (g_player_stats[g_selected_player].accuracy < 100)
             {
-                if (cstrl_ui_button(&g_ui_context, "+", 1, 120 + text_width + acc_text_width, 20, 30, 30, GEN_ID(0),
+                if (cstrl_ui_button(&g_ui_context, "+", 1, next_item_x, 20, bsize, bsize, GEN_ID(0),
                                     &g_ui_menu_button_layout))
                 {
                     g_player_stats[g_selected_player].accuracy++;
                 }
+                if (cstrl_ui_button(&g_ui_context, "++", 2, next_item_x + bsize, 20, bsize, bsize, GEN_ID(0),
+                                    &g_ui_menu_button_layout))
+                {
+                    g_player_stats[g_selected_player].accuracy += 10;
+                    if (g_player_stats[g_selected_player].accuracy > 100)
+                    {
+                        g_player_stats[g_selected_player].accuracy = 100;
+                    }
+                }
             }
 
+            next_item_x = 10 + acc_text_width / 2;
             int foc_text_width = cstrl_ui_text_width(&g_ui_context, "ACC", 3, 1.0f);
             cstrl_ui_text(&g_ui_context, "FOC", 3, 10 + foc_text_width / 2, 30 + prev_text_height, 60, 60, GEN_ID(0),
                           CSTRL_UI_ALIGN_CENTER, &g_ui_menu_button_layout);
+            next_item_x += bsize;
             if (g_player_stats[g_selected_player].focus > 0)
             {
-                if (cstrl_ui_button(&g_ui_context, "-", 1, acc_text_width + 20, 20 + prev_text_height, 30, 30,
+                if (cstrl_ui_button(&g_ui_context, "--", 2, next_item_x, 20 + prev_text_height, bsize, bsize, GEN_ID(0),
+                                    &g_ui_menu_button_layout))
+                {
+                    g_player_stats[g_selected_player].focus -= 10;
+                    if (g_player_stats[g_selected_player].focus < 0)
+                    {
+                        g_player_stats[g_selected_player].focus = 0;
+                    }
+                }
+                if (cstrl_ui_button(&g_ui_context, "-", 1, next_item_x + bsize, 20 + prev_text_height, bsize, bsize,
                                     GEN_ID(0), &g_ui_menu_button_layout))
                 {
                     g_player_stats[g_selected_player].focus--;
@@ -374,25 +409,36 @@ void main_menu_scene_render()
             sprintf(buffer, "%3d", g_player_stats[g_selected_player].focus);
             text_width = cstrl_ui_text_width(&g_ui_context, buffer, 3, 1.0f);
             text_height = cstrl_ui_text_height(&g_ui_context, buffer, 3, 1.0f);
-            cstrl_ui_text(&g_ui_context, buffer, 3, 120 - text_width / 2 + acc_text_width,
+            next_item_x += bsize * 2 + bsize / 2;
+            cstrl_ui_text(&g_ui_context, buffer, 3, next_item_x + text_width / 2,
                           20 + text_height / 2 + prev_text_height, 60, 60, GEN_ID(0), CSTRL_UI_ALIGN_CENTER,
                           &g_ui_menu_button_layout);
+            next_item_x += bsize * 2;
             if (g_player_stats[g_selected_player].focus < 100)
             {
-                if (cstrl_ui_button(&g_ui_context, "+", 1, 120 + text_width + acc_text_width, 20 + prev_text_height, 30,
-                                    30, GEN_ID(0), &g_ui_menu_button_layout))
+                if (cstrl_ui_button(&g_ui_context, "+", 1, next_item_x, 20 + prev_text_height, bsize, bsize, GEN_ID(0),
+                                    &g_ui_menu_button_layout))
                 {
                     g_player_stats[g_selected_player].focus++;
                 }
+                if (cstrl_ui_button(&g_ui_context, "++", 2, next_item_x + bsize, 20 + prev_text_height, bsize, bsize,
+                                    GEN_ID(0), &g_ui_menu_button_layout))
+                {
+                    g_player_stats[g_selected_player].focus += 10;
+                    if (g_player_stats[g_selected_player].focus > 100)
+                    {
+                        g_player_stats[g_selected_player].focus = 100;
+                    }
+                }
             }
 
-            prev_text_height += cstrl_ui_text_height(&g_ui_context, "FOC", 3, 1.0f);
+            prev_text_height += cstrl_ui_text_height(&g_ui_context, "FOC", 3, 1.0f) + 20;
             int player_text_width = cstrl_ui_text_width(&g_ui_context, "PLY", 3, 1.0f);
             cstrl_ui_text(&g_ui_context, "PLY", 3, 10 + foc_text_width / 2, 30 + prev_text_height, 60, 60, GEN_ID(0),
                           CSTRL_UI_ALIGN_CENTER, &g_ui_menu_button_layout);
             if (g_selected_player > 0)
             {
-                if (cstrl_ui_button(&g_ui_context, "-", 1, acc_text_width + 20, 20 + prev_text_height, 30, 30,
+                if (cstrl_ui_button(&g_ui_context, "-", 1, acc_text_width + 20, 20 + prev_text_height, bsize, bsize,
                                     GEN_ID(0), &g_ui_menu_button_layout))
                 {
                     g_selected_player--;
@@ -406,8 +452,8 @@ void main_menu_scene_render()
                           &g_ui_menu_button_layout);
             if (g_selected_player < MAX_PLAYER_COUNT - 1)
             {
-                if (cstrl_ui_button(&g_ui_context, "+", 1, 120 + text_width + acc_text_width, 20 + prev_text_height, 30,
-                                    30, GEN_ID(0), &g_ui_menu_button_layout))
+                if (cstrl_ui_button(&g_ui_context, "+", 1, 180 + acc_text_width, 20 + prev_text_height, bsize, bsize,
+                                    GEN_ID(0), &g_ui_menu_button_layout))
                 {
                     g_selected_player++;
                 }
@@ -415,8 +461,15 @@ void main_menu_scene_render()
 
             if (cstrl_ui_button(&g_ui_context, "Play", 4, 20, 520, 144, 60, GEN_ID(0), &g_ui_menu_button_layout))
             {
-                // g_transition_state = QUICK_GAME_TRANSITION;
-                g_transition_state = SIMULATION_TRANSITION;
+                if (g_menu_state == SIMULATION_STATS_MENU_STATE)
+                {
+                    g_transition_state = SIMULATION_TRANSITION;
+                }
+                else
+                {
+                    g_transition_state = QUICK_GAME_TRANSITION;
+                }
+                g_menu_state = NO_MENU_STATE;
             }
             cstrl_ui_container_end(&g_ui_context);
         }

@@ -216,16 +216,16 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
         cstrl_ui_renderer_add_rect_uv(context->internal_render_state, 0.0f, 0.0f, 1.0f, 1.0f);
         cstrl_ui_renderer_add_rect_uv(context->internal_render_state, 0.0f, 0.0f, 1.0f, 1.0f);
 
-        if (index == ui_state->active_item)
+        if (ui_state->elements.elements[index].id == ui_state->active_item)
         {
             cstrl_ui_renderer_add_rect_position(context->internal_render_state, x0, y0, x1, y0 + 3);
             cstrl_ui_renderer_add_rect_position(context->internal_render_state, x0, y1 - 3, x1, y1);
             cstrl_ui_renderer_add_rect_position(context->internal_render_state, x0, y0, x0 + 3, y1);
             cstrl_ui_renderer_add_rect_position(context->internal_render_state, x1 - 3, y0, x1, y1);
-            cstrl_ui_renderer_add_rect_color(context->internal_render_state, 1.0f, 0.0f, 0.0f, 1.0f);
-            cstrl_ui_renderer_add_rect_color(context->internal_render_state, 1.0f, 0.0f, 0.0f, 1.0f);
-            cstrl_ui_renderer_add_rect_color(context->internal_render_state, 1.0f, 0.0f, 0.0f, 1.0f);
-            cstrl_ui_renderer_add_rect_color(context->internal_render_state, 1.0f, 0.0f, 0.0f, 1.0f);
+            cstrl_ui_renderer_add_rect_color(context->internal_render_state, 0.0f, 0.0f, 0.0f, 1.0f);
+            cstrl_ui_renderer_add_rect_color(context->internal_render_state, 0.0f, 0.0f, 0.0f, 1.0f);
+            cstrl_ui_renderer_add_rect_color(context->internal_render_state, 0.0f, 0.0f, 0.0f, 1.0f);
+            cstrl_ui_renderer_add_rect_color(context->internal_render_state, 0.0f, 0.0f, 0.0f, 1.0f);
             cstrl_ui_renderer_add_rect_uv(context->internal_render_state, 0.0f, 0.0f, 1.0f, 1.0f);
             cstrl_ui_renderer_add_rect_uv(context->internal_render_state, 0.0f, 0.0f, 1.0f, 1.0f);
             cstrl_ui_renderer_add_rect_uv(context->internal_render_state, 0.0f, 0.0f, 1.0f, 1.0f);
@@ -378,11 +378,11 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
             ui_state->mouse_state.left_mouse_button_down)
         {
             ui_state->dragged_element_id = id;
-            ui_state->active_item = index;
+            ui_state->active_item = id;
         }
         if (ui_state->dragged_element_id == id && ui_state->mouse_state.left_mouse_button_down)
         {
-            ui_state->active_item = index;
+            ui_state->active_item = id;
             x -= ui_state->mouse_state.prev_mouse_x - ui_state->mouse_state.mouse_x;
             y -= ui_state->mouse_state.prev_mouse_y - ui_state->mouse_state.mouse_y;
         }
@@ -410,7 +410,7 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
         }
     }
 
-    if (ui_state->active_item != index)
+    if (ui_state->active_item != ui_state->elements.elements[index].id)
     {
         cstrl_da_int_push_back(&ui_state->elements.render_order, index);
         order_priority = original_order_priority;
@@ -488,7 +488,7 @@ static void build_child_rect(cstrl_ui_internal_state *ui_state, int index, const
     ui_state->elements.elements[index].parent_index = parent_index;
     ui_state->elements.element_count++;
 
-    if (ui_state->active_item != parent_index)
+    if (ui_state->active_item != ui_state->elements.elements[parent_index].id)
     {
         cstrl_da_int_insert(&ui_state->elements.render_order, index, ui_state->elements.render_order.size - 1);
     }
@@ -538,10 +538,10 @@ CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int
         if (ui_state->mouse_state.left_mouse_button_down && !ui_state->mouse_state.left_mouse_button_processed &&
             (ui_state->active_item == -1 || ui_state->active_item == ui_state->elements.elements[index].parent_index))
         {
-            ui_state->active_item = index;
+            ui_state->active_item = id;
             return true;
         }
-        if (ui_state->active_item == index)
+        if (ui_state->active_item == id)
         {
             ui_state->active_item = -1;
         }
