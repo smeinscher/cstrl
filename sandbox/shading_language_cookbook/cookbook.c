@@ -249,7 +249,7 @@ static void create_plane(float *positions, float *normals, float *uvs, int *indi
 int cookbook()
 {
     cstrl_platform_state platform_state;
-    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600, false))
     {
         printf("Failed to initialize platform\n");
         cstrl_platform_shutdown(&platform_state);
@@ -326,7 +326,7 @@ int cookbook()
 int cookbook_chapter4_b()
 {
     cstrl_platform_state platform_state;
-    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600, false))
     {
         printf("Failed to initialize platform\n");
         cstrl_platform_shutdown(&platform_state);
@@ -426,7 +426,7 @@ int cookbook_chapter4_b()
 int cookbook_chapter4_a()
 {
     cstrl_platform_state platform_state;
-    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600, false))
     {
         printf("Failed to initialize platform\n");
         cstrl_platform_shutdown(&platform_state);
@@ -509,7 +509,7 @@ int cookbook_chapter4_a()
 int cookbook_chapter3()
 {
     cstrl_platform_state platform_state;
-    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600, false))
     {
         printf("Failed to initialize platform\n");
         cstrl_platform_shutdown(&platform_state);
@@ -577,7 +577,7 @@ int cookbook_chapter3()
 int cookbook_chapter2()
 {
     cstrl_platform_state platform_state;
-    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&platform_state, "Shading Language Cookbook", 560, 240, 800, 600, false))
     {
         printf("Failed to initialize platform\n");
         cstrl_platform_shutdown(&platform_state);

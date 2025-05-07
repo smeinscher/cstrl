@@ -4,6 +4,9 @@ project(cstrl-test C)
 project(cstrl-sandbox C)
 project(cstrl-moon-game C)
 project(cstrl-moon-game-executable C)
+project(cstrl-rpg-game C)
+project(cstrl-rpg-game-executable C)
+project(cstrl-bpc-game C)
 
 #set(CMAKE_SYSTEM_PROCESSOR arm)
 
@@ -17,12 +20,23 @@ find_package(OpenGL)
 
 find_package(Vulkan)
 
+if (WIN32)
+    set(OPENAL_SDK "C:/Program Files (x86)/OpenAL 1.1 SDK")
+    include_directories("${OPENAL_SDK}/include")
+    link_directories("${OPENAL_SDK}/libs/Win64")
+    set(OPENAL_LIBRARY "OpenAL32.lib")
+else ()
+    find_package(OpenAL)
+    set(OPENAL_LIBRARY OpenAL::OpenAL)
+endif ()
+
 find_package(X11 QUIET)
 
 add_library(log_c STATIC
         extern/log.c/log.c
         extern/log.c/log.h)
 target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
+
 
 if (NOT DEFINED RENDER_API)
     set(RENDER_API "OPENGL")
@@ -90,6 +104,8 @@ add_library(cstrl SHARED
         src/debug/assert.c
         src/platform/platform_em_web.c
         src/renderer/opengl/opengl_platform_em_web.c
+        src/audio/openal/openal_audio.c
+        include/cstrl/cstrl_audio.h
 )
 
 add_executable(cstrl-test
@@ -146,7 +162,7 @@ add_executable(cstrl-sandbox
 )
 
 add_executable(cstrl-moon-game-executable
-    games/moon_game/main.c
+        games/moon_game/main.c
 )
 
 add_library(cstrl-moon-game SHARED
@@ -172,11 +188,43 @@ add_library(cstrl-moon-game SHARED
         games/moon_game/game/physics_wrapper.h
 )
 
-target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
-target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT -Wall -Werror -Wno-missing-braces)
-target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
-target_compile_options(cstrl-sandbox PRIVATE -Wall -Werror -Wno-missing-braces)
-target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES})
+add_executable(cstrl-rpg-game-executable
+        games/rpg/main.c
+)
+
+add_library(cstrl-rpg-game SHARED
+        games/rpg/game/game.c
+        games/rpg/game/game.h
+)
+
+add_executable(cstrl-bpc-game
+        games/bpc/main.c
+        games/bpc/game/game.c
+        games/bpc/game/game.h
+        games/bpc/game/entities/ball.c
+        games/bpc/game/entities/ball.h
+        games/bpc/game/entities/cup.c
+        games/bpc/game/entities/cup.h
+        games/bpc/game/entities/player.c
+        games/bpc/game/entities/player.h
+        games/bpc/game/scenes/scenes.c
+        games/bpc/game/scenes/scenes.h
+        games/bpc/game/scenes/scene_manager.c
+        games/bpc/game/scenes/scene_manager.h
+        games/bpc/game/gameplay/gameplay.c
+        games/bpc/game/gameplay/gameplay.h
+)
+
+#target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
+#target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT -Wall -Werror -Wno-missing-braces)
+#target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
+#target_compile_options(cstrl-sandbox PRIVATE -Wall -Werror -Wno-missing-braces)
+
+target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
+target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT)
+target_compile_options(cstrl-rpg-game PRIVATE -DCSTRL_RPG_GAME_EXPORT)
+
+target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES} ${OPENAL_LIBRARY})
 if (X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)
 endif ()
@@ -184,19 +232,27 @@ if (UNIX)
     target_link_libraries(cstrl PRIVATE m)
     target_link_libraries(cstrl-test PRIVATE m)
     target_link_libraries(cstrl-sandbox PRIVATE m)
+    target_link_libraries(cstrl-bpc-game PRIVATE m)
 endif ()
 if (ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
-# else ()
+    # else ()
     # target_link_libraries(cstrl PRIVATE Vulkan::Vulkan)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log_c cstrl)
 target_link_libraries(cstrl-sandbox PRIVATE cstrl)
 target_link_libraries(cstrl-moon-game PRIVATE cstrl)
 target_link_libraries(cstrl-moon-game-executable PRIVATE cstrl cstrl-moon-game)
+target_link_libraries(cstrl-rpg-game PRIVATE cstrl)
+# target_link_libraries(cstrl-rpg-game-executable PRIVATE cstrl cstrl-rpg-game)
+target_link_libraries(cstrl-rpg-game-executable PRIVATE cstrl)
+target_link_libraries(cstrl-bpc-game PRIVATE cstrl)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-moon-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-moon-game-executable PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(cstrl-rpg-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(cstrl-rpg-game-executable PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(cstrl-bpc-game PRIVATE ${CMAKE_SOURCE_DIR}/include)

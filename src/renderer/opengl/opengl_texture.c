@@ -19,7 +19,7 @@
 
 CSTRL_API int upload_opengl_texture(const char *path)
 {
-    stbi_set_flip_vertically_on_load(true);
+    // stbi_set_flip_vertically_on_load(true);
     int nr_channels;
     int width, height;
     unsigned char *data = stbi_load(path, &width, &height, &nr_channels, STBI_rgb_alpha);
@@ -49,7 +49,7 @@ CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height
     return texture;
 }
 
-CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path)
+CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path, cstrl_texture_filter texture_filter)
 {
     cstrl_texture texture = {0};
     unsigned int texture_id;
@@ -58,8 +58,16 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if (texture_filter == CSTRL_TEXTURE_FILTER_LINEAR)
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    }
+    else
+    {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
 
     if (upload_opengl_texture(path))
     {

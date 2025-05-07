@@ -163,7 +163,7 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
 int learnopengl()
 {
     cstrl_platform_state state;
-    if (!cstrl_platform_init(&state, "Learn OpenGL", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&state, "Learn OpenGL", 560, 240, 800, 600, false))
     {
         cstrl_platform_shutdown(&state);
         return 1;
@@ -210,12 +210,14 @@ int learnopengl()
     cstrl_shader light_shader = cstrl_load_shaders_from_files("resources/shaders/learnopengl/light_cube.vert",
                                                               "resources/shaders/learnopengl/light_cube.frag");
     cstrl_set_active_texture(0);
-    cstrl_texture diffuse_texture = cstrl_texture_generate_from_path("resources/textures/container2.png");
+    cstrl_texture diffuse_texture =
+        cstrl_texture_generate_from_path("resources/textures/container2.png", CSTRL_TEXTURE_FILTER_LINEAR);
     cstrl_texture_bind(diffuse_texture);
     cstrl_set_uniform_int(color_shader.program, "material.diffuse", 0);
 
     cstrl_set_active_texture(1);
-    cstrl_texture specular_texture = cstrl_texture_generate_from_path("resources/textures/container2_specular.png");
+    cstrl_texture specular_texture =
+        cstrl_texture_generate_from_path("resources/textures/container2_specular.png", CSTRL_TEXTURE_FILTER_LINEAR);
     cstrl_texture_bind(specular_texture);
     cstrl_set_uniform_int(color_shader.program, "material.specular", 1);
 

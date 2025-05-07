@@ -768,7 +768,7 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
                             cstrl_platform_state *platform_state)
 {
     if (!cstrl_platform_init(platform_state, "Planet", (1920 - INITIAL_WINDOW_WIDTH) / 2,
-                             (1080 - INITIAL_WINDOW_HEIGHT) / 2, INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT))
+                             (1080 - INITIAL_WINDOW_HEIGHT) / 2, INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, false))
     {
         cstrl_platform_shutdown(platform_state);
         return 1;
@@ -894,8 +894,8 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
 
     render_state->shaders[SHADER_CITY] =
         cstrl_load_shaders_from_files("resources/shaders/city_borders.vert", "resources/shaders/city_borders.frag");
-    render_state->textures[TEXTURE_CITY_NOISE] =
-        cstrl_texture_generate_from_path("resources/textures/planet_game/noise_texture.png");
+    render_state->textures[TEXTURE_CITY_NOISE] = cstrl_texture_generate_from_path(
+        "resources/textures/planet_game/noise_texture.png", CSTRL_TEXTURE_FILTER_LINEAR);
     // TODO: get this from somewhere else
     game_state->player_data.human_player = 0;
     ai_init(&game_state->player_data.ai, 6, game_state->player_data.human_player);
@@ -911,7 +911,8 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
     cstrl_renderer_add_colors(render_state->render_data[RENDER_DATA_UNIT], unit_colors);
     render_state->shaders[SHADER_UNIT] =
         cstrl_load_shaders_from_files("resources/shaders/default3D.vert", "resources/shaders/default3D.frag");
-    render_state->textures[TEXTURE_UNIT] = cstrl_texture_generate_from_path("resources/textures/planet_game/icons.png");
+    render_state->textures[TEXTURE_UNIT] =
+        cstrl_texture_generate_from_path("resources/textures/planet_game/icons.png", CSTRL_TEXTURE_FILTER_LINEAR);
 
     render_state->render_data[RENDER_DATA_PATH_MARKER] = cstrl_renderer_create_render_data();
     float path_marker_positions[18] = {0.0f};
@@ -979,7 +980,7 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
     render_state->shaders[SHADER_EXPLOSION] = cstrl_load_shaders_from_files(
         "resources/shaders/default3D_no_color.vert", "resources/shaders/default3D_no_color.frag");
     render_state->textures[TEXTURE_EXPLOSION] =
-        cstrl_texture_generate_from_path("resources/textures/planet_game/explosion2.png");
+        cstrl_texture_generate_from_path("resources/textures/planet_game/explosion2.png", CSTRL_TEXTURE_FILTER_LINEAR);
 
     render_state->camera_objects.main_camera = cstrl_camera_create(INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT, false);
     vec3 origin;
@@ -1471,12 +1472,17 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
     cstrl_use_shader(render_state->shaders[SHADER_SELECTION_BOX]);
     cstrl_renderer_draw_indices(render_state->render_data[RENDER_DATA_SELECTION_BOX]);
     cstrl_ui_begin(&render_state->ui_context);
-    if (cstrl_ui_container_begin(&render_state->ui_context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2))
+    cstrl_ui_layout layout = {0};
+    layout.color = (cstrl_ui_color){0.4f, 0.0f, 0.0f, 0.7f};
+    layout.border.color = (cstrl_ui_color){0.6f, 0.6f, 0.6f, 1.0f};
+    layout.border.size = (cstrl_ui_border_size){4, 4, 4, 4};
+    if (cstrl_ui_container_begin(&render_state->ui_context, "Economy", 7, 10, 10, 200, 300, GEN_ID(0), false, false, 2,
+                                 &layout))
     {
         cstrl_ui_container_end(&render_state->ui_context);
     }
     if (cstrl_ui_container_begin(&render_state->ui_context, "Something Else", 14, 10, 320, 200, 300, GEN_ID(0), false,
-                                 false, 2))
+                                 false, 2, &layout))
     {
         cstrl_ui_container_end(&render_state->ui_context);
     }

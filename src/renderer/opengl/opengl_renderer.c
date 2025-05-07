@@ -31,6 +31,7 @@ typedef struct internal_data
     bool cleared;
 } internal_data;
 
+#if defined(CSTRL_DEBUG)
 static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                            const GLchar *message, const void *param)
 {
@@ -51,6 +52,7 @@ static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severit
         break;
     }
 }
+#endif
 
 CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
@@ -305,8 +307,7 @@ CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, f
         }
         else
         {
-            glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float),
-                            positions + start_index);
+            glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), positions);
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);

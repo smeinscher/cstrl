@@ -43,7 +43,7 @@ static void key_callback(cstrl_platform_state *state, int key, int scancode, int
 int pong()
 {
     cstrl_platform_state platform_state;
-    if (!cstrl_platform_init(&platform_state, "Pong", 560, 240, 800, 600))
+    if (!cstrl_platform_init(&platform_state, "Pong", 560, 240, 800, 600, false))
     {
         cstrl_platform_shutdown(&platform_state);
         return 1;

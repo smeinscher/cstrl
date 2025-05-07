@@ -5,6 +5,7 @@
 #ifndef CSTRL_RENDERER_H
 #define CSTRL_RENDERER_H
 
+#include "cstrl/cstrl_defines.h"
 #include "cstrl_math.h"
 #include "cstrl_platform.h"
 #include <time.h>
@@ -57,6 +58,12 @@ typedef enum cstrl_texture_format
     CSTRL_RGB,
     CSTRL_RGBA
 } cstrl_texture_format;
+
+typedef CSTRL_PACKED_ENUM
+{
+    CSTRL_TEXTURE_FILTER_LINEAR,
+    CSTRL_TEXTURE_FILTER_NEAREST
+} cstrl_texture_filter;
 
 #endif
 
@@ -184,7 +191,7 @@ CSTRL_API void cstrl_shader_hot_reload(cstrl_shader *shader);
 
 CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height);
 
-CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path);
+CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path, cstrl_texture_filter texture_filter);
 
 CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap, int width, int height, cstrl_texture_format format, cstrl_texture_format internal_format);
 
