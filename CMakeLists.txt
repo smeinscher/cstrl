@@ -4,8 +4,6 @@ project(cstrl-test C)
 project(cstrl-sandbox C)
 project(cstrl-moon-game C)
 project(cstrl-moon-game-executable C)
-project(cstrl-rpg-game C)
-project(cstrl-rpg-game-executable C)
 project(cstrl-bpc-game C)
 
 #set(CMAKE_SYSTEM_PROCESSOR arm)
@@ -188,15 +186,6 @@ add_library(cstrl-moon-game SHARED
         games/moon_game/game/physics_wrapper.h
 )
 
-add_executable(cstrl-rpg-game-executable
-        games/rpg/main.c
-)
-
-add_library(cstrl-rpg-game SHARED
-        games/rpg/game/game.c
-        games/rpg/game/game.h
-)
-
 add_executable(cstrl-bpc-game
         games/bpc/main.c
         games/bpc/game/game.c
@@ -222,7 +211,6 @@ add_executable(cstrl-bpc-game
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
 target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT)
-target_compile_options(cstrl-rpg-game PRIVATE -DCSTRL_RPG_GAME_EXPORT)
 
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES} ${OPENAL_LIBRARY})
 if (X11_FOUND)
@@ -243,9 +231,6 @@ target_link_libraries(cstrl-test PRIVATE log_c cstrl)
 target_link_libraries(cstrl-sandbox PRIVATE cstrl)
 target_link_libraries(cstrl-moon-game PRIVATE cstrl)
 target_link_libraries(cstrl-moon-game-executable PRIVATE cstrl cstrl-moon-game)
-target_link_libraries(cstrl-rpg-game PRIVATE cstrl)
-# target_link_libraries(cstrl-rpg-game-executable PRIVATE cstrl cstrl-rpg-game)
-target_link_libraries(cstrl-rpg-game-executable PRIVATE cstrl)
 target_link_libraries(cstrl-bpc-game PRIVATE cstrl)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
@@ -253,6 +238,4 @@ target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE
 target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-moon-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-moon-game-executable PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(cstrl-rpg-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(cstrl-rpg-game-executable PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-bpc-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
