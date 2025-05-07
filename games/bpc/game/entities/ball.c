@@ -77,7 +77,7 @@ void balls_update(balls_t *balls, cups_t *cups, players_t *players)
                 {
                     balls->origin[i] = balls->position[i];
                     balls->bounce_length[i] = (float)(rand() % INITIAL_BOUNCE_DISTANCE * 100 + 1) / 100.0f;
-                    balls->velocity[i].y = (float)(rand() % 1000) / 1000.0f;
+                    balls->velocity[i].y = (float)(rand() % 1000 - 500) / 500.0f;
                     balls->velocity[i] = cstrl_vec2_normalize(balls->velocity[i]);
                     balls->target[i] = cstrl_vec2_add(
                         balls->origin[i], cstrl_vec2_mult_scalar(balls->velocity[i], balls->bounce_length[i]));
