@@ -104,6 +104,7 @@ add_library(cstrl SHARED
         src/renderer/opengl/opengl_platform_em_web.c
         src/audio/openal/openal_audio.c
         include/cstrl/cstrl_audio.h
+        src/util/random.c
 )
 
 add_executable(cstrl-test
@@ -117,12 +118,12 @@ add_executable(cstrl-test
         test/unit_tests/cstrl_math/test_vec3.h
         test/unit_tests/cstrl_math/test_vec4.c
         test/unit_tests/cstrl_math/test_vec4.h
-        test/unit_tests/util/test_dynamic_array.c
-        test/unit_tests/util/test_dynamic_array.h
+        test/unit_tests/cstrl_util/test_dynamic_array.c
+        test/unit_tests/cstrl_util/test_dynamic_array.h
         test/unit_tests/cstrl_math/test_quat.c
         test/unit_tests/cstrl_math/test_quat.h
-        test/unit_tests/renderer/test_camera.c
-        test/unit_tests/renderer/test_camera.h
+        test/unit_tests/cstrl_renderer/test_camera.c
+        test/unit_tests/cstrl_renderer/test_camera.h
         test/unit_tests/unit_tests.c
         test/unit_tests/unit_tests.h
         test/manual_tests/basic/test_4_cubes_scene.c
@@ -137,6 +138,8 @@ add_executable(cstrl-test
         test/unit_tests/cstrl_math/test_mat3.h
         test/unit_tests/cstrl_physics/test_collision.c
         test/unit_tests/cstrl_physics/test_collision.h
+        test/unit_tests/cstrl_util/test_random.c
+        test/unit_tests/cstrl_util/test_random.h
 )
 
 add_executable(cstrl-sandbox
@@ -202,6 +205,8 @@ add_executable(cstrl-bpc-game
         games/bpc/game/scenes/scene_manager.h
         games/bpc/game/gameplay/gameplay.c
         games/bpc/game/gameplay/gameplay.h
+        games/bpc/game/util/game_random.c
+        games/bpc/game/util/game_random.h
 )
 
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)

@@ -2,7 +2,7 @@
 #define HELPERS_H
 
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_types.h"
+#include "cstrl/cstrl_util.h"
 #include <stdbool.h>
 
 bool planet_hit_check(vec3 d, float *t, vec3 origin, vec3 center, float radius);

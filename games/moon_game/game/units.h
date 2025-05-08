@@ -2,7 +2,7 @@
 #define UNITS_H
 
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_types.h"
+#include "cstrl/cstrl_util.h"
 
 #define UNIT_SIZE_X 0.075f
 #define UNIT_SIZE_Y 0.075f

@@ -4,6 +4,7 @@
 #include "cstrl/cstrl_renderer.h"
 #include "scenes/scene_manager.h"
 #include "scenes/scenes.h"
+#include "util/game_random.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -27,7 +28,7 @@ int bpc_game_run()
         return 2;
     }
 
-    srand(cstrl_platform_get_absolute_time());
+    game_random_init((int)cstrl_platform_get_absolute_time());
 
     cstrl_renderer_init(&platform_state);
 

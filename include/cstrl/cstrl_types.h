@@ -9,38 +9,6 @@
 #include <limits.h>
 #include <stddef.h>
 
-#define CSTRL_DA_INT_ITEM_NOT_FOUND INT_MAX
-
-typedef struct dynamic_array_int
-{
-    int *array;
-    size_t size;
-    size_t capacity;
-} da_int;
-
-typedef struct dynamic_array_float
-{
-    float *array;
-    size_t size;
-    size_t capacity;
-} da_float;
-
-typedef struct dynamic_array_char
-{
-    char *array;
-    size_t size;
-    size_t capacity;
-} da_char;
-
-typedef da_char string;
-
-typedef struct dynamic_array_string
-{
-    string *array;
-    size_t size;
-    size_t capacity;
-} da_string;
-
 typedef CSTRL_PACKED_ENUM
 {
     CSTRL_MOUSE_BUTTON_LEFT,

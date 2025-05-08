@@ -1,6 +1,7 @@
 #include "gameplay.h"
 #include "../entities/ball.h"
 #include "../entities/cup.h"
+#include "../util/game_random.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
@@ -439,7 +440,7 @@ static int shot_heuristic(int team)
     int selected_cup = -1;
     if (g_players.base_game_state == EYE_TO_EYE_STAGE)
     {
-        int middle_or_front_cup = rand() % 2;
+        int middle_or_front_cup = game_random_int(0, 2);
         if (middle_or_front_cup == 0)
         {
             selected_cup = 9 + team * 10;
@@ -467,7 +468,7 @@ static int shot_heuristic(int team)
         cstrl_da_int_push_back(&desired_values, (int)(weight_total * 1000.0f));
     }
 
-    int random_number = rand() % (int)(weight_total * 1000.0f);
+    int random_number = game_random_int(0, (int)(weight_total * 1000.0f));
     for (int i = 0; i < desired_values.size; i++)
     {
         if (desired_values.array[i] > random_number)
@@ -495,7 +496,7 @@ static void shoot_ball(bool human, int team)
         }
         vec2 target_position = g_cups.position[selected_cup];
         float t = (float)g_players.stats[g_players.current_player_turn].focus / 100.0f;
-        float scale = (1.0f - t) * 3.0f + t * 2.5f;
+        float scale = (1.0f - t) * 4.0f + t * 2.5f;
         float length = cstrl_vec2_length(cstrl_vec2_sub(target_position, team == 0 ? g_team1_start : g_team2_start));
         t = (length - 212.0f) / 32.0f;
         float modifier = (1.0f - t) * 1.0f + t * 1.25f;

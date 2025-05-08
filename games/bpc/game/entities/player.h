@@ -2,7 +2,7 @@
 #define PLAYER_H
 
 #include "cstrl/cstrl_defines.h"
-#include "cstrl/cstrl_types.h"
+#include "cstrl/cstrl_util.h"
 #include <stdbool.h>
 
 #define MAX_PLAYER_COUNT 4

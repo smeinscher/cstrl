@@ -1,4 +1,5 @@
 #include "ball.h"
+#include "../util/game_random.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_util.h"
 #include <stdlib.h>
@@ -76,8 +77,8 @@ void balls_update(balls_t *balls, cups_t *cups, players_t *players)
                 else
                 {
                     balls->origin[i] = balls->position[i];
-                    balls->bounce_length[i] = (float)(rand() % INITIAL_BOUNCE_DISTANCE * 100 + 1) / 100.0f;
-                    balls->velocity[i].y = (float)(rand() % 1000 - 500) / 500.0f;
+                    balls->bounce_length[i] = game_random_float(5.0f, INITIAL_BOUNCE_DISTANCE);
+                    balls->velocity[i].y = game_random_float(-0.7f, 0.7f);
                     balls->velocity[i] = cstrl_vec2_normalize(balls->velocity[i]);
                     balls->target[i] = cstrl_vec2_add(
                         balls->origin[i], cstrl_vec2_mult_scalar(balls->velocity[i], balls->bounce_length[i]));

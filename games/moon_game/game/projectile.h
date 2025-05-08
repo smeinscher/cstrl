@@ -2,7 +2,7 @@
 #define PROJECTILE_H
 
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_types.h"
+#include "cstrl/cstrl_util.h"
 
 typedef struct projectiles_t
 {

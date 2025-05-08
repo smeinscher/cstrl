@@ -2,7 +2,7 @@
 #define CUP_H
 
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_types.h"
+#include "cstrl/cstrl_util.h"
 #include <stdbool.h>
 
 #define TOTAL_CUP_COUNT 20

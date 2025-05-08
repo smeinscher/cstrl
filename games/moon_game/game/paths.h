@@ -2,7 +2,7 @@
 #define PATHS_H
 
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_types.h"
+#include "cstrl/cstrl_util.h"
 #include "units.h"
 
 typedef struct paths_t

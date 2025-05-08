@@ -1,9 +1,7 @@
 #ifndef FORMATION_H
 #define FORMATION_H
 
-#include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_types.h"
-#include "units.h"
+#include "cstrl/cstrl_util.h"
 #include <stdbool.h>
 
 typedef struct formations_t

@@ -7,6 +7,7 @@
 
 #include "cstrl/cstrl_defines.h"
 #include "cstrl_platform.h"
+#include "cstrl/cstrl_util.h"
 
 #define GEN_ID(group) (((group) * 10000) + (__LINE__))
 

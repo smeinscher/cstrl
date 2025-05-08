@@ -4,6 +4,7 @@
 #include "cstrl/cstrl_math.h"
 #include "cup.h"
 #include "player.h"
+
 #define MAX_BALLS 2
 
 #define BALL_SIZE 4.0f

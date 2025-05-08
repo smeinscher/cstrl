@@ -3,7 +3,7 @@
 
 #include "cstrl/cstrl_defines.h"
 #include "cstrl/cstrl_math.h"
-#include "cstrl/cstrl_types.h"
+#include "cstrl/cstrl_util.h"
 
 typedef struct aabb_tree_node_t
 {

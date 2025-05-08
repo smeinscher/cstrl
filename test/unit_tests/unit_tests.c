@@ -12,8 +12,9 @@
 #include "cstrl_math/test_vec3.h"
 #include "cstrl_math/test_vec4.h"
 #include "cstrl_physics/test_collision.h"
-#include "renderer/test_camera.h"
-#include "util/test_dynamic_array.h"
+#include "cstrl_renderer/test_camera.h"
+#include "cstrl_util/test_dynamic_array.h"
+#include "cstrl_util/test_random.h"
 
 void vec2_tests()
 {
@@ -172,6 +173,21 @@ void collision_tests()
     test_manager_log_results(test_suite);
 }
 
+void random_tests()
+{
+    int test_suite = test_manager_add_suite("Random Test", "Suite for testing random functions");
+    test_manager_add_test(test_suite, test_cstrl_rand_uint32, "Random uint32",
+                          "Test if correctly produces random numbers based on seed");
+    test_manager_add_test(test_suite, test_cstrl_rand_uint32_range, "Random uint32 in Range",
+                          "Test if correctly produces random numbers in r range");
+    test_manager_add_test(test_suite, test_cstrl_rand_float, "Random float",
+                          "Test if correctly produces random floats");
+    test_manager_add_test(test_suite, test_cstrl_rand_float_range, "Random float in Range",
+                          "Test if correctly produces random floats in range");
+    test_manager_run_tests(test_suite);
+    test_manager_log_results(test_suite);
+}
+
 int run_unit_tests()
 {
     // vec2_tests();
@@ -184,7 +200,9 @@ int run_unit_tests()
     //
     // camera_tests();
 
-    collision_tests();
+    // collision_tests();
+
+    random_tests();
 
     test_manager_log_total_failed_tests();
 
