@@ -177,9 +177,9 @@ void guys_update(guys_t *guys)
             guys->position[i].y = 720;
             guys->velocity[i].y *= -1.0f;
         }
-        if (random == 995)
+        if (random > 995)
         {
-            guys->animate[i] = true;
+            // guys->animate[i] = true;
         }
 
         if (!guys->animate[i])

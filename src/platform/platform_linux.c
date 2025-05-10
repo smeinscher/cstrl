@@ -128,8 +128,7 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     state->state_common.window_width = width;
     state->state_common.window_height = height;
 
-    state->state_common.callbacks.key = NULL;
-    state->state_common.callbacks.mouse_position = NULL;
+    state->state_common.callbacks = (user_callbacks){0};
 
     memset(state->state_common.input.mouse_buttons, 0, CSTRL_MOUSE_BUTTON_MAX + 1);
     memset(state->state_common.input.keys, 0, CSTRL_KEY_MAX + 1);
@@ -254,7 +253,10 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
                     mods |= CSTRL_KEY_MOD_CAPS_LOCK;
                 }
 
-                state->state_common.callbacks.mouse_button(platform_state, button, action, mods);
+                if (state->state_common.callbacks.mouse_button != NULL)
+                {
+                    state->state_common.callbacks.mouse_button(platform_state, button, action, mods);
+                }
             }
             break;
         }

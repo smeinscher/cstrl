@@ -31,7 +31,7 @@ endif ()
 
 find_package(X11 QUIET)
 
-add_library(log_c STATIC
+add_library(log_c SHARED
         extern/log.c/log.c
         extern/log.c/log.h)
 target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
@@ -211,19 +211,19 @@ add_executable(cstrl-bpc-game
 )
 
 add_executable(cstrl-cozy-game
-    games/cozy/main.c
-    games/cozy/game/game.c
-    games/cozy/game/game.h
-    games/cozy/game/random/cozy_random.c
-    games/cozy/game/random/cozy_random.h
-    games/cozy/game/scenes/gameplay_scene.c
-    games/cozy/game/scenes/gameplay_scene.h
-    games/cozy/game/scenes/main_menu_scene.c
-    games/cozy/game/scenes/main_menu_scene.h
-    games/cozy/game/entities/butterfly.c
-    games/cozy/game/entities/butterfly.h
-    games/cozy/game/entities/guy.c
-    games/cozy/game/entities/guy.h
+        games/cozy/main.c
+        games/cozy/game/game.c
+        games/cozy/game/game.h
+        games/cozy/game/random/cozy_random.c
+        games/cozy/game/random/cozy_random.h
+        games/cozy/game/scenes/gameplay_scene.c
+        games/cozy/game/scenes/gameplay_scene.h
+        games/cozy/game/scenes/main_menu_scene.c
+        games/cozy/game/scenes/main_menu_scene.h
+        games/cozy/game/entities/butterfly.c
+        games/cozy/game/entities/butterfly.h
+        games/cozy/game/entities/guy.c
+        games/cozy/game/entities/guy.h
 )
 
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
