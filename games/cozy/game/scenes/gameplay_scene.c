@@ -1,14 +1,17 @@
 #include "gameplay_scene.h"
 #include "../entities/butterfly.h"
 #include "../entities/guy.h"
+#include "../entities/hero.h"
 #include "../random/cozy_random.h"
 #include "cstrl/cstrl_camera.h"
+#include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
+#include "cstrl/cstrl_types.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define TOTAL_GUY_COUNT 5000
+#define TOTAL_GUY_COUNT 200
 static bool g_should_transition = false;
 
 static cstrl_shader g_default_shader;
@@ -26,6 +29,63 @@ static cstrl_texture g_skin_type_texture;
 
 static butterflies_t g_butterflies;
 static guys_t g_guys;
+static hero_t g_hero;
+static float g_hero_prev_x0 = 0.0f;
+static float g_hero_prev_x1 = 0.0f;
+
+static hero_movement_t g_hero_movement = 0;
+
+static void gameplay_scene_key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
+{
+    switch (key)
+    {
+    case CSTRL_KEY_ESCAPE:
+        g_should_transition = true;
+        break;
+    case CSTRL_KEY_W:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            g_hero_movement |= MOVE_UP;
+        }
+        else if (action == CSTRL_ACTION_RELEASE)
+        {
+            g_hero_movement ^= MOVE_UP;
+        }
+        break;
+    case CSTRL_KEY_S:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            g_hero_movement |= MOVE_DOWN;
+        }
+        else if (action == CSTRL_ACTION_RELEASE)
+        {
+            g_hero_movement ^= MOVE_DOWN;
+        }
+        break;
+    case CSTRL_KEY_A:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            g_hero_movement |= MOVE_LEFT;
+        }
+        else if (action == CSTRL_ACTION_RELEASE)
+        {
+            g_hero_movement ^= MOVE_LEFT;
+        }
+        break;
+    case CSTRL_KEY_D:
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            g_hero_movement |= MOVE_RIGHT;
+        }
+        else if (action == CSTRL_ACTION_RELEASE)
+        {
+            g_hero_movement ^= MOVE_RIGHT;
+        }
+        break;
+    default:
+        break;
+    }
+}
 
 static float *g_guy_positions;
 static float *g_guy_uvs;
@@ -36,6 +96,7 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
     g_default_shader =
         cstrl_load_shaders_from_files("resources/shaders/default.vert", "resources/shaders/default.frag");
 
+    cstrl_platform_set_key_callback(platform_state, gameplay_scene_key_callback);
     int width, height;
     cstrl_platform_get_window_size(platform_state, &width, &height);
     g_main_camera = cstrl_camera_create(width, height, true);
@@ -115,35 +176,35 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
 
     g_guy_render_data = cstrl_renderer_create_render_data();
 
-    g_guy_positions = malloc(sizeof(float) * TOTAL_GUY_COUNT * 24);
+    g_guy_positions = malloc(sizeof(float) * (TOTAL_GUY_COUNT + 1) * 24);
     if (g_guy_positions)
     {
-        memset(g_guy_positions, 0, sizeof(float) * TOTAL_GUY_COUNT * 24);
+        memset(g_guy_positions, 0, sizeof(float) * (TOTAL_GUY_COUNT + 1) * 24);
     }
     else
     {
         printf("Failed to malloc g_guy_positions\n");
     }
-    g_guy_uvs = malloc(sizeof(float) * TOTAL_GUY_COUNT * 24);
+    g_guy_uvs = malloc(sizeof(float) * (TOTAL_GUY_COUNT + 1) * 24);
     if (g_guy_uvs)
     {
-        memset(g_guy_uvs, 0, sizeof(float) * TOTAL_GUY_COUNT * 24);
+        memset(g_guy_uvs, 0, sizeof(float) * (TOTAL_GUY_COUNT + 1) * 24);
     }
     else
     {
         printf("Failed to malloc g_guy_uvs\n");
     }
-    g_guy_colors = malloc(sizeof(float) * TOTAL_GUY_COUNT * 48);
+    g_guy_colors = malloc(sizeof(float) * (TOTAL_GUY_COUNT + 1) * 48);
     if (g_guy_colors)
     {
-        memset(g_guy_colors, 0, sizeof(float) * TOTAL_GUY_COUNT * 48);
+        memset(g_guy_colors, 0, sizeof(float) * (TOTAL_GUY_COUNT + 1) * 48);
     }
     else
     {
         printf("Failed to malloc g_guy_colors\n");
     }
 
-    cstrl_renderer_add_positions(g_guy_render_data, g_guy_positions, 2, TOTAL_GUY_COUNT * 6);
+    cstrl_renderer_add_positions(g_guy_render_data, g_guy_positions, 2, (TOTAL_GUY_COUNT * 2 + 1) * 6);
     cstrl_renderer_add_uvs(g_guy_render_data, g_guy_uvs);
     cstrl_renderer_add_colors(g_guy_render_data, g_guy_colors);
     g_guy_texture =
@@ -165,12 +226,20 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
         guys_add(&g_guys, (vec2){cozy_random_float(0, (float)width), cozy_random_float(0, (float)height)},
                  random_color);
     }
+
+    g_hero = (hero_t){0};
+    g_hero.position = (vec2){(float)width / 2.0f, (float)height / 2.0f};
+    g_hero.speed = 1.5f;
+
+    g_hero_prev_x0 = g_hero.position.x - GUY_SIZE / 2.0f;
+    g_hero_prev_x1 = g_hero.position.x + GUY_SIZE / 2.0f;
 }
 
 bool gameplay_scene_update(cstrl_platform_state *platform_state)
 {
     butterflies_update(&g_butterflies);
     guys_update(&g_guys);
+    hero_update(&g_hero, g_hero_movement);
     return g_should_transition;
 }
 
@@ -362,8 +431,62 @@ void gameplay_scene_render(cstrl_platform_state *platform_state)
             g_guy_colors[i * 48 + j * 4 + 3] = 1.0f;
         }
     }
+    float x0 = g_hero_prev_x0;
+    float y0 = g_hero.position.y - GUY_SIZE / 2.0f;
+    float x1 = g_hero_prev_x1;
+    float y1 = g_hero.position.y + GUY_SIZE / 2.0f;
+    if (g_hero.velocity.x < 0.0f)
+    {
+        x0 = g_hero.position.x - GUY_SIZE / 2.0f;
+        x1 = g_hero.position.x + GUY_SIZE / 2.0f;
+    }
+    else if (g_hero.velocity.x > 0.0f)
+    {
+        x1 = g_hero.position.x - GUY_SIZE / 2.0f;
+        x0 = g_hero.position.x + GUY_SIZE / 2.0f;
+    }
+    g_hero_prev_x0 = x0;
+    g_hero_prev_x1 = x1;
+    g_guy_positions[TOTAL_GUY_COUNT * 24] = x0;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 1] = y1;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 2] = x1;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 3] = y0;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 4] = x0;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 5] = y0;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 6] = x0;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 7] = y1;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 8] = x1;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 9] = y0;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 10] = x1;
+    g_guy_positions[TOTAL_GUY_COUNT * 24 + 11] = y1;
+
+    float u0 = (float)HERO_COL / (float)GUY_TOTAL_COLS;
+    float v0 = (float)HERO_ROW / (float)GUY_TOTAL_ROWS;
+    float u1 = (float)(HERO_COL + 1) / (float)GUY_TOTAL_COLS;
+    float v1 = (float)(HERO_ROW + 1) / (float)GUY_TOTAL_ROWS;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24] = u0;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 1] = v1;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 2] = u1;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 3] = v0;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 4] = u0;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 5] = v0;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 6] = u0;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 7] = v1;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 8] = u1;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 9] = v0;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 10] = u1;
+    g_guy_uvs[TOTAL_GUY_COUNT * 24 + 11] = v1;
+
+    for (int i = 0; i < 6; i++)
+    {
+        g_guy_colors[TOTAL_GUY_COUNT * 48 + i * 4] = 1.0f;
+        g_guy_colors[TOTAL_GUY_COUNT * 48 + i * 4 + 1] = 1.0f;
+        g_guy_colors[TOTAL_GUY_COUNT * 48 + i * 4 + 2] = 1.0f;
+        g_guy_colors[TOTAL_GUY_COUNT * 48 + i * 4 + 3] = 1.0f;
+    }
+
     cstrl_renderer_modify_render_attributes(g_guy_render_data, g_guy_positions, g_guy_uvs, g_guy_colors,
-                                            g_guys.count * 6);
+                                            (g_guys.count * 2 + 1) * 6);
 
     cstrl_use_shader(g_default_shader);
 
