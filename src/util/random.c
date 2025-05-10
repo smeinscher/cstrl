@@ -37,7 +37,7 @@ CSTRL_API uint32_t cstrl_rand_uint32(cstrl_mt_rand_state_t *state)
         j += CSTRL_RAND_N;
     }
 
-    x = state->array[j] & x_a;
+    x = state->array[j] ^ x_a;
     state->array[k++] = x;
 
     if (k >= CSTRL_RAND_N)
@@ -49,7 +49,7 @@ CSTRL_API uint32_t cstrl_rand_uint32(cstrl_mt_rand_state_t *state)
     uint32_t y = x ^ (x >> CSTRL_RAND_U);
     y = y ^ ((y << CSTRL_RAND_S) & CSTRL_RAND_B);
     y = y ^ ((y << CSTRL_RAND_T) & CSTRL_RAND_C);
-    uint32_t z = y ^ (y >> 1);
+    uint32_t z = y ^ (y >> CSTRL_RAND_L);
 
     return z;
 }

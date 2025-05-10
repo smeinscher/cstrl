@@ -8,9 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static const int WINDOW_WIDTH = 1920;  // 1280;
-static const int WINDOW_HEIGHT = 1080; // 720;
-static const char *WINDOW_TITLE = "Beer Pong Champion";
+#define WINDOW_WIDTH 1920  // 1280;
+#define WINDOW_HEIGHT 1080 // 720;
+#define WINDOW_TITLE "Beer Pong Champion"
 
 int bpc_game_run()
 {

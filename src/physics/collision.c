@@ -1,6 +1,5 @@
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_physics.h"
-#include "cstrl/cstrl_types.h"
 #include "cstrl/cstrl_util.h"
 #include "log.c/log.h"
 #include <stdlib.h>

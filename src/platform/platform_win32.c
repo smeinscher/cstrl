@@ -306,7 +306,7 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
     }
     else
     {
-        window_style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
+        window_style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION /*| WS_MAXIMIZEBOX*/ | WS_MINIMIZEBOX | WS_THICKFRAME;
         window_ex_style = WS_EX_APPWINDOW;
     }
 

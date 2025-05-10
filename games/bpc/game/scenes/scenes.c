@@ -556,16 +556,25 @@ void main_game_scene_render()
             int start = (cstrl_ui_text_width(&g_ui_context, buffer, 16, 1.0) + 40) * (i + 1) - 200;
             cstrl_ui_text(&g_ui_context, buffer, 16, start, 20, 100, 50, GEN_ID(i), CSTRL_UI_ALIGN_CENTER,
                           &g_ui_button_layout);
-            sprintf(buffer, "CM: %5d", metrics.cups_made);
-            cstrl_ui_text(&g_ui_context, buffer, 9, start,
+            int avg_text_width = cstrl_ui_text_width(&g_ui_context, "Avg", 3, 1.0f);
+            cstrl_ui_text(&g_ui_context, "CM", 2, start, 20 + 10 + cstrl_ui_text_height(&g_ui_context, buffer, 13, 1.0),
+                          100, 50, GEN_ID(i), CSTRL_UI_ALIGN_CENTER, &g_ui_button_layout);
+            sprintf(buffer, "%5d", metrics.cups_made);
+            cstrl_ui_text(&g_ui_context, buffer, 5, start + 30 + avg_text_width,
                           20 + 10 + cstrl_ui_text_height(&g_ui_context, buffer, 13, 1.0), 100, 50, GEN_ID(i),
                           CSTRL_UI_ALIGN_CENTER, &g_ui_button_layout);
-            sprintf(buffer, "SM: %5d", metrics.successful_shots);
-            cstrl_ui_text(&g_ui_context, buffer, 9, start,
+            cstrl_ui_text(&g_ui_context, "SM", 2, start,
                           20 + (10 + cstrl_ui_text_height(&g_ui_context, buffer, 13, 1.0) * 2), 100, 50, GEN_ID(i),
                           CSTRL_UI_ALIGN_CENTER, &g_ui_button_layout);
-            sprintf(buffer, "SA: %5d", metrics.attempted_shots);
-            cstrl_ui_text(&g_ui_context, buffer, 9, start,
+            sprintf(buffer, "%5d", metrics.successful_shots);
+            cstrl_ui_text(&g_ui_context, buffer, 5, start + 30 + avg_text_width,
+                          20 + (10 + cstrl_ui_text_height(&g_ui_context, buffer, 13, 1.0) * 2), 100, 50, GEN_ID(i),
+                          CSTRL_UI_ALIGN_CENTER, &g_ui_button_layout);
+            cstrl_ui_text(&g_ui_context, "SA", 2, start,
+                          20 + (10 + cstrl_ui_text_height(&g_ui_context, buffer, 13, 1.0) * 3), 100, 50, GEN_ID(i),
+                          CSTRL_UI_ALIGN_CENTER, &g_ui_button_layout);
+            sprintf(buffer, "%5d", metrics.attempted_shots);
+            cstrl_ui_text(&g_ui_context, buffer, 5, start + 30 + avg_text_width,
                           20 + (10 + cstrl_ui_text_height(&g_ui_context, buffer, 13, 1.0) * 3), 100, 50, GEN_ID(i),
                           CSTRL_UI_ALIGN_CENTER, &g_ui_button_layout);
             float avg = 0.0f;
@@ -573,8 +582,11 @@ void main_game_scene_render()
             {
                 avg = (float)metrics.successful_shots / (float)metrics.attempted_shots * 100.0f;
             }
-            sprintf(buffer, "Avg: %3.3f", avg);
-            cstrl_ui_text(&g_ui_context, buffer, 10, start,
+            cstrl_ui_text(&g_ui_context, "Avg", 3, start,
+                          20 + (10 + cstrl_ui_text_height(&g_ui_context, buffer, 13, 1.0) * 4), 100, 50, GEN_ID(i),
+                          CSTRL_UI_ALIGN_CENTER, &g_ui_button_layout);
+            sprintf(buffer, "%3.4f", avg);
+            cstrl_ui_text(&g_ui_context, buffer, 6, start + 30 + avg_text_width,
                           20 + (10 + cstrl_ui_text_height(&g_ui_context, buffer, 13, 1.0) * 4), 100, 50, GEN_ID(i),
                           CSTRL_UI_ALIGN_CENTER, &g_ui_button_layout);
         }
@@ -619,6 +631,7 @@ void main_game_scene_shutdown()
 
 void scenes_clean()
 {
+    cstrl_ui_shutdown(&g_ui_context);
     cstrl_camera_free(g_main_camera);
     cstrl_renderer_free_render_data(g_cursor_render_data);
     cstrl_audio_stop(&g_theme_source);

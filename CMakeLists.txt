@@ -5,6 +5,7 @@ project(cstrl-sandbox C)
 project(cstrl-moon-game C)
 project(cstrl-moon-game-executable C)
 project(cstrl-bpc-game C)
+project(cstrl-cozy-game C)
 
 #set(CMAKE_SYSTEM_PROCESSOR arm)
 
@@ -209,6 +210,22 @@ add_executable(cstrl-bpc-game
         games/bpc/game/util/game_random.h
 )
 
+add_executable(cstrl-cozy-game
+    games/cozy/main.c
+    games/cozy/game/game.c
+    games/cozy/game/game.h
+    games/cozy/game/random/cozy_random.c
+    games/cozy/game/random/cozy_random.h
+    games/cozy/game/scenes/gameplay_scene.c
+    games/cozy/game/scenes/gameplay_scene.h
+    games/cozy/game/scenes/main_menu_scene.c
+    games/cozy/game/scenes/main_menu_scene.h
+    games/cozy/game/entities/butterfly.c
+    games/cozy/game/entities/butterfly.h
+    games/cozy/game/entities/guy.c
+    games/cozy/game/entities/guy.h
+)
+
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
 #target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT -Wall -Werror -Wno-missing-braces)
 #target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
@@ -226,6 +243,7 @@ if (UNIX)
     target_link_libraries(cstrl-test PRIVATE m)
     target_link_libraries(cstrl-sandbox PRIVATE m)
     target_link_libraries(cstrl-bpc-game PRIVATE m)
+    target_link_libraries(cstrl-cozy-game PRIVATE m)
 endif ()
 if (ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
@@ -237,6 +255,7 @@ target_link_libraries(cstrl-sandbox PRIVATE cstrl)
 target_link_libraries(cstrl-moon-game PRIVATE cstrl)
 target_link_libraries(cstrl-moon-game-executable PRIVATE cstrl cstrl-moon-game)
 target_link_libraries(cstrl-bpc-game PRIVATE cstrl)
+target_link_libraries(cstrl-cozy-game PRIVATE cstrl)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
@@ -244,3 +263,4 @@ target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-moon-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-moon-game-executable PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-bpc-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(cstrl-cozy-game PRIVATE ${CMAKE_SOURCE_DIR}/include)

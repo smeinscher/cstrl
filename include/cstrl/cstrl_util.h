@@ -162,6 +162,8 @@ CSTRL_API bool cstrl_realloc_string(string **str_ptr, size_t size);
 
 CSTRL_API bool cstrl_realloc_transform(transform **trans_ptr, size_t size);
 
+CSTRL_API bool cstrl_realloc_vec2(vec2 **vec2_ptr, size_t size);
+
 CSTRL_API bool cstrl_realloc_vec3(vec3 **vec3_ptr, size_t size);
 
 CSTRL_API bool cstrl_realloc_vec4(vec4 **vec4_ptr, size_t size);

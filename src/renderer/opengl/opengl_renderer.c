@@ -354,12 +354,12 @@ CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render
     internal_data *data = render_data->internal_data;
     data->cleared = false;
 
-    if (count != data->count && (positions == NULL || (uvs == NULL && data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS] != 0) ||
-                                 (colors == NULL && data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS] != 0)))
-    {
-        log_error("When adding or removing data, need all attributes to be present");
-        return;
-    }
+    // if (count != data->count && (positions == NULL || (uvs == NULL && data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS] != 0) ||
+    //                              (colors == NULL && data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS] != 0)))
+    // {
+    //     log_error("When adding or removing data, need all attributes to be present");
+    //     return;
+    // }
     glBindVertexArray(data->vao);
     if (uvs != NULL)
     {
