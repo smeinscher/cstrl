@@ -226,6 +226,8 @@ add_executable(cstrl-cozy-game
         games/cozy/game/entities/guy.h
         games/cozy/game/entities/hero.c
         games/cozy/game/entities/hero.h
+        games/cozy/game/entities/projectile.c
+        games/cozy/game/entities/projectile.h
 )
 
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)

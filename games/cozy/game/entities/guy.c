@@ -1,6 +1,7 @@
 #include "guy.h"
 #include "../random/cozy_random.h"
 #include "cstrl/cstrl_math.h"
+#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_util.h"
 #include <stdio.h>
@@ -42,6 +43,13 @@ bool guys_init(guys_t *guys)
     if (!guys->type)
     {
         printf("Failed to malloc type\n");
+        return false;
+    }
+
+    guys->collision_index = malloc(sizeof(int));
+    if (!guys->type)
+    {
+        printf("Failed to malloc collision_index\n");
         return false;
     }
 
@@ -106,6 +114,11 @@ int guys_add(guys_t *guys, vec2 position, vec3 color)
                 printf("Error reallocating type\n");
                 return -1;
             }
+            if (!cstrl_realloc_int(&guys->collision_index, new_capacity))
+            {
+                printf("Error reallocating collision_index\n");
+                return -1;
+            }
             if (!cstrl_realloc_double(&guys->animation_last_frame, new_capacity))
             {
                 printf("Error reallocating animation_last_frame\n");
@@ -143,7 +156,7 @@ int guys_add(guys_t *guys, vec2 position, vec3 color)
     return new_id;
 }
 
-void guys_update(guys_t *guys)
+void guys_update(guys_t *guys, aabb_tree_t *aabb_tree)
 {
     for (int i = 0; i < guys->count; i++)
     {
@@ -177,14 +190,14 @@ void guys_update(guys_t *guys)
             guys->position[i].y = 720;
             guys->velocity[i].y *= -1.0f;
         }
-        if (random > 995)
-        {
-            // guys->animate[i] = true;
-        }
 
         if (!guys->animate[i])
         {
             guys->position[i] = cstrl_vec2_add(guys->position[i], guys->velocity[i]);
+            vec3 new_aabb[2];
+            new_aabb[0] = (vec3){guys->position[i].x - GUY_SIZE / 2.0f, guys->position[i].y - GUY_SIZE / 2.0f, 0.0f};
+            new_aabb[1] = (vec3){guys->position[i].x + GUY_SIZE / 2.0f, guys->position[i].y + GUY_SIZE / 2.0f, 1.0f};
+            cstrl_collision_aabb_tree_update_node(aabb_tree, guys->collision_index[i], new_aabb);
             continue;
         }
         double current_time = cstrl_platform_get_absolute_time();
@@ -199,4 +212,27 @@ void guys_update(guys_t *guys)
             }
         }
     }
+}
+
+void guys_clean(guys_t *guys)
+{
+    cstrl_da_int_free(&guys->freed_ids);
+    free(guys->color);
+    guys->color = NULL;
+    free(guys->position);
+    guys->position = NULL;
+    free(guys->velocity);
+    guys->velocity = NULL;
+    free(guys->animation_last_frame);
+    guys->animation_last_frame = NULL;
+    free(guys->animation_frame);
+    guys->animation_frame = NULL;
+    free(guys->type);
+    guys->type = NULL;
+    free(guys->animate);
+    guys->animate = NULL;
+    free(guys->active);
+    guys->active = NULL;
+    guys->count = 0;
+    guys->capacity = 0;
 }

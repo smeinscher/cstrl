@@ -2,8 +2,11 @@
 #include "../entities/butterfly.h"
 #include "../entities/guy.h"
 #include "../entities/hero.h"
+#include "../entities/projectile.h"
 #include "../random/cozy_random.h"
 #include "cstrl/cstrl_camera.h"
+#include "cstrl/cstrl_math.h"
+#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
@@ -15,12 +18,13 @@
 static bool g_should_transition = false;
 
 static cstrl_shader g_default_shader;
+static cstrl_shader g_projectile_shader;
 static cstrl_camera *g_main_camera;
 static cstrl_render_data *g_background_render_data;
 static cstrl_render_data *g_butterfly_render_data;
 static cstrl_render_data *g_flower_render_data;
 static cstrl_render_data *g_guy_render_data;
-static cstrl_render_data *g_guy_skin_type_render_data;
+static cstrl_render_data *g_projectile_render_data;
 static cstrl_texture g_background_texture;
 static cstrl_texture g_butterfly_texture;
 static cstrl_texture g_flower_texture;
@@ -30,10 +34,21 @@ static cstrl_texture g_skin_type_texture;
 static butterflies_t g_butterflies;
 static guys_t g_guys;
 static hero_t g_hero;
+static projectiles_t g_projectiles;
+
 static float g_hero_prev_x0 = 0.0f;
 static float g_hero_prev_x1 = 0.0f;
 
 static hero_movement_t g_hero_movement = 0;
+
+static float *g_guy_positions;
+static float *g_guy_uvs;
+static float *g_guy_colors;
+
+static int g_mouse_x;
+static int g_mouse_y;
+
+static aabb_tree_t g_aabb_tree;
 
 static void gameplay_scene_key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
@@ -87,16 +102,36 @@ static void gameplay_scene_key_callback(cstrl_platform_state *state, int key, in
     }
 }
 
-static float *g_guy_positions;
-static float *g_guy_uvs;
-static float *g_guy_colors;
+static void gameplay_scene_mouse_position_callback(cstrl_platform_state *state, int xpos, int ypos)
+{
+    g_mouse_x = xpos;
+    g_mouse_y = ypos;
+}
+
+static void gameplay_scene_mouse_button_callback(cstrl_platform_state *state, int button, int action, int mods)
+{
+    if (button == CSTRL_MOUSE_BUTTON_LEFT)
+    {
+        if (action == CSTRL_ACTION_PRESS)
+        {
+            vec2 direction = cstrl_vec2_sub((vec2){(float)g_mouse_x, (float)g_mouse_y}, g_hero.position);
+            projectiles_add(&g_projectiles, g_hero.position, cstrl_vec2_normalize(direction),
+                            (vec3){0.67f, 0.03f, 0.03f});
+        }
+    }
+}
 
 void gameplay_scene_init(cstrl_platform_state *platform_state)
 {
     g_default_shader =
         cstrl_load_shaders_from_files("resources/shaders/default.vert", "resources/shaders/default.frag");
 
+    g_projectile_shader = cstrl_load_shaders_from_files("resources/shaders/default_no_texture.vert",
+                                                        "resources/shaders/default_no_texture.frag");
+
     cstrl_platform_set_key_callback(platform_state, gameplay_scene_key_callback);
+    cstrl_platform_set_mouse_button_callback(platform_state, gameplay_scene_mouse_button_callback);
+    cstrl_platform_set_mouse_position_callback(platform_state, gameplay_scene_mouse_position_callback);
     int width, height;
     cstrl_platform_get_window_size(platform_state, &width, &height);
     g_main_camera = cstrl_camera_create(width, height, true);
@@ -175,7 +210,6 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
         cstrl_texture_generate_from_path("resources/textures/cozy_game/butterfly.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
     g_guy_render_data = cstrl_renderer_create_render_data();
-
     g_guy_positions = malloc(sizeof(float) * (TOTAL_GUY_COUNT + 1) * 24);
     if (g_guy_positions)
     {
@@ -210,8 +244,16 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
     g_guy_texture =
         cstrl_texture_generate_from_path("resources/textures/cozy_game/guys.png", CSTRL_TEXTURE_FILTER_NEAREST);
 
+    g_projectile_render_data = cstrl_renderer_create_render_data();
+    float projectile_positions[12] = {0};
+    float projectile_colors[24] = {0};
+    cstrl_renderer_add_positions(g_projectile_render_data, projectile_positions, 2, 6);
+    cstrl_renderer_add_colors(g_projectile_render_data, projectile_colors);
+
     cstrl_set_uniform_mat4(g_default_shader.program, "view", g_main_camera->view);
     cstrl_set_uniform_mat4(g_default_shader.program, "projection", g_main_camera->projection);
+    cstrl_set_uniform_mat4(g_projectile_shader.program, "view", g_main_camera->view);
+    cstrl_set_uniform_mat4(g_projectile_shader.program, "projection", g_main_camera->projection);
 
     butterflies_init(&g_butterflies);
 
@@ -223,8 +265,13 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
     {
         vec3 random_color =
             (vec3){cozy_random_float(0.0f, 1.0f), cozy_random_float(0.0f, 1.0f), cozy_random_float(0.0f, 1.0f)};
-        guys_add(&g_guys, (vec2){cozy_random_float(0, (float)width), cozy_random_float(0, (float)height)},
-                 random_color);
+        int *id = malloc(sizeof(int));
+        *id = guys_add(&g_guys, (vec2){cozy_random_float(0, (float)width), cozy_random_float(0, (float)height)},
+                       random_color);
+        vec3 aabb[2];
+        aabb[0] = (vec3){g_guys.position[i].x - GUY_SIZE / 2.0f, g_guys.position[i].y - GUY_SIZE / 2.0f, 0.0f};
+        aabb[1] = (vec3){g_guys.position[i].x + GUY_SIZE / 2.0f, g_guys.position[i].y + GUY_SIZE / 2.0f, 1.0f};
+        g_guys.collision_index[i] = cstrl_collision_aabb_tree_insert(&g_aabb_tree, id, aabb);
     }
 
     g_hero = (hero_t){0};
@@ -233,13 +280,16 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
 
     g_hero_prev_x0 = g_hero.position.x - GUY_SIZE / 2.0f;
     g_hero_prev_x1 = g_hero.position.x + GUY_SIZE / 2.0f;
+
+    projectiles_init(&g_projectiles);
 }
 
 bool gameplay_scene_update(cstrl_platform_state *platform_state)
 {
     butterflies_update(&g_butterflies);
-    guys_update(&g_guys);
+    guys_update(&g_guys, &g_aabb_tree);
     hero_update(&g_hero, g_hero_movement);
+    projectiles_update(&g_projectiles, &g_aabb_tree, &g_guys);
     return g_should_transition;
 }
 
@@ -488,6 +538,48 @@ void gameplay_scene_render(cstrl_platform_state *platform_state)
     cstrl_renderer_modify_render_attributes(g_guy_render_data, g_guy_positions, g_guy_uvs, g_guy_colors,
                                             (g_guys.count * 2 + 1) * 6);
 
+    float projectile_positions[g_projectiles.count * 12];
+    float projectile_colors[g_projectiles.count * 24];
+    for (int i = 0; i < g_projectiles.count; i++)
+    {
+        float x0 = 0.0f;
+        float y0 = 0.0f;
+        float x1 = 0.0f;
+        float y1 = 0.0f;
+        if (g_projectiles.active[i])
+        {
+            x0 = g_projectiles.position[i].x - PROJECTILE_SIZE / 2.0f;
+            y0 = g_projectiles.position[i].y - PROJECTILE_SIZE / 2.0f;
+            x1 = g_projectiles.position[i].x + PROJECTILE_SIZE / 2.0f;
+            y1 = g_projectiles.position[i].y + PROJECTILE_SIZE / 2.0f;
+        }
+        projectile_positions[i * 12] = x0;
+        projectile_positions[i * 12 + 1] = y1;
+        projectile_positions[i * 12 + 2] = x1;
+        projectile_positions[i * 12 + 3] = y0;
+        projectile_positions[i * 12 + 4] = x0;
+        projectile_positions[i * 12 + 5] = y0;
+        projectile_positions[i * 12 + 6] = x0;
+        projectile_positions[i * 12 + 7] = y1;
+        projectile_positions[i * 12 + 8] = x1;
+        projectile_positions[i * 12 + 9] = y0;
+        projectile_positions[i * 12 + 10] = x1;
+        projectile_positions[i * 12 + 11] = y1;
+
+        for (int j = 0; j < 6; j++)
+        {
+            projectile_colors[i * 24 + j * 4] = g_projectiles.color[i].x;
+            projectile_colors[i * 24 + j * 4 + 1] = g_projectiles.color[i].y;
+            projectile_colors[i * 24 + j * 4 + 2] = g_projectiles.color[i].z;
+            projectile_colors[i * 24 + j * 4 + 3] = 1.0f;
+        }
+    }
+    if (g_projectiles.count > 0)
+    {
+        cstrl_renderer_modify_render_attributes(g_projectile_render_data, projectile_positions, NULL, projectile_colors,
+                                                g_projectiles.count * 6);
+    }
+
     cstrl_use_shader(g_default_shader);
 
     cstrl_texture_bind(g_background_texture);
@@ -498,6 +590,9 @@ void gameplay_scene_render(cstrl_platform_state *platform_state)
 
     cstrl_texture_bind(g_butterfly_texture);
     cstrl_renderer_draw(g_butterfly_render_data);
+
+    cstrl_use_shader(g_projectile_shader);
+    cstrl_renderer_draw(g_projectile_render_data);
 }
 
 void gameplay_scene_shutdown(cstrl_platform_state *platform_state)

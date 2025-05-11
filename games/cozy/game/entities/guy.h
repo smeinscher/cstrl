@@ -1,6 +1,7 @@
 #ifndef GUY_H
 #define GUY_H
 
+#include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_util.h"
 #include <stdbool.h>
 
@@ -21,6 +22,7 @@ typedef struct guys_t
     double *animation_last_frame;
     int *animation_frame;
     int *type;
+    int *collision_index;
     bool *animate;
     bool *active;
     size_t count;
@@ -31,6 +33,8 @@ bool guys_init(guys_t *guys);
 
 int guys_add(guys_t *guys, vec2 position, vec3 color);
 
-void guys_update(guys_t *guys);
+void guys_update(guys_t *guys, aabb_tree_t *aabb_tree);
+
+void guys_clean(guys_t *guys);
 
 #endif // GUY_H
