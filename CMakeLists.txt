@@ -31,7 +31,7 @@ endif ()
 
 find_package(X11 QUIET)
 
-add_library(log_c STATIC
+add_library(log_c SHARED
         extern/log.c/log.c
         extern/log.c/log.h)
 target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
@@ -228,6 +228,10 @@ add_executable(cstrl-cozy-game
         games/cozy/game/entities/hero.h
         games/cozy/game/entities/projectile.c
         games/cozy/game/entities/projectile.h
+        games/cozy/game/ui/cozy_ui.c
+        games/cozy/game/ui/cozy_ui.h
+        games/cozy/game/scenes/scene_manager.c
+        games/cozy/game/scenes/scene_manager.h
 )
 
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)

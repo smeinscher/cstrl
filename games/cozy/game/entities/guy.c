@@ -156,6 +156,28 @@ int guys_add(guys_t *guys, vec2 position, vec3 color)
     return new_id;
 }
 
+static vec2 compute_avoidance(aabb_tree_t *aabb_tree, guys_t *guys, int id)
+{
+    vec2 forward = cstrl_vec2_normalize(guys->velocity[id]);
+    vec2 left = cstrl_vec2_normalize((vec2){-forward.y, forward.x});
+    vec2 right = cstrl_vec2_negate(left);
+
+    vec2 avoidance_force = {0.0f, 0.0f};
+    vec2 ahead = cstrl_vec2_add(guys->position[id], cstrl_vec2_mult_scalar(forward, 50));
+    da_int excluded_nodes;
+    cstrl_da_int_init(&excluded_nodes, 1);
+    cstrl_da_int_push_back(&excluded_nodes, guys->collision_index[id]);
+    ray_cast_result_t result =
+        cstrl_collision_aabb_tree_ray_cast(aabb_tree, (vec3){guys->position[id].x, guys->position[id].y, 0.0f},
+                                           (vec3){forward.x, forward.y, 0.0f}, 50, &excluded_nodes);
+    if (result.hit && *((int *)aabb_tree->nodes[result.node_index].user_data) == -1)
+    {
+        vec2 direction = cstrl_vec2_sub(ahead, (vec2){result.aabb_center.x, result.aabb_center.y});
+        avoidance_force = cstrl_vec2_negate(direction);
+    }
+    cstrl_da_int_free(&excluded_nodes);
+    return cstrl_vec2_mult_scalar(cstrl_vec2_normalize(avoidance_force), 1.5f);
+}
 void guys_update(guys_t *guys, aabb_tree_t *aabb_tree)
 {
     for (int i = 0; i < guys->count; i++)
@@ -190,6 +212,9 @@ void guys_update(guys_t *guys, aabb_tree_t *aabb_tree)
             guys->position[i].y = 720;
             guys->velocity[i].y *= -1.0f;
         }
+
+        // guys->velocity[i] =
+        //     cstrl_vec2_normalize(cstrl_vec2_add(guys->velocity[i], compute_avoidance(aabb_tree, guys, i)));
 
         if (!guys->animate[i])
         {

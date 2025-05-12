@@ -2,6 +2,7 @@
 #define SCENE_MANAGER_H
 
 #include "cstrl/cstrl_defines.h"
+
 typedef CSTRL_PACKED_ENUM
 {
     INIT_SCENE,

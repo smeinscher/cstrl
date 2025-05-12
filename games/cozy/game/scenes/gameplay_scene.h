@@ -5,7 +5,7 @@
 
 void gameplay_scene_init(cstrl_platform_state *platform_state);
 
-bool gameplay_scene_update(cstrl_platform_state *platform_state);
+void gameplay_scene_update(cstrl_platform_state *platform_state);
 
 void gameplay_scene_render(cstrl_platform_state *platform_state);
 

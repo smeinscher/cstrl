@@ -4,18 +4,20 @@
 #include "../entities/hero.h"
 #include "../entities/projectile.h"
 #include "../random/cozy_random.h"
+#include "../scenes/scene_manager.h"
+#include "../ui/cozy_ui.h"
 #include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_physics.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
 #include "cstrl/cstrl_types.h"
+#include "scene_manager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define TOTAL_GUY_COUNT 200
-static bool g_should_transition = false;
+#define TOTAL_GUY_COUNT 1000
 
 static cstrl_shader g_default_shader;
 static cstrl_shader g_projectile_shader;
@@ -25,6 +27,9 @@ static cstrl_render_data *g_butterfly_render_data;
 static cstrl_render_data *g_flower_render_data;
 static cstrl_render_data *g_guy_render_data;
 static cstrl_render_data *g_projectile_render_data;
+#ifdef COLLISION_DEBUG
+static cstrl_render_data *g_collision_render_data;
+#endif
 static cstrl_texture g_background_texture;
 static cstrl_texture g_butterfly_texture;
 static cstrl_texture g_flower_texture;
@@ -45,17 +50,22 @@ static float *g_guy_positions;
 static float *g_guy_uvs;
 static float *g_guy_colors;
 
+static float *g_collision_positions;
+static float *g_collision_colors;
+
 static int g_mouse_x;
 static int g_mouse_y;
 
 static aabb_tree_t g_aabb_tree;
+
+static bool g_paused = true;
 
 static void gameplay_scene_key_callback(cstrl_platform_state *state, int key, int scancode, int action, int mods)
 {
     switch (key)
     {
     case CSTRL_KEY_ESCAPE:
-        g_should_transition = true;
+        scene_set(MAIN_MENU_SCENE, state);
         break;
     case CSTRL_KEY_W:
         if (action == CSTRL_ACTION_PRESS)
@@ -112,7 +122,7 @@ static void gameplay_scene_mouse_button_callback(cstrl_platform_state *state, in
 {
     if (button == CSTRL_MOUSE_BUTTON_LEFT)
     {
-        if (action == CSTRL_ACTION_PRESS)
+        if (action == CSTRL_ACTION_PRESS && !g_paused)
         {
             vec2 direction = cstrl_vec2_sub((vec2){(float)g_mouse_x, (float)g_mouse_y}, g_hero.position);
             projectiles_add(&g_projectiles, g_hero.position, cstrl_vec2_normalize(direction),
@@ -237,7 +247,6 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
     {
         printf("Failed to malloc g_guy_colors\n");
     }
-
     cstrl_renderer_add_positions(g_guy_render_data, g_guy_positions, 2, (TOTAL_GUY_COUNT * 2 + 1) * 6);
     cstrl_renderer_add_uvs(g_guy_render_data, g_guy_uvs);
     cstrl_renderer_add_colors(g_guy_render_data, g_guy_colors);
@@ -255,6 +264,30 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
     cstrl_set_uniform_mat4(g_projectile_shader.program, "view", g_main_camera->view);
     cstrl_set_uniform_mat4(g_projectile_shader.program, "projection", g_main_camera->projection);
 
+#ifdef COLLISION_DEBUG
+    g_collision_render_data = cstrl_renderer_create_render_data();
+    g_collision_positions = malloc(sizeof(float) * TOTAL_GUY_COUNT * 2 * 12);
+    if (g_collision_positions)
+    {
+        memset(g_collision_positions, 0, sizeof(float) * TOTAL_GUY_COUNT * 2 * 12);
+    }
+    else
+    {
+        printf("Failed to malloc g_collision_positions\n");
+    }
+    g_collision_colors = malloc(sizeof(float) * TOTAL_GUY_COUNT * 2 * 24);
+    if (g_collision_colors)
+    {
+        memset(g_collision_colors, 0, sizeof(float) * TOTAL_GUY_COUNT * 2 * 24);
+    }
+    else
+    {
+        printf("Failed to malloc g_collision_colors\n");
+    }
+    cstrl_renderer_add_positions(g_collision_render_data, g_collision_positions, 2, TOTAL_GUY_COUNT * 6);
+    cstrl_renderer_add_colors(g_collision_render_data, g_collision_colors);
+#endif
+
     butterflies_init(&g_butterflies);
 
     butterflies_add(&g_butterflies, (vec2){cozy_random_float(0.0f, (float)width - BUTTERFLY_SIZE),
@@ -266,6 +299,11 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
         vec3 random_color =
             (vec3){cozy_random_float(0.0f, 1.0f), cozy_random_float(0.0f, 1.0f), cozy_random_float(0.0f, 1.0f)};
         int *id = malloc(sizeof(int));
+        if (!id)
+        {
+            printf("Failed to malloc id\n");
+            continue;
+        }
         *id = guys_add(&g_guys, (vec2){cozy_random_float(0, (float)width), cozy_random_float(0, (float)height)},
                        random_color);
         vec3 aabb[2];
@@ -277,20 +315,34 @@ void gameplay_scene_init(cstrl_platform_state *platform_state)
     g_hero = (hero_t){0};
     g_hero.position = (vec2){(float)width / 2.0f, (float)height / 2.0f};
     g_hero.speed = 1.5f;
+    int *id = malloc(sizeof(int));
+    if (!id)
+    {
+        printf("Failed to malloc id\n");
+    }
+    *id = -1;
+    vec3 aabb[2];
+    aabb[0] = (vec3){g_hero.position.x - GUY_SIZE / 2.0f, g_hero.position.y - GUY_SIZE / 2.0f, 0.0f};
+    aabb[1] = (vec3){g_hero.position.x + GUY_SIZE / 2.0f, g_hero.position.y + GUY_SIZE / 2.0f, 1.0f};
+    g_hero.collision_index = cstrl_collision_aabb_tree_insert(&g_aabb_tree, id, aabb);
 
     g_hero_prev_x0 = g_hero.position.x - GUY_SIZE / 2.0f;
     g_hero_prev_x1 = g_hero.position.x + GUY_SIZE / 2.0f;
 
     projectiles_init(&g_projectiles);
+
+    g_paused = true;
 }
 
-bool gameplay_scene_update(cstrl_platform_state *platform_state)
+void gameplay_scene_update(cstrl_platform_state *platform_state)
 {
-    butterflies_update(&g_butterflies);
-    guys_update(&g_guys, &g_aabb_tree);
-    hero_update(&g_hero, g_hero_movement);
-    projectiles_update(&g_projectiles, &g_aabb_tree, &g_guys);
-    return g_should_transition;
+    if (!g_paused)
+    {
+        butterflies_update(&g_butterflies);
+        guys_update(&g_guys, &g_aabb_tree);
+        hero_update(&g_aabb_tree, &g_hero, g_hero_movement);
+        projectiles_update(&g_projectiles, &g_aabb_tree, &g_guys);
+    }
 }
 
 void gameplay_scene_render(cstrl_platform_state *platform_state)
@@ -542,10 +594,10 @@ void gameplay_scene_render(cstrl_platform_state *platform_state)
     float projectile_colors[g_projectiles.count * 24];
     for (int i = 0; i < g_projectiles.count; i++)
     {
-        float x0 = 0.0f;
-        float y0 = 0.0f;
-        float x1 = 0.0f;
-        float y1 = 0.0f;
+        x0 = 0.0f;
+        y0 = 0.0f;
+        x1 = 0.0f;
+        y1 = 0.0f;
         if (g_projectiles.active[i])
         {
             x0 = g_projectiles.position[i].x - PROJECTILE_SIZE / 2.0f;
@@ -580,6 +632,53 @@ void gameplay_scene_render(cstrl_platform_state *platform_state)
                                                 g_projectiles.count * 6);
     }
 
+#ifdef COLLISION_DEBUG
+    for (int i = 0; i < g_aabb_tree.node_count; i++)
+    {
+        vec3 aabb[2];
+        aabb[0] = g_aabb_tree.nodes[i].aabb[0];
+        aabb[1] = g_aabb_tree.nodes[i].aabb[1];
+        if (g_aabb_tree.nodes[i].active)
+        {
+            x0 = aabb[0].x;
+            y0 = aabb[0].y;
+            x1 = aabb[1].x;
+            y1 = aabb[1].y;
+        }
+        else
+        {
+            x0 = 0.0f;
+            y0 = 0.0f;
+            x1 = 0.0f;
+            y1 = 0.0f;
+        }
+        g_collision_positions[i * 12] = x0;
+        g_collision_positions[i * 12 + 1] = y1;
+        g_collision_positions[i * 12 + 2] = x1;
+        g_collision_positions[i * 12 + 3] = y0;
+        g_collision_positions[i * 12 + 4] = x0;
+        g_collision_positions[i * 12 + 5] = y0;
+        g_collision_positions[i * 12 + 6] = x0;
+        g_collision_positions[i * 12 + 7] = y1;
+        g_collision_positions[i * 12 + 8] = x1;
+        g_collision_positions[i * 12 + 9] = y0;
+        g_collision_positions[i * 12 + 10] = x1;
+        g_collision_positions[i * 12 + 11] = y1;
+
+        for (int j = 0; j < 6; j++)
+        {
+            g_collision_colors[i * 24 + j * 4] = 1.0f;
+            g_collision_colors[i * 24 + j * 4 + 1] = 0.0f;
+            g_collision_colors[i * 24 + j * 4 + 2] = 0.0f;
+            g_collision_colors[i * 24 + j * 4 + 3] = 0.4f;
+        }
+    }
+    if (g_aabb_tree.node_count > 0)
+    {
+        cstrl_renderer_modify_render_attributes(g_collision_render_data, g_collision_positions, NULL,
+                                                g_collision_colors, g_aabb_tree.node_count * 6);
+    }
+#endif
     cstrl_use_shader(g_default_shader);
 
     cstrl_texture_bind(g_background_texture);
@@ -593,6 +692,14 @@ void gameplay_scene_render(cstrl_platform_state *platform_state)
 
     cstrl_use_shader(g_projectile_shader);
     cstrl_renderer_draw(g_projectile_render_data);
+
+#ifdef COLLISION_DEBUG
+    cstrl_renderer_draw(g_collision_render_data);
+#endif
+    if (g_paused)
+    {
+        cozy_ui_render_gameplay(platform_state, &g_paused);
+    }
 }
 
 void gameplay_scene_shutdown(cstrl_platform_state *platform_state)

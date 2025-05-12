@@ -135,13 +135,19 @@ void projectiles_update(projectiles_t *projectiles, aabb_tree_t *aabb_tree, guys
         cstrl_collision_aabb_tree_query(aabb_tree, aabb, &intersecting_nodes);
         if (intersecting_nodes.size > 0)
         {
-            projectiles->active[i] = false;
+            bool stay_active = true;
             for (int j = 0; j < intersecting_nodes.size; j++)
             {
                 int *id = aabb_tree->nodes[intersecting_nodes.array[j]].user_data;
+                if (!id || *id < 0)
+                {
+                    continue;
+                }
+                stay_active = false;
                 guys->animate[*id] = true;
                 cstrl_collision_aabb_tree_remove(aabb_tree, intersecting_nodes.array[j]);
             }
+            projectiles->active[i] = stay_active;
         }
     }
 }

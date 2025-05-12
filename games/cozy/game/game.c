@@ -5,13 +5,12 @@
 #include "random/cozy_random.h"
 #include "scenes/gameplay_scene.h"
 #include "scenes/main_menu_scene.h"
+#include "scenes/scene_manager.h"
+#include "ui/cozy_ui.h"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
 #define WINDOW_TITLE "Cozy Spring Game"
-
-CSTRL_PACKED_ENUM{MAIN_MENU_SCENE, TRANSITION_TO_GAMEPLAY_SCENE, GAMEPLAY_SCENE,
-                  TRANSITION_TO_MAIN_MENU_SCENE} g_scene_state;
 
 int cozy_game_run()
 {
@@ -33,7 +32,8 @@ int cozy_game_run()
 
     cstrl_renderer_init(&platform_state);
 
-    g_scene_state = MAIN_MENU_SCENE;
+    scene_set(MAIN_MENU_SCENE, &platform_state);
+    cozy_ui_init(&platform_state);
     main_menu_scene_init(&platform_state);
 
     double previous_frame_time = cstrl_platform_get_absolute_time();
@@ -48,60 +48,17 @@ int cozy_game_run()
         frame_lag += elapsed_frame_time;
         while (frame_lag >= 1.0 / 60.0)
         {
-            switch (g_scene_state)
-            {
-            case MAIN_MENU_SCENE:
-                if (main_menu_scene_update(&platform_state))
-                {
-                    g_scene_state = TRANSITION_TO_GAMEPLAY_SCENE;
-                }
-                break;
-            case GAMEPLAY_SCENE:
-                if (gameplay_scene_update(&platform_state))
-                {
-                    g_scene_state = TRANSITION_TO_MAIN_MENU_SCENE;
-                }
-                break;
-            case TRANSITION_TO_GAMEPLAY_SCENE:
-                main_menu_scene_shutdown(&platform_state);
-                gameplay_scene_init(&platform_state);
-                g_scene_state = GAMEPLAY_SCENE;
-                break;
-            case TRANSITION_TO_MAIN_MENU_SCENE:
-                gameplay_scene_shutdown(&platform_state);
-                main_menu_scene_init(&platform_state);
-                g_scene_state = MAIN_MENU_SCENE;
-                break;
-            }
+            scene_update(&platform_state);
             frame_lag -= 1.0 / 60.0;
         } // end update loop
 
-        switch (g_scene_state)
-        {
-        case TRANSITION_TO_GAMEPLAY_SCENE:
-        case MAIN_MENU_SCENE:
-            main_menu_scene_render(&platform_state);
-            break;
-        case TRANSITION_TO_MAIN_MENU_SCENE:
-        case GAMEPLAY_SCENE:
-            gameplay_scene_render(&platform_state);
-            break;
-        }
+        scene_render(&platform_state);
         cstrl_renderer_swap_buffers(&platform_state);
     }
 
-    switch (g_scene_state)
-    {
-    case TRANSITION_TO_GAMEPLAY_SCENE:
-    case MAIN_MENU_SCENE:
-        main_menu_scene_shutdown(&platform_state);
-        break;
-    case TRANSITION_TO_MAIN_MENU_SCENE:
-    case GAMEPLAY_SCENE:
-        gameplay_scene_shutdown(&platform_state);
-        break;
-    }
+    scene_shutdown(&platform_state);
 
+    cozy_ui_shutdown();
     cstrl_renderer_shutdown(&platform_state);
     cstrl_audio_shutdown();
     cstrl_platform_shutdown(&platform_state);
