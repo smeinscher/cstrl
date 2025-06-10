@@ -12,6 +12,8 @@ typedef struct cstrl_camera
 {
     bool is_orthographic;
     float fov;
+    float near;
+    float far;
     vec2i viewport;
     vec3 position;
     vec3 forward;

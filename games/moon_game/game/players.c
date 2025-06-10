@@ -516,7 +516,7 @@ bool players_select_units(players_t *players, int player_id, int viewport_width,
             continue;
         }
         vec3 p0, p1, p2, p3;
-        get_points(&p0, &p1, &p2, &p3, (transform){players->units[player_id].position[i], unit_rotation, UNIT_SIZE});
+        get_points(&p0, &p1, &p2, &p3, (transform_t){players->units[player_id].position[i], unit_rotation, UNIT_SIZE});
         vec2 p0_screen = world_to_screen(p0, (vec2){2.0f, 2.0f}, camera->projection, camera->view);
         vec2 p2_screen = world_to_screen(p2, (vec2){2.0f, 2.0f}, camera->projection, camera->view);
         vec2 p_min = (vec2){cstrl_min(p0_screen.x, p2_screen.x), cstrl_min(p0_screen.y, p2_screen.y)};

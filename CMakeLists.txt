@@ -31,7 +31,7 @@ endif ()
 
 find_package(X11 QUIET)
 
-add_library(log_c SHARED
+add_library(log_c STATIC
         extern/log.c/log.c
         extern/log.c/log.h)
 target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
@@ -58,6 +58,16 @@ endif ()
 add_library(cstrl SHARED
         ${GLAD_C}
         ${GLAD_H}
+        extern/stb/stb_image.c
+        extern/stb/stb_image.h
+        extern/stb/stb_truetype.c
+        extern/stb/stb_truetype.h
+        extern/stb/stb_image_write.c
+        extern/stb/stb_image_write.h
+        extern/cgltf/cgltf.c
+        extern/cgltf/cgltf.h
+        extern/fast_obj/fast_obj.c
+        extern/fast_obj/fast_obj.h
         include/cstrl/cstrl_defines.h
         include/cstrl/cstrl_math.h
         src/util/dynamic_array.c
@@ -75,8 +85,6 @@ add_library(cstrl SHARED
         src/renderer/opengl/opengl_shader.c
         src/renderer/opengl/opengl_texture.c
         src/util/file_helpers.c
-        extern/stb/stb_image.c
-        extern/stb/stb_image.h
         src/renderer/glsl_shader_programs.h
         src/renderer/camera.c
         src/platform/platform_common.c
@@ -85,10 +93,6 @@ add_library(cstrl SHARED
         src/ui/ui.c
         src/ui/ui_opengl_renderer.c
         src/ui/ui_internal.h
-        extern/stb/stb_truetype.c
-        extern/stb/stb_truetype.h
-        extern/stb/stb_image_write.c
-        extern/stb/stb_image_write.h
         src/platform/platform_android.c
         src/renderer/opengl/opengl_platform_android.c
         src/renderer/vulkan/vulkan_renderer.c
@@ -106,6 +110,9 @@ add_library(cstrl SHARED
         src/audio/openal/openal_audio.c
         include/cstrl/cstrl_audio.h
         src/util/random.c
+        src/model/gltf_loader.c
+        include/cstrl/cstrl_model.h
+        src/model/obj_loader.c
 )
 
 add_executable(cstrl-test
@@ -161,6 +168,8 @@ add_executable(cstrl-sandbox
         sandbox/pong/pong.h
         sandbox/shading_language_cookbook/cookbook.c
         sandbox/shading_language_cookbook/cookbook.h
+        sandbox/model_loading/model_loading.c
+        sandbox/model_loading/model_loading.h
 )
 
 add_executable(cstrl-moon-game-executable
@@ -220,8 +229,6 @@ add_executable(cstrl-cozy-game
         games/cozy/game/scenes/gameplay_scene.h
         games/cozy/game/scenes/main_menu_scene.c
         games/cozy/game/scenes/main_menu_scene.h
-        games/cozy/game/entities/butterfly.c
-        games/cozy/game/entities/butterfly.h
         games/cozy/game/entities/guy.c
         games/cozy/game/entities/guy.h
         games/cozy/game/entities/hero.c

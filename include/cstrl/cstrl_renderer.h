@@ -125,6 +125,8 @@ CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data);
 
+CSTRL_API void cstrl_renderer_draw_lines_indices(cstrl_render_data *data);
+
 CSTRL_API void cstrl_renderer_draw_patches(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state);
@@ -188,6 +190,8 @@ CSTRL_API void cstrl_shader_hot_reload(cstrl_shader *shader);
  *  Texture
  *
  */
+
+CSTRL_API void cstrl_texture_set_flip_vertically(bool flip_vertically);
 
 CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height);
 

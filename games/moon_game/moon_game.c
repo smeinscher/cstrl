@@ -515,7 +515,7 @@ static void mouse_wheel_callback(cstrl_platform_state *state, int delta_x, int d
 }
 
 static void add_billboard_object(da_float *positions, da_int *indices, da_float *uvs, da_float *colors,
-                                 transform transform, vec4 uv_positions, vec4 color)
+                                 transform_t transform, vec4 uv_positions, vec4 color)
 {
     vec3 point0, point1, point2, point3;
     get_points(&point0, &point1, &point2, &point3, transform);
@@ -566,7 +566,7 @@ static void add_billboard_object(da_float *positions, da_int *indices, da_float 
 }
 
 static void update_billboard_object(da_float *positions, da_int *indices, da_float *uvs, da_float *colors, size_t index,
-                                    transform transform, vec4 new_uv_positions, vec4 new_color)
+                                    transform_t transform, vec4 new_uv_positions, vec4 new_color)
 {
     if ((index + 1) * 12 <= positions->size)
     {
@@ -812,6 +812,7 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
     render_state->shaders[SHADER_PLANET] =
         cstrl_load_shaders_from_files("resources/shaders/planet.vert", "resources/shaders/planet.frag");
 
+    cstrl_texture_set_flip_vertically(false);
     render_state->textures[TEXTURE_PLANET] =
         cstrl_texture_cube_map_generate_from_folder("resources/textures/planet_game/moon/", true);
     render_state->textures[TEXTURE_PLANET_NORMALS] =
@@ -894,6 +895,7 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
 
     render_state->shaders[SHADER_CITY] =
         cstrl_load_shaders_from_files("resources/shaders/city_borders.vert", "resources/shaders/city_borders.frag");
+    cstrl_texture_set_flip_vertically(true);
     render_state->textures[TEXTURE_CITY_NOISE] = cstrl_texture_generate_from_path(
         "resources/textures/planet_game/noise_texture.png", CSTRL_TEXTURE_FILTER_LINEAR);
     // TODO: get this from somewhere else
@@ -954,6 +956,7 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
     }
     cstrl_renderer_add_positions(render_state->render_data[RENDER_DATA_SKYBOX], positions, 3, 36);
     cstrl_renderer_add_colors(render_state->render_data[RENDER_DATA_SKYBOX], colors);
+    cstrl_texture_set_flip_vertically(false);
     render_state->shaders[SHADER_SKYBOX] =
         cstrl_load_shaders_from_files("resources/shaders/skybox.vert", "resources/shaders/skybox.frag");
     render_state->textures[TEXTURE_SKYBOX] =
@@ -979,6 +982,7 @@ GAME_API int moon_game_init(render_state_t *render_state, game_state_t *game_sta
     cstrl_renderer_add_uvs(render_state->render_data[RENDER_DATA_EXPLOSION], explosion_uvs);
     render_state->shaders[SHADER_EXPLOSION] = cstrl_load_shaders_from_files(
         "resources/shaders/default3D_no_color.vert", "resources/shaders/default3D_no_color.frag");
+    cstrl_texture_set_flip_vertically(true);
     render_state->textures[TEXTURE_EXPLOSION] =
         cstrl_texture_generate_from_path("resources/textures/planet_game/explosion2.png", CSTRL_TEXTURE_FILTER_LINEAR);
 
@@ -1286,9 +1290,9 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
                 (type != ASTRONAUT && type != ASTRONAUT_ARMED ? UNIT_SIZE : cstrl_vec3_mult_scalar(UNIT_SIZE, 0.85f));
             update_billboard_object(
                 &unit_positions, &unit_indices, &unit_uvs, &unit_colors, unit_render_index,
-                (transform){players->units[i].position[j], billboard_rotation,
-                            adjust_billboard_scale(size, render_state->camera_objects.main_camera->fov /
-                                                             (45.0f * cstrl_pi_180))},
+                (transform_t){players->units[i].position[j], billboard_rotation,
+                              adjust_billboard_scale(size, render_state->camera_objects.main_camera->fov /
+                                                               (45.0f * cstrl_pi_180))},
                 uv_positions, color);
             unit_render_index++;
         }
@@ -1300,7 +1304,7 @@ GAME_API int moon_game_render(render_state_t *render_state, game_state_t *game_s
             }
             update_billboard_object(
                 &explosion_positions, &explosion_indices, &explosion_uvs, NULL, projectile_render_index++,
-                (transform){
+                (transform_t){
                     players->projectiles[i].position[j], billboard_rotation,
                     adjust_billboard_scale((vec3){UNIT_SIZE_X * 0.4f, UNIT_SIZE_Y * 0.4f, 0.0f},
                                            render_state->camera_objects.main_camera->fov / (45.0f * cstrl_pi_180))},

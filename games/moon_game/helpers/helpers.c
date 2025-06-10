@@ -67,7 +67,7 @@ vec2 world_to_screen(vec3 world_coords, vec2 screen_size, mat4 projection, mat4 
     return window_space;
 }
 
-vec3 modify_point(vec3 point, transform transform)
+vec3 modify_point(vec3 point, transform_t transform)
 {
     point = cstrl_vec3_mult(point, transform.scale);
     point = cstrl_vec3_rotate_by_quat(point, transform.rotation);
@@ -76,7 +76,7 @@ vec3 modify_point(vec3 point, transform transform)
     return point;
 }
 
-void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, transform transform)
+void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, transform_t transform)
 {
     float x0 = -0.5f;
     float x1 = 0.5f;

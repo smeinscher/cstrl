@@ -67,9 +67,9 @@ CSTRL_API bool cstrl_realloc_string(string **str_ptr, size_t size)
     return true;
 }
 
-CSTRL_API bool cstrl_realloc_transform(transform **trans_ptr, size_t size)
+CSTRL_API bool cstrl_realloc_transform(transform_t **trans_ptr, size_t size)
 {
-    transform *temp_trans_ptr = realloc(*trans_ptr, size * sizeof(transform));
+    transform_t *temp_trans_ptr = realloc(*trans_ptr, size * sizeof(transform_t));
     if (temp_trans_ptr == NULL)
     {
         log_error("Error reallocating memory for trans_ptr");

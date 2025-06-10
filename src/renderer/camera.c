@@ -13,6 +13,8 @@ CSTRL_API cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_hei
 
     new_camera->is_orthographic = is_orthographic;
     new_camera->fov = 45.0f * cstrl_pi_180;
+    new_camera->near = 0.1f;
+    new_camera->far = 100.0f;
     new_camera->viewport.x = viewport_width;
     new_camera->viewport.y = viewport_height;
     new_camera->forward = (vec3){0.0f, 0.0f, -1.0f};
@@ -79,13 +81,13 @@ CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_
 
     if (!camera->is_orthographic)
     {
-        camera->projection =
-            cstrl_mat4_perspective(camera->fov, (float)camera->viewport.x / (float)camera->viewport.y, 0.1f, 100.0f);
+        camera->projection = cstrl_mat4_perspective(camera->fov, (float)camera->viewport.x / (float)camera->viewport.y,
+                                                    camera->near, camera->far);
     }
     else
     {
-        camera->projection =
-            cstrl_mat4_ortho(0.0f, (float)camera->viewport.x, (float)camera->viewport.y, 0.0f, 0.1f, 100.0f);
+        camera->projection = cstrl_mat4_ortho(0.0f, (float)camera->viewport.x, (float)camera->viewport.y, 0.0f,
+                                              camera->near, camera->far);
     }
 }
 

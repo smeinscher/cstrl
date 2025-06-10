@@ -17,7 +17,7 @@ bool projectiles_init(projectiles_t *projectiles)
         return false;
     }
 
-    projectiles->position = malloc(sizeof(vec2));
+    projectiles->position = malloc(sizeof(vec3));
     if (!projectiles->position)
     {
         printf("Failed to malloc position\n");
@@ -25,7 +25,7 @@ bool projectiles_init(projectiles_t *projectiles)
         return false;
     }
 
-    projectiles->velocity = malloc(sizeof(vec2));
+    projectiles->velocity = malloc(sizeof(vec3));
     if (!projectiles->velocity)
     {
         printf("Failed to malloc velocity\n");
@@ -55,7 +55,7 @@ bool projectiles_init(projectiles_t *projectiles)
     return true;
 }
 
-int projectiles_add(projectiles_t *projectiles, vec2 position, vec2 velocity, vec3 color)
+int projectiles_add(projectiles_t *projectiles, vec3 position, vec3 velocity, vec3 color)
 {
     int new_id = 0;
     if (projectiles->freed_ids.size == 0)
@@ -69,12 +69,12 @@ int projectiles_add(projectiles_t *projectiles, vec2 position, vec2 velocity, ve
                 printf("Error reallocating color\n");
                 return -1;
             }
-            if (!cstrl_realloc_vec2(&projectiles->position, new_capacity))
+            if (!cstrl_realloc_vec3(&projectiles->position, new_capacity))
             {
                 printf("Error reallocating position\n");
                 return -1;
             }
-            if (!cstrl_realloc_vec2(&projectiles->velocity, new_capacity))
+            if (!cstrl_realloc_vec3(&projectiles->velocity, new_capacity))
             {
                 printf("Error reallocating velocity\n");
                 return -1;
@@ -121,15 +121,17 @@ void projectiles_update(projectiles_t *projectiles, aabb_tree_t *aabb_tree, guys
             continue;
         }
         projectiles->distance[i] +=
-            cstrl_vec2_length(cstrl_vec2_mult_scalar(projectiles->velocity[i], PROJECTILE_SPEED));
-        projectiles->position[i] = cstrl_vec2_add(projectiles->position[i],
-                                                  cstrl_vec2_mult_scalar(projectiles->velocity[i], PROJECTILE_SPEED));
+            cstrl_vec3_length(cstrl_vec3_mult_scalar(projectiles->velocity[i], PROJECTILE_SPEED));
+        projectiles->position[i] = cstrl_vec3_add(projectiles->position[i],
+                                                  cstrl_vec3_mult_scalar(projectiles->velocity[i], PROJECTILE_SPEED));
 
         vec3 aabb[2];
         aabb[0] = (vec3){projectiles->position[i].x - PROJECTILE_SIZE / 2.0f,
-                         projectiles->position[i].y - PROJECTILE_SIZE / 2.0f, 0.0f};
+                         projectiles->position[i].y - PROJECTILE_SIZE / 2.0f,
+                         projectiles->position[i].z - PROJECTILE_SIZE / 2.0f};
         aabb[1] = (vec3){projectiles->position[i].x + PROJECTILE_SIZE / 2.0f,
-                         projectiles->position[i].y + PROJECTILE_SIZE / 2.0f, 1.0f};
+                         projectiles->position[i].y + PROJECTILE_SIZE / 2.0f,
+                         projectiles->position[i].z + PROJECTILE_SIZE / 2.0f};
         da_int intersecting_nodes;
         cstrl_da_int_init(&intersecting_nodes, 4);
         cstrl_collision_aabb_tree_query(aabb_tree, aabb, &intersecting_nodes);

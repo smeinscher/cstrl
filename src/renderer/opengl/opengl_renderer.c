@@ -455,6 +455,14 @@ CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data)
     glDrawArrays(GL_LINES, 0, internal_data->count);
 }
 
+CSTRL_API void cstrl_renderer_draw_lines_indices(cstrl_render_data *data)
+{
+    internal_data *internal_data = data->internal_data;
+    glBindVertexArray(internal_data->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, internal_data->ebo);
+    glDrawElements(GL_LINES, internal_data->indices_count, GL_UNSIGNED_INT, 0);
+}
+
 CSTRL_API void cstrl_renderer_draw_patches(cstrl_render_data *data)
 {
     internal_data *internal_data = data->internal_data;

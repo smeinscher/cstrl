@@ -17,9 +17,8 @@
 #include "log.c/log.h"
 #include "stb/stb_image.h"
 
-CSTRL_API int upload_opengl_texture(const char *path)
+static int upload_opengl_texture(const char *path)
 {
-    // stbi_set_flip_vertically_on_load(true);
     int nr_channels;
     int width, height;
     unsigned char *data = stbi_load(path, &width, &height, &nr_channels, STBI_rgb_alpha);
@@ -31,6 +30,11 @@ CSTRL_API int upload_opengl_texture(const char *path)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     stbi_image_free(data);
     return 0;
+}
+
+CSTRL_API void cstrl_texture_set_flip_vertically(bool flip_vertically)
+{
+    stbi_set_flip_vertically_on_load(flip_vertically);
 }
 
 CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height)

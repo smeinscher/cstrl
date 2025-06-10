@@ -18,14 +18,14 @@ bool guys_init(guys_t *guys)
         return false;
     }
 
-    guys->position = malloc(sizeof(vec2));
+    guys->position = malloc(sizeof(vec3));
     if (!guys->position)
     {
         printf("Failed to malloc position\n");
         return false;
     }
 
-    guys->velocity = malloc(sizeof(vec2));
+    guys->velocity = malloc(sizeof(vec3));
     if (!guys->velocity)
     {
         printf("Failed to malloc velocity\n");
@@ -80,7 +80,7 @@ bool guys_init(guys_t *guys)
     return true;
 }
 
-int guys_add(guys_t *guys, vec2 position, vec3 color)
+int guys_add(guys_t *guys, aabb_tree_t *aabb_tree, vec3 position, vec3 color)
 {
     int new_id = 0;
     if (guys->freed_ids.size == 0)
@@ -94,12 +94,12 @@ int guys_add(guys_t *guys, vec2 position, vec3 color)
                 printf("Error reallocating color\n");
                 return -1;
             }
-            if (!cstrl_realloc_vec2(&guys->position, new_capacity))
+            if (!cstrl_realloc_vec3(&guys->position, new_capacity))
             {
                 printf("Error reallocating position\n");
                 return -1;
             }
-            if (!cstrl_realloc_vec2(&guys->velocity, new_capacity))
+            if (!cstrl_realloc_vec3(&guys->velocity, new_capacity))
             {
                 printf("Error reallocating velocity\n");
                 return -1;
@@ -146,38 +146,30 @@ int guys_add(guys_t *guys, vec2 position, vec3 color)
     guys->color[new_id] = color;
     guys->position[new_id] = position;
     guys->velocity[new_id] =
-        cstrl_vec2_normalize((vec2){cozy_random_float(-1.0f, 1.0f), cozy_random_float(-1.0f, 1.0f)});
+        cstrl_vec3_normalize((vec3){cozy_random_float(-1.0f, 1.0f), 0.0f, cozy_random_float(-1.0f, 1.0f)});
     guys->animation_last_frame[new_id] = 0.0;
     guys->animation_frame[new_id] = -1;
     guys->type[new_id] = cozy_random_int(0, GUY_TOTAL_TYPES - 1);
+    vec3 aabb[2];
+    aabb[0] = (vec3){guys->position[new_id].x - GUY_SIZE / 2.0f, guys->position[new_id].y - GUY_SIZE / 2.0f,
+                     guys->position[new_id].z - GUY_SIZE / 2.0f};
+    aabb[1] = (vec3){guys->position[new_id].x + GUY_SIZE / 2.0f, guys->position[new_id].y + GUY_SIZE / 2.0f,
+                     guys->position[new_id].z + GUY_SIZE / 2.0f};
     guys->animate[new_id] = false;
     guys->active[new_id] = true;
+    int *id = malloc(sizeof(int));
+    if (!id)
+    {
+        guys->collision_index[new_id] = -1;
+        printf("Failed to malloc id\n");
+        return new_id;
+    }
+    *id = new_id;
+    guys->collision_index[new_id] = cstrl_collision_aabb_tree_insert(aabb_tree, id, aabb);
 
     return new_id;
 }
 
-static vec2 compute_avoidance(aabb_tree_t *aabb_tree, guys_t *guys, int id)
-{
-    vec2 forward = cstrl_vec2_normalize(guys->velocity[id]);
-    vec2 left = cstrl_vec2_normalize((vec2){-forward.y, forward.x});
-    vec2 right = cstrl_vec2_negate(left);
-
-    vec2 avoidance_force = {0.0f, 0.0f};
-    vec2 ahead = cstrl_vec2_add(guys->position[id], cstrl_vec2_mult_scalar(forward, 50));
-    da_int excluded_nodes;
-    cstrl_da_int_init(&excluded_nodes, 1);
-    cstrl_da_int_push_back(&excluded_nodes, guys->collision_index[id]);
-    ray_cast_result_t result =
-        cstrl_collision_aabb_tree_ray_cast(aabb_tree, (vec3){guys->position[id].x, guys->position[id].y, 0.0f},
-                                           (vec3){forward.x, forward.y, 0.0f}, 50, &excluded_nodes);
-    if (result.hit && *((int *)aabb_tree->nodes[result.node_index].user_data) == -1)
-    {
-        vec2 direction = cstrl_vec2_sub(ahead, (vec2){result.aabb_center.x, result.aabb_center.y});
-        avoidance_force = cstrl_vec2_negate(direction);
-    }
-    cstrl_da_int_free(&excluded_nodes);
-    return cstrl_vec2_mult_scalar(cstrl_vec2_normalize(avoidance_force), 1.5f);
-}
 void guys_update(guys_t *guys, aabb_tree_t *aabb_tree)
 {
     for (int i = 0; i < guys->count; i++)
@@ -190,27 +182,27 @@ void guys_update(guys_t *guys, aabb_tree_t *aabb_tree)
         if (random < 20)
         {
             guys->velocity[i] =
-                cstrl_vec2_normalize((vec2){cozy_random_float(-1.0f, 1.0f), cozy_random_float(-1.0f, 1.0f)});
+                cstrl_vec3_normalize((vec3){cozy_random_float(-1.0f, 1.0f), 0.0f, cozy_random_float(-1.0f, 1.0f)});
         }
-        if (guys->position[i].x < 0)
+        if (guys->position[i].x < -1.0f)
         {
-            guys->position[i].x = 0;
+            guys->position[i].x = -1.0f;
             guys->velocity[i].x *= -1.0f;
         }
-        else if (guys->position[i].x > 1280)
+        else if (guys->position[i].x > 1.0f)
         {
-            guys->position[i].x = 1280;
+            guys->position[i].x = 1.0f;
             guys->velocity[i].x *= -1.0f;
         }
-        if (guys->position[i].y < 0)
+        if (guys->position[i].z < -1.0f)
         {
-            guys->position[i].y = 0;
-            guys->velocity[i].y *= -1.0f;
+            guys->position[i].z = -1.0f;
+            guys->velocity[i].z *= -1.0f;
         }
-        else if (guys->position[i].y > 720)
+        else if (guys->position[i].z > 1.0f)
         {
-            guys->position[i].y = 720;
-            guys->velocity[i].y *= -1.0f;
+            guys->position[i].z = 1.0f;
+            guys->velocity[i].z *= -1.0f;
         }
 
         // guys->velocity[i] =
@@ -218,10 +210,12 @@ void guys_update(guys_t *guys, aabb_tree_t *aabb_tree)
 
         if (!guys->animate[i])
         {
-            guys->position[i] = cstrl_vec2_add(guys->position[i], guys->velocity[i]);
+            guys->position[i] = cstrl_vec3_add(guys->position[i], cstrl_vec3_mult_scalar(guys->velocity[i], GUY_SCALE));
             vec3 new_aabb[2];
-            new_aabb[0] = (vec3){guys->position[i].x - GUY_SIZE / 2.0f, guys->position[i].y - GUY_SIZE / 2.0f, 0.0f};
-            new_aabb[1] = (vec3){guys->position[i].x + GUY_SIZE / 2.0f, guys->position[i].y + GUY_SIZE / 2.0f, 1.0f};
+            new_aabb[0] = (vec3){guys->position[i].x - GUY_SIZE / 2.0f, guys->position[i].y - GUY_SIZE / 2.0f,
+                                 guys->position[i].z - GUY_SIZE / 2.0f};
+            new_aabb[1] = (vec3){guys->position[i].x + GUY_SIZE / 2.0f, guys->position[i].y + GUY_SIZE / 2.0f,
+                                 guys->position[i].z + GUY_SIZE / 2.0f};
             cstrl_collision_aabb_tree_update_node(aabb_tree, guys->collision_index[i], new_aabb);
             continue;
         }
@@ -239,7 +233,7 @@ void guys_update(guys_t *guys, aabb_tree_t *aabb_tree)
     }
 }
 
-void guys_clean(guys_t *guys)
+void guys_clean(guys_t *guys, aabb_tree_t *aabb_tree)
 {
     cstrl_da_int_free(&guys->freed_ids);
     free(guys->color);
@@ -254,6 +248,15 @@ void guys_clean(guys_t *guys)
     guys->animation_frame = NULL;
     free(guys->type);
     guys->type = NULL;
+    if (aabb_tree)
+    {
+        for (int i = 0; i < guys->count; i++)
+        {
+            cstrl_collision_aabb_tree_remove(aabb_tree, guys->collision_index[i]);
+        }
+    }
+    free(guys->collision_index);
+    guys->collision_index = NULL;
     free(guys->animate);
     guys->animate = NULL;
     free(guys->active);

@@ -1,6 +1,7 @@
 #ifndef HERO_H
 #define HERO_H
 
+#include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_math.h"
 #include "cstrl/cstrl_physics.h"
 
@@ -17,12 +18,12 @@ typedef enum hero_movement_t
 
 typedef struct hero_t
 {
-    vec2 position;
-    vec2 velocity;
+    vec3 position;
+    vec3 velocity;
     int collision_index;
     float speed;
 } hero_t;
 
-void hero_update(aabb_tree_t *aabb_tree, hero_t *hero, hero_movement_t movement);
+void hero_update(hero_t *hero, aabb_tree_t *aabb_tree, hero_movement_t movement, cstrl_camera *camera);
 
 #endif // HERO_H

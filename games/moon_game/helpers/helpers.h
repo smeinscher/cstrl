@@ -13,9 +13,9 @@ vec3 screen_ray_cast(vec2 screen_coords, vec2 screen_size, mat4 projection, mat4
 
 vec2 world_to_screen(vec3 world_coords, vec2 screen_size, mat4 projection, mat4 view);
 
-vec3 modify_point(vec3 point, transform transform);
+vec3 modify_point(vec3 point, transform_t transform);
 
-void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, transform transform);
+void get_points(vec3 *p0, vec3 *p1, vec3 *p2, vec3 *p3, transform_t transform);
 
 vec3 get_point_on_path(vec3 origin, vec3 start_position, vec3 end_position, float t);
 

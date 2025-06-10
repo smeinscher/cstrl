@@ -183,15 +183,26 @@ typedef struct mat4x4
 } mat4x4;
 typedef mat4x4 mat4;
 
-typedef struct transform
+typedef struct transform_t
 {
     vec3 position;
     quat rotation;
     vec3 scale;
-} transform;
+} transform_t;
 
 #define cstrl_max(a, b) (a > b ? a : b)
 #define cstrl_min(a, b) (a < b ? a : b)
+
+/*
+ *
+ *      scalar math functions
+ *
+ */
+
+CSTRL_INLINE float cstrl_scalar_interpolation(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
 
 /*
  *
@@ -343,6 +354,17 @@ CSTRL_INLINE vec3 cstrl_vec3_cross(const vec3 a, const vec3 b)
     return (vec3){a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
 }
 
+CSTRL_INLINE vec3 cstrl_vec3_mult_quat(const vec3 v, const quat q)
+{
+    vec3 q_vec3 = {q.x, q.y, q.z};
+    vec3 a = cstrl_vec3_mult_scalar(q_vec3, 2.0f);
+    vec3 b = cstrl_vec3_mult_scalar(a, cstrl_vec3_dot(q_vec3, a));
+    vec3 c = cstrl_vec3_mult_scalar(v, q.w * q.w - cstrl_vec3_dot(q_vec3, q_vec3));
+    vec3 d = cstrl_vec3_mult_scalar(cstrl_vec3_cross(q_vec3, v), 2.0f * q.w);
+
+    return cstrl_vec3_add(cstrl_vec3_add(b, c), d);
+}
+
 // For rotate by quat
 CSTRL_INLINE quat cstrl_quat_conjugate(quat q);
 CSTRL_INLINE quat cstrl_quat_mult(quat a, quat b);
@@ -417,6 +439,12 @@ CSTRL_INLINE vec3 cstrl_vec3_mult_mat3(const vec3 v, const mat3 m)
                   m.xz * v.x + m.yz * v.y + m.zz * v.z};
 }
 
+// TODO: add to unit tests
+CSTRL_INLINE vec3 cstrl_vec3_lerp(const vec3 a, const vec3 b, float t)
+{
+    return cstrl_vec3_add(cstrl_vec3_mult_scalar(a, 1.0f - t), cstrl_vec3_mult_scalar(b, t));
+}
+
 /*
  *
  *      vec4 math functions
@@ -425,7 +453,7 @@ CSTRL_INLINE vec3 cstrl_vec3_mult_mat3(const vec3 v, const mat3 m)
 
 CSTRL_INLINE float cstrl_vec4_length(const vec4 v)
 {
-    return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w);
+    return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
 }
 
 CSTRL_INLINE vec4 cstrl_vec4_normalize(const vec4 v)
@@ -509,14 +537,40 @@ CSTRL_INLINE vec4 cstrl_vec4_mult_mat4(const vec4 v, const mat4 m)
  *
  */
 
+CSTRL_INLINE mat3 cstrl_mat3_indentity()
+{
+    mat3 mat = {0.0f};
+    mat.xx = 1.0f;
+    mat.yy = 1.0f;
+    mat.zz = 1.0f;
+    return mat;
+}
+
+#define _mat3_mult_entry(row, col)                                                                                     \
+    a.m[0 * 3 + row] * b.m[col * 3 + 0] + a.m[1 * 3 + row] * b.m[col * 3 + 1] + a.m[2 * 3 + row] * b.m[col * 3 + 2]
+
 // TODO: add to unit tests
-CSTRL_INLINE float cstrl_mat3_determinant(mat3 m)
+CSTRL_INLINE mat3 cstrl_mat3_mult(const mat3 a, const mat3 b)
+{
+    return (mat3){_mat3_mult_entry(0, 0), _mat3_mult_entry(1, 0), _mat3_mult_entry(2, 0),
+                  _mat3_mult_entry(0, 1), _mat3_mult_entry(1, 1), _mat3_mult_entry(2, 1),
+                  _mat3_mult_entry(0, 2), _mat3_mult_entry(1, 2), _mat3_mult_entry(2, 2)};
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat3 cstrl_mat3_mult_scalar(const mat3 m, const float s)
+{
+    return (mat3){m.xx * s, m.yx * s, m.zx * s, m.xy * s, m.yy * s, m.zy * s, m.xz * s, m.yz * s, m.zz * s};
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE float cstrl_mat3_determinant(const mat3 m)
 {
     return m.xx * (m.yy * m.zz - m.zy * m.yz) - m.xy * (m.yx * m.zz - m.zx * m.yz) + m.xz * (m.yx * m.zy - m.yy * m.zx);
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat3 cstrl_mat3_adjugate(mat3 m)
+CSTRL_INLINE mat3 cstrl_mat3_adjugate(const mat3 m)
 {
     mat3 result;
 
@@ -547,7 +601,7 @@ CSTRL_INLINE mat3 cstrl_mat3_negate(mat3 m)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat3 cstrl_mat3_inverse(mat3 m)
+CSTRL_INLINE mat3 cstrl_mat3_inverse(const mat3 m)
 {
     float det = cstrl_mat3_determinant(m);
     mat3 adj = cstrl_mat3_adjugate(m);
@@ -561,11 +615,11 @@ CSTRL_INLINE mat3 cstrl_mat3_inverse(mat3 m)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE quat cstrl_mat3_orthogonal_to_quat(mat3 m)
+CSTRL_INLINE quat cstrl_mat3_orthogonal_to_quat(const mat3 m)
 {
     quat q;
     float t = m.xx + m.yy + m.zz;
-    if (fabsf(1.0f + t) > cstrl_epsilon)
+    if (t > cstrl_epsilon)
     {
         float r = sqrtf(1.0f + t);
         float s = 1.0f / (2.0f * r);
@@ -590,7 +644,7 @@ CSTRL_INLINE quat cstrl_mat3_orthogonal_to_quat(mat3 m)
             float r = sqrtf(1 + m.yy - m.xx - m.zz);
             float s = 1.0f / (2.0f * r);
             q.w = (m.xz - m.zx) * s;
-            q.x = (m.xy - m.yx);
+            q.x = (m.xy - m.yx) * s;
             q.y = r * 0.5f;
             q.z = (m.zy - m.yz) * s;
         }
@@ -707,7 +761,7 @@ CSTRL_INLINE mat4 cstrl_mat4_perspective(float fov, float aspect, float near, fl
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat4 cstrl_mat4_mult_scalar(mat4 m, float s)
+CSTRL_INLINE mat4 cstrl_mat4_mult_scalar(const mat4 m, const float s)
 {
     return (mat4){m.xx * s, m.yx * s, m.zx * s, m.wx * s, m.xy * s, m.yy * s, m.zy * s, m.wy * s,
                   m.xz * s, m.yz * s, m.zz * s, m.wz * s, m.xw * s, m.yw * s, m.zw * s, m.ww * s};
@@ -727,14 +781,14 @@ CSTRL_INLINE mat4 cstrl_mat4_mult(mat4 a, mat4 b)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE bool cstrl_mat4_is_equal(mat4 a, mat4 b)
+CSTRL_INLINE bool cstrl_mat4_is_equal(const mat4 a, const mat4 b)
 {
     return cstrl_vec4_is_equal(a.x, b.x) && cstrl_vec4_is_equal(a.y, b.y) && cstrl_vec4_is_equal(a.z, b.z) &&
            cstrl_vec4_is_equal(a.w, b.w);
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat4 cstrl_mat4_translate(mat4 m, vec3 v)
+CSTRL_INLINE mat4 cstrl_mat4_translate(const mat4 m, const vec3 v)
 {
     mat4 translation = cstrl_mat4_identity();
     translation.xw = v.x;
@@ -745,7 +799,7 @@ CSTRL_INLINE mat4 cstrl_mat4_translate(mat4 m, vec3 v)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat4 cstrl_mat4_scale(mat4 m, vec3 v)
+CSTRL_INLINE mat4 cstrl_mat4_scale(mat4 m, const vec3 v)
 {
     m.xx *= v.x;
     m.yy *= v.y;
@@ -756,11 +810,11 @@ CSTRL_INLINE mat4 cstrl_mat4_scale(mat4 m, vec3 v)
 
 // TODO: add to unit tests
 // Rodrigues' rotation formula
-CSTRL_INLINE mat4 cstrl_mat4_rotate(mat4 m, float angle, vec3 axis)
+CSTRL_INLINE mat4 cstrl_mat4_rotate(const mat4 m, const float angle, const vec3 axis)
 {
     mat4 result = cstrl_mat4_identity();
 
-    mat4 k = {0};
+    mat3 k = {0};
     k.yx = -axis.z;
     k.zx = axis.y;
     k.xy = axis.z;
@@ -768,18 +822,22 @@ CSTRL_INLINE mat4 cstrl_mat4_rotate(mat4 m, float angle, vec3 axis)
     k.xz = -axis.y;
     k.yz = axis.x;
 
-    mat4 m0 = cstrl_mat4_mult_scalar(k, sinf(angle));
-    mat4 m1 = cstrl_mat4_mult(k, k);
-    m1 = cstrl_mat4_mult_scalar(m1, (1 - cosf(angle)));
+    mat3 m0 = cstrl_mat3_mult_scalar(k, sinf(angle));
+    mat3 m1 = cstrl_mat3_mult(k, k);
+    m1 = cstrl_mat3_mult_scalar(m1, (1 - cosf(angle)));
 
-    result = cstrl_mat4_add(result, m0);
-    result = cstrl_mat4_add(result, m1);
+    mat4 r0 =
+        (mat4){m0.xx, m0.yx, m0.zx, 0.0f, m0.xy, m0.yy, m0.zy, 0.0f, m0.xz, m0.yz, m0.zz, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    mat4 r1 =
+        (mat4){m1.xx, m1.yx, m1.zx, 0.0f, m1.xy, m1.yy, m1.zy, 0.0f, m1.xz, m1.yz, m1.zz, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+    result = cstrl_mat4_add(result, r0);
+    result = cstrl_mat4_add(result, r1);
 
-    return result;
+    return cstrl_mat4_mult(m, result);
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE float cstrl_mat4_determinant(mat4 m)
+CSTRL_INLINE float cstrl_mat4_determinant(const mat4 m)
 {
     return m.xw * m.yz * m.zy * m.wx - m.xz * m.yw * m.zy * m.wx - m.xw * m.yy * m.zz * m.wx +
            m.xy * m.yw * m.zz * m.wx + m.xz * m.yy * m.zw * m.wx - m.xy * m.yz * m.zw * m.wx -
@@ -792,12 +850,12 @@ CSTRL_INLINE float cstrl_mat4_determinant(mat4 m)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE float cstrl_mat4_cofactor(mat4 m, int i, int j)
+CSTRL_INLINE float cstrl_mat4_cofactor(const mat4 m, const int i, const int j)
 {
     return powf(-1, i + j);
 }
 
-CSTRL_INLINE mat4 cstrl_mat4_affine_inverse(mat4 m)
+CSTRL_INLINE mat4 cstrl_mat4_affine_inverse(const mat4 m)
 {
     mat3 m3;
 
@@ -820,20 +878,20 @@ CSTRL_INLINE mat4 cstrl_mat4_affine_inverse(mat4 m)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat3 cstrl_mat4_upper_left(mat4 m)
+CSTRL_INLINE mat3 cstrl_mat4_upper_left(const mat4 m)
 {
     return (mat3){m.xx, m.yx, m.zx, m.xy, m.yy, m.zy, m.xz, m.yz, m.zz};
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat4 cstrl_mat4_view_remove_translation(mat4 m)
+CSTRL_INLINE mat4 cstrl_mat4_view_remove_translation(const mat4 m)
 {
     return (mat4){m.xx, m.yx, m.zx, 0.0f, m.yx, m.yy, m.zy, 0.0f, m.xz, m.yz, m.zz, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
 }
 
 // TODO: add to unit tests
 // From glm compute_inverse function
-CSTRL_INLINE mat4 cstrl_mat4_inverse_glm(mat4 m)
+CSTRL_INLINE mat4 cstrl_mat4_inverse_glm(const mat4 m)
 {
     float coef00 = m.zz * m.ww - m.wz * m.zw;
     float coef02 = m.yz * m.ww - m.wz * m.yw;
@@ -919,7 +977,7 @@ CSTRL_INLINE mat4 cstrl_mat4_inverse_glm(mat4 m)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat4 cstrl_mat4_inverse(mat4 m)
+CSTRL_INLINE mat4 cstrl_mat4_inverse(const mat4 m)
 {
     mat4 result;
     result.xx = m.yz * m.zw * m.wy - m.yw * m.zz * m.wy + m.yw * m.zy * m.wz - m.yy * m.zw * m.wz - m.yz * m.zy * m.ww +
@@ -964,7 +1022,7 @@ CSTRL_INLINE mat4 cstrl_mat4_inverse(mat4 m)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat4 cstrl_mat4_transpose(mat4 m)
+CSTRL_INLINE mat4 cstrl_mat4_transpose(const mat4 m)
 {
     mat4 result;
 
@@ -1054,13 +1112,13 @@ CSTRL_INLINE quat cstrl_quat_identity()
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE quat cstrl_quat_conjugate(quat q)
+CSTRL_INLINE quat cstrl_quat_conjugate(const quat q)
 {
     return (quat){q.w, -q.x, -q.y, -q.z};
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE quat cstrl_quat_inverse(quat q)
+CSTRL_INLINE quat cstrl_quat_inverse(const quat q)
 {
     float len_sq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
     if (len_sq < cstrl_epsilon)
@@ -1072,7 +1130,7 @@ CSTRL_INLINE quat cstrl_quat_inverse(quat q)
     return (quat){q.w * recip, -q.x * recip, -q.y * recip, -q.z * recip};
 }
 
-CSTRL_INLINE quat cstrl_quat_normalize(quat q)
+CSTRL_INLINE quat cstrl_quat_normalize(const quat q)
 {
     float len_sq = q.w * q.w + q.x * q.x + q.y * q.y + q.z * q.z;
     if (len_sq < cstrl_epsilon)
@@ -1085,7 +1143,7 @@ CSTRL_INLINE quat cstrl_quat_normalize(quat q)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE quat cstrl_quat_angle_axis(float angle, vec3 axis)
+CSTRL_INLINE quat cstrl_quat_angle_axis(const float angle, const vec3 axis)
 {
     vec3 norm = cstrl_vec3_normalize(axis);
     float s = sinf(angle / 2.0f);
@@ -1124,33 +1182,38 @@ CSTRL_INLINE quat cstrl_quat_from_to(vec3 from, vec3 to)
     return (quat){cstrl_vec3_dot(from, half), axis.x, axis.y, axis.z};
 }
 
-CSTRL_INLINE vec3 cstrl_quat_get_axis(quat q)
+CSTRL_INLINE vec3 cstrl_quat_get_axis(const quat q)
 {
     return cstrl_vec3_normalize((vec3){q.x, q.y, q.z});
 }
 
-CSTRL_INLINE float cstrl_quat_get_angle(quat q)
+CSTRL_INLINE float cstrl_quat_get_angle(const quat q)
 {
     return 2.0f * acosf(q.w);
 }
 
-CSTRL_INLINE quat cstrl_quat_add(quat a, quat b)
+CSTRL_INLINE quat cstrl_quat_add(const quat a, const quat b)
 {
     return (quat){a.w + b.w, a.x + b.x, a.y + b.y, a.z + b.z};
 }
 
-CSTRL_INLINE quat cstrl_quat_mult(quat a, quat b)
+CSTRL_INLINE quat cstrl_quat_mult(const quat a, const quat b)
 {
     return (quat){(a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z), (a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y),
                   (a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x), (a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w)};
 }
 
-CSTRL_INLINE mat4 cstrl_quat_to_mat4(quat q)
+CSTRL_INLINE quat cstrl_quat_mult_scalar(const quat q, const float s)
+{
+    return (quat){q.w * s, q.x * s, q.y * s, q.z * s};
+}
+
+CSTRL_INLINE mat4 cstrl_quat_to_mat4(const quat q)
 {
     return (mat4){q.w, -q.x, -q.y, -q.z, q.x, q.w, -q.z, q.y, q.y, q.z, q.w, -q.x, q.z, -q.y, q.x, q.w};
 }
 
-CSTRL_INLINE vec3 cstrl_quat_to_euler_angles(quat q)
+CSTRL_INLINE vec3 cstrl_quat_to_euler_angles(const quat q)
 {
     vec3 v = (vec3){0.0f, 0.0f, 0.0f};
     v.x = atan2f(2.0f * (q.w * q.x + q.y * q.z), q.w * q.w - q.x * q.x - q.y * q.y - q.z * q.z);
@@ -1171,7 +1234,7 @@ CSTRL_INLINE vec3 cstrl_quat_to_euler_angles(quat q)
     return v;
 }
 
-CSTRL_INLINE quat cstrl_quat_from_euler_angles(vec3 euler_angles)
+CSTRL_INLINE quat cstrl_quat_from_euler_angles(const vec3 euler_angles)
 {
     float cx = cosf(euler_angles.x / 2.0f);
     float cy = cosf(euler_angles.y / 2.0f);
@@ -1189,9 +1252,58 @@ CSTRL_INLINE quat cstrl_quat_from_euler_angles(vec3 euler_angles)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE vec3 cstrl_quat_xyz(quat q)
+CSTRL_INLINE vec3 cstrl_quat_xyz(const quat q)
 {
     return (vec3){q.x, q.y, q.z};
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE quat cstrl_quat_mix(const quat a, const quat b, const float t)
+{
+    return cstrl_quat_add(cstrl_quat_mult_scalar(a, 1.0f - t), cstrl_quat_mult_scalar(b, t));
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE float cstrl_quat_dot(const quat a, const quat b)
+{
+    return a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE quat cstrl_quat_negate(const quat q)
+{
+    return (quat){-q.w, -q.x, -q.y, -q.z};
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE quat cstrl_quat_neighbor(const quat a, const quat b)
+{
+    return cstrl_quat_dot(a, b) < 0 ? cstrl_quat_negate(b) : b;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE quat cstrl_quat_interpolate(const quat a, const quat b, const float t)
+{
+    return cstrl_quat_mix(a, cstrl_quat_neighbor(a, b), t);
+}
+
+/*
+ *
+ *      transform math functions
+ *
+ */
+
+// TODO: add to unit tests
+CSTRL_INLINE transform_t combine(const transform_t a, const transform_t b)
+{
+    transform_t out;
+    out.scale = cstrl_vec3_mult(a.scale, b.scale);
+    out.rotation = cstrl_quat_mult(a.rotation, b.rotation);
+
+    out.position = cstrl_vec3_mult_quat(cstrl_vec3_mult(a.scale, b.position), a.rotation);
+    out.position = cstrl_vec3_add(a.position, out.position);
+
+    return out;
 }
 
 #endif // CSTRL_MATH_H
