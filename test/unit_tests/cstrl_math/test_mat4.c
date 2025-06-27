@@ -263,3 +263,51 @@ int test_cstrl_mat4_look_at()
 
     return 1;
 }
+
+int test_cstrl_mat4_shear()
+{
+    vec4 point = {2.0f, 3.0f, 4.0f, 1.0f};
+    vec4 expected = {5.0f, 3.0f, 4.0f, 1.0f};
+    vec4 result = cstrl_vec4_mult_mat4(point, cstrl_mat4_shear(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f));
+
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+    expect_float_to_be(expected.w, result.w);
+
+    expected = (vec4){6.0f, 3.0f, 4.0f, 1.0f};
+    result = cstrl_vec4_mult_mat4(point, cstrl_mat4_shear(0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f));
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+    expect_float_to_be(expected.w, result.w);
+
+    expected = (vec4){2.0f, 5.0f, 4.0f, 1.0f};
+    result = cstrl_vec4_mult_mat4(point, cstrl_mat4_shear(0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f));
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+    expect_float_to_be(expected.w, result.w);
+
+    expected = (vec4){2.0f, 7.0f, 4.0f, 1.0f};
+    result = cstrl_vec4_mult_mat4(point, cstrl_mat4_shear(0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f));
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+    expect_float_to_be(expected.w, result.w);
+
+    expected = (vec4){2.0f, 3.0f, 6.0f, 1.0f};
+    result = cstrl_vec4_mult_mat4(point, cstrl_mat4_shear(0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f));
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+    expect_float_to_be(expected.w, result.w);
+
+    expected = (vec4){2.0f, 3.0f, 7.0f, 1.0f};
+    result = cstrl_vec4_mult_mat4(point, cstrl_mat4_shear(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f));
+    expect_float_to_be(expected.x, result.x);
+    expect_float_to_be(expected.y, result.y);
+    expect_float_to_be(expected.z, result.z);
+    expect_float_to_be(expected.w, result.w);
+    return 1;
+}

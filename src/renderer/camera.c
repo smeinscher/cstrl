@@ -24,6 +24,8 @@ CSTRL_API cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_hei
     new_camera->projection = cstrl_mat4_identity();
     new_camera->position = (vec3){0.0f, 0.0f, 1.0f};
 
+    cstrl_camera_update(new_camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
+
     return new_camera;
 }
 

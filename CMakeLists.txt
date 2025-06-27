@@ -6,6 +6,7 @@ project(cstrl-moon-game C)
 project(cstrl-moon-game-executable C)
 project(cstrl-bpc-game C)
 project(cstrl-cozy-game C)
+project(cstrl-cube C)
 
 #set(CMAKE_SYSTEM_PROCESSOR arm)
 
@@ -241,6 +242,20 @@ add_executable(cstrl-cozy-game
         games/cozy/game/scenes/scene_manager.h
 )
 
+add_executable(cstrl-cube
+    games/cube/main.c
+    games/cube/game/game.c
+    games/cube/game/game.h
+    games/cube/game/helpers.c
+    games/cube/game/helpers.h
+    games/cube/game/scenes/scene_manager.c
+    games/cube/game/scenes/scene_manager.h
+    games/cube/game/scenes/main_menu_scene.c
+    games/cube/game/scenes/main_menu_scene.h
+    games/cube/game/ui/cube_ui.c
+    games/cube/game/ui/cube_ui.h
+)
+
 #target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
 #target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT -Wall -Werror -Wno-missing-braces)
 #target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
@@ -271,6 +286,7 @@ target_link_libraries(cstrl-moon-game PRIVATE cstrl)
 target_link_libraries(cstrl-moon-game-executable PRIVATE cstrl cstrl-moon-game)
 target_link_libraries(cstrl-bpc-game PRIVATE cstrl)
 target_link_libraries(cstrl-cozy-game PRIVATE cstrl)
+target_link_libraries(cstrl-cube PRIVATE cstrl)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
@@ -279,3 +295,4 @@ target_include_directories(cstrl-moon-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-moon-game-executable PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-bpc-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-cozy-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(cstrl-cube PRIVATE ${CMAKE_SOURCE_DIR}/include)

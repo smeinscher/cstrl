@@ -54,6 +54,12 @@ typedef struct vec3
             float y;
             float z;
         };
+        struct
+        {
+            float r;
+            float g;
+            float b;
+        };
         float v[3];
     };
 } vec3;
@@ -202,6 +208,12 @@ typedef struct transform_t
 CSTRL_INLINE float cstrl_scalar_interpolation(float a, float b, float t)
 {
     return a + (b - a) * t;
+}
+
+CSTRL_INLINE float cstrl_scalar_clamp(float s, float min, float max)
+{
+    const float t = s < min ? min : s;
+    return t > max ? max : t;
 }
 
 /*
@@ -469,8 +481,8 @@ CSTRL_INLINE vec4 cstrl_vec4_normalize(const vec4 v)
 // TODO: add to unit tests
 CSTRL_INLINE bool cstrl_vec4_is_equal(const vec4 a, const vec4 b)
 {
-    return fabsf(a.x - b.x) > cstrl_epsilon && fabsf(a.y - b.y) > cstrl_epsilon && fabsf(a.z - b.z) > cstrl_epsilon &&
-           fabsf(a.w - b.w) > cstrl_epsilon;
+    return fabsf(a.x - b.x) < cstrl_epsilon && fabsf(a.y - b.y) < cstrl_epsilon && fabsf(a.z - b.z) < cstrl_epsilon &&
+           fabsf(a.w - b.w) < cstrl_epsilon;
 }
 
 CSTRL_INLINE vec4 cstrl_vec4_add(const vec4 a, const vec4 b)
@@ -1097,6 +1109,19 @@ CSTRL_INLINE mat4 cstrl_mat4_broken_inverse(mat4 m)
     }
 
     return m;
+}
+
+// TODO: add to unit tests
+CSTRL_INLINE mat4 cstrl_mat4_shear(float shear_xy, float shear_xz, float shear_yx, float shear_yz, float shear_zx, float shear_zy)
+{
+    mat4 shear_matrix = cstrl_mat4_identity();
+    shear_matrix.yx = shear_xy;
+    shear_matrix.zx = shear_xz;
+    shear_matrix.xy = shear_yx;
+    shear_matrix.zy = shear_yz;
+    shear_matrix.xz = shear_zx;
+    shear_matrix.yz = shear_zy;
+    return shear_matrix;
 }
 
 /*

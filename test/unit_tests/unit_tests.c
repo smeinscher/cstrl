@@ -131,6 +131,8 @@ void mat4_tests()
                           "Test if correctly applies perspective projection on matrix 4x4");
     test_manager_add_test(test_suite, test_cstrl_mat4_look_at, "mat4 Look At Test",
                           "Test if correctly applies look at calculation on matrix 4x4");
+    test_manager_add_test(test_suite, test_cstrl_mat4_shear, "mat4 Shear Test",
+                          "Test if correctly applies shear on matrix 4x4");
     test_manager_run_tests(test_suite);
     test_manager_log_results(test_suite);
 }
@@ -195,14 +197,14 @@ int run_unit_tests()
     // vec4_tests();
     // quat_tests();
     // mat3_tests();
-    // mat4_tests();
+    mat4_tests();
     // dynamic_int_array_tests();
     //
     // camera_tests();
 
     // collision_tests();
 
-    random_tests();
+    // random_tests();
 
     test_manager_log_total_failed_tests();
 
