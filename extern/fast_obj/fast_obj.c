@@ -24,5 +24,6 @@
  *
  */
 
+#define _CRT_SECURE_NO_WARNINGS
 #define FAST_OBJ_IMPLEMENTATION
 #include "fast_obj.h"

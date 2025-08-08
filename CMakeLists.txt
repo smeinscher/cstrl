@@ -162,5 +162,5 @@ if (ANDROID)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log_c cstrl)
 
-target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+target_include_directories(cstrl PRIVATE extern include)
+target_include_directories(cstrl-test PRIVATE extern include src)
