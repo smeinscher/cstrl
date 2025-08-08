@@ -1,12 +1,6 @@
 cmake_minimum_required(VERSION 3.29)
 project(cstrl C)
 project(cstrl-test C)
-project(cstrl-sandbox C)
-project(cstrl-moon-game C)
-project(cstrl-moon-game-executable C)
-project(cstrl-bpc-game C)
-project(cstrl-cozy-game C)
-project(cstrl-cube C)
 
 #set(CMAKE_SYSTEM_PROCESSOR arm)
 
@@ -151,118 +145,9 @@ add_executable(cstrl-test
         test/unit_tests/cstrl_util/test_random.h
 )
 
-add_executable(cstrl-sandbox
-        sandbox/main.c
-        sandbox/learnopengl/learnopengl.c
-        sandbox/learnopengl/learnopengl.h
-        sandbox/physics_for_game_developers/physics_for_game_developers.c
-        sandbox/physics_for_game_developers/physics_for_game_developers.h
-        sandbox/physics_for_game_developers/cannon_example.c
-        sandbox/physics_for_game_developers/cannon_example.h
-        sandbox/ui/basic_ui.c
-        sandbox/ui/basic_ui.h
-        sandbox/vulkan-tutorial/vulkan_triangle.c
-        sandbox/vulkan-tutorial/vulkan_triangle.h
-        sandbox/the_ray_tracer_challenge/challenge.c
-        sandbox/the_ray_tracer_challenge/challenge.h
-        sandbox/pong/pong.c
-        sandbox/pong/pong.h
-        sandbox/shading_language_cookbook/cookbook.c
-        sandbox/shading_language_cookbook/cookbook.h
-        sandbox/model_loading/model_loading.c
-        sandbox/model_loading/model_loading.h
-)
-
-add_executable(cstrl-moon-game-executable
-        games/moon_game/main.c
-)
-
-add_library(cstrl-moon-game SHARED
-        games/moon_game/moon_game.c
-        games/moon_game/moon_game.h
-        games/moon_game/game/formation.c
-        games/moon_game/game/formation.h
-        games/moon_game/game/paths.c
-        games/moon_game/game/paths.h
-        games/moon_game/game/players.c
-        games/moon_game/game/players.h
-        games/moon_game/game/units.c
-        games/moon_game/game/units.h
-        games/moon_game/game/sphere.c
-        games/moon_game/game/sphere.h
-        games/moon_game/helpers/helpers.c
-        games/moon_game/helpers/helpers.h
-        games/moon_game/game/ai.c
-        games/moon_game/game/ai.h
-        games/moon_game/game/projectile.c
-        games/moon_game/game/projectile.h
-        games/moon_game/game/physics_wrapper.c
-        games/moon_game/game/physics_wrapper.h
-)
-
-add_executable(cstrl-bpc-game
-        games/bpc/main.c
-        games/bpc/game/game.c
-        games/bpc/game/game.h
-        games/bpc/game/entities/ball.c
-        games/bpc/game/entities/ball.h
-        games/bpc/game/entities/cup.c
-        games/bpc/game/entities/cup.h
-        games/bpc/game/entities/player.c
-        games/bpc/game/entities/player.h
-        games/bpc/game/scenes/scenes.c
-        games/bpc/game/scenes/scenes.h
-        games/bpc/game/scenes/scene_manager.c
-        games/bpc/game/scenes/scene_manager.h
-        games/bpc/game/gameplay/gameplay.c
-        games/bpc/game/gameplay/gameplay.h
-        games/bpc/game/util/game_random.c
-        games/bpc/game/util/game_random.h
-)
-
-add_executable(cstrl-cozy-game
-        games/cozy/main.c
-        games/cozy/game/game.c
-        games/cozy/game/game.h
-        games/cozy/game/random/cozy_random.c
-        games/cozy/game/random/cozy_random.h
-        games/cozy/game/scenes/gameplay_scene.c
-        games/cozy/game/scenes/gameplay_scene.h
-        games/cozy/game/scenes/main_menu_scene.c
-        games/cozy/game/scenes/main_menu_scene.h
-        games/cozy/game/entities/guy.c
-        games/cozy/game/entities/guy.h
-        games/cozy/game/entities/hero.c
-        games/cozy/game/entities/hero.h
-        games/cozy/game/entities/projectile.c
-        games/cozy/game/entities/projectile.h
-        games/cozy/game/ui/cozy_ui.c
-        games/cozy/game/ui/cozy_ui.h
-        games/cozy/game/scenes/scene_manager.c
-        games/cozy/game/scenes/scene_manager.h
-)
-
-add_executable(cstrl-cube
-    games/cube/main.c
-    games/cube/game/game.c
-    games/cube/game/game.h
-    games/cube/game/helpers.c
-    games/cube/game/helpers.h
-    games/cube/game/scenes/scene_manager.c
-    games/cube/game/scenes/scene_manager.h
-    games/cube/game/scenes/main_menu_scene.c
-    games/cube/game/scenes/main_menu_scene.h
-    games/cube/game/ui/cube_ui.c
-    games/cube/game/ui/cube_ui.h
-)
-
-#target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT -Wall -Werror -Wno-missing-braces)
-#target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT -Wall -Werror -Wno-missing-braces)
-#target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
-#target_compile_options(cstrl-sandbox PRIVATE -Wall -Werror -Wno-missing-braces)
+target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
 
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
-target_compile_options(cstrl-moon-game PRIVATE -DCSTRL_MOON_GAME_EXPORT)
 
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES} ${OPENAL_LIBRARY})
 if (X11_FOUND)
@@ -271,28 +156,11 @@ endif ()
 if (UNIX)
     target_link_libraries(cstrl PRIVATE m)
     target_link_libraries(cstrl-test PRIVATE m)
-    target_link_libraries(cstrl-sandbox PRIVATE m)
-    target_link_libraries(cstrl-bpc-game PRIVATE m)
-    target_link_libraries(cstrl-cozy-game PRIVATE m)
 endif ()
 if (ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
-    # else ()
-    # target_link_libraries(cstrl PRIVATE Vulkan::Vulkan)
 endif ()
 target_link_libraries(cstrl-test PRIVATE log_c cstrl)
-target_link_libraries(cstrl-sandbox PRIVATE cstrl)
-target_link_libraries(cstrl-moon-game PRIVATE cstrl)
-target_link_libraries(cstrl-moon-game-executable PRIVATE cstrl cstrl-moon-game)
-target_link_libraries(cstrl-bpc-game PRIVATE cstrl)
-target_link_libraries(cstrl-cozy-game PRIVATE cstrl)
-target_link_libraries(cstrl-cube PRIVATE cstrl)
 
 target_include_directories(cstrl PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(cstrl-test PRIVATE ${CMAKE_SOURCE_DIR}/extern ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
-target_include_directories(cstrl-sandbox PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(cstrl-moon-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(cstrl-moon-game-executable PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(cstrl-bpc-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(cstrl-cozy-game PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_include_directories(cstrl-cube PRIVATE ${CMAKE_SOURCE_DIR}/include)

@@ -75,9 +75,4 @@ a stackoverflow post describing the issue with MSVC. If you want to use Visual S
    ```sh
    ./run_tests.sh
    ```
-   OR if you want to build and run the sandbox code:
-   ```sh
-   ./run_sandbox.sh
-   ```
-
    Instructions for alternative building methods will come soon.
