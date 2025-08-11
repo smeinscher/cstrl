@@ -7,7 +7,7 @@
 
 #include <stdlib.h>
 
-CSTRL_API cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool is_orthographic)
+CSTRL_API cstrl_camera *cstrl_camera_create(float viewport_width, float viewport_height, bool is_orthographic)
 {
     cstrl_camera *new_camera = malloc(sizeof(cstrl_camera));
 
@@ -15,8 +15,11 @@ CSTRL_API cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_hei
     new_camera->fov = 45.0f * cstrl_pi_180;
     new_camera->near = 0.1f;
     new_camera->far = 100.0f;
+    new_camera->speed = 1.0f;
     new_camera->viewport.x = viewport_width;
     new_camera->viewport.y = viewport_height;
+    new_camera->offset.x = 0.0f;
+    new_camera->offset.y = 0.0f;
     new_camera->forward = (vec3){0.0f, 0.0f, -1.0f};
     new_camera->up = (vec3){0.0f, 1.0f, 0.0f};
     new_camera->right = (vec3){1.0f, 0.0f, 0.0f};
@@ -40,11 +43,25 @@ CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_
     vec3 velocity = {0.0f, 0.0f, 0.0f};
     if (movement & CSTRL_CAMERA_DIRECTION_UP)
     {
-        velocity = cstrl_vec3_add(velocity, camera->forward);
+        if (!camera->is_orthographic)
+        {
+            velocity = cstrl_vec3_add(velocity, camera->forward);
+        }
+        else
+        {
+            velocity = cstrl_vec3_sub(velocity, camera->up);
+        }
     }
     if (movement & CSTRL_CAMERA_DIRECTION_DOWN)
     {
-        velocity = cstrl_vec3_sub(velocity, camera->forward);
+        if (!camera->is_orthographic)
+        {
+            velocity = cstrl_vec3_sub(velocity, camera->forward);
+        }
+        else
+        {
+            velocity = cstrl_vec3_add(velocity, camera->up);
+        }
     }
     if (movement & CSTRL_CAMERA_DIRECTION_LEFT)
     {
@@ -57,7 +74,7 @@ CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_
             cstrl_vec3_add(velocity, cstrl_vec3_normalize(cstrl_vec3_cross(camera->forward, (vec3){0.0f, 1.0f, 0.0f})));
     }
     velocity = cstrl_vec3_normalize(velocity);
-    velocity = cstrl_vec3_mult_scalar(velocity, 0.1f);
+    velocity = cstrl_vec3_mult_scalar(velocity, camera->speed);
     camera->position = cstrl_vec3_add(camera->position, velocity);
 
     vec3 rotation_velocity = {0.0f, 0.0f, 0.0f};
@@ -83,13 +100,13 @@ CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_
 
     if (!camera->is_orthographic)
     {
-        camera->projection = cstrl_mat4_perspective(camera->fov, (float)camera->viewport.x / (float)camera->viewport.y,
-                                                    camera->near, camera->far);
+        camera->projection =
+            cstrl_mat4_perspective(camera->fov, camera->viewport.x / camera->viewport.y, camera->near, camera->far);
     }
     else
     {
-        camera->projection = cstrl_mat4_ortho(0.0f, (float)camera->viewport.x, (float)camera->viewport.y, 0.0f,
-                                              camera->near, camera->far);
+        camera->projection = cstrl_mat4_ortho(camera->offset.x, camera->viewport.x, camera->viewport.y,
+                                              camera->offset.y, camera->near, camera->far);
     }
 }
 

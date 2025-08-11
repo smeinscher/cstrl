@@ -13,6 +13,7 @@
 
 #include <windows.h>
 #include <windowsx.h>
+#include <winuser.h>
 
 static double g_clock_frequency;
 static LARGE_INTEGER g_start_time;
@@ -194,8 +195,9 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         }
         if (internal_state->state_common.input.mouse_mode == CSTRL_MOUSE_DISABLED)
         {
-            // TODO: base this on screen dimensions
-            SetCursorPos(1920 / 2, 1080 / 2);
+            int screen_width, screen_height;
+            cstrl_platform_get_screen_resolution(&screen_width, &screen_height);
+            SetCursorPos(screen_width / 2, screen_height / 2);
         }
         else
         {
@@ -321,8 +323,8 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
     {
         window_x = 0;
         window_y = 0;
-        window_width = 1920;
-        window_height = 1080;
+        window_width = width;
+        window_height = height;
     }
     else
     {
@@ -366,7 +368,7 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
     state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;
 
     // TODO: get screen dimensions
-    SetCursorPos(1920 / 2, 1080 / 2);
+    SetCursorPos(width / 2, height / 2);
 
     state->state_common.input.last_mouse_x = width / 2;
     state->state_common.input.last_mouse_y = height / 2;
@@ -429,6 +431,12 @@ CSTRL_API void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_sta
     internal_state *state = platform_state->internal_state;
     state->state_common.input.cursor_shown = show_cursor;
     ShowCursor(show_cursor);
+}
+
+CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height)
+{
+    *width = GetSystemMetrics(SM_CXSCREEN);
+    *height = GetSystemMetrics(SM_CYSCREEN);
 }
 
 #endif

@@ -14,7 +14,9 @@ typedef struct cstrl_camera
     float fov;
     float near;
     float far;
-    vec2i viewport;
+    float speed;
+    vec2 viewport;
+    vec2 offset;
     vec3 position;
     vec3 forward;
     vec3 up;
@@ -32,12 +34,12 @@ typedef enum cstrl_camera_direction_mask
     CSTRL_CAMERA_DIRECTION_RIGHT = 8,
 } cstrl_camera_direction_mask;
 
-CSTRL_API cstrl_camera *cstrl_camera_create(int viewport_width, int viewport_height, bool is_orthographic);
+CSTRL_API cstrl_camera *cstrl_camera_create(float viewport_width, float viewport_height, bool is_orthographic);
 
 CSTRL_API void cstrl_camera_free(cstrl_camera *camera);
 
 CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movement,
-                         cstrl_camera_direction_mask rotation);
+                                   cstrl_camera_direction_mask rotation);
 
 CSTRL_API void cstrl_camera_euler_rotate(vec3 amount);
 
@@ -45,7 +47,8 @@ CSTRL_API void cstrl_camera_first_person_rotate(cstrl_camera *camera, float chan
 
 CSTRL_API void cstrl_camera_set_rotation(cstrl_camera *camera, quat rotation);
 
-CSTRL_API void cstrl_camera_rotate_around_point(cstrl_camera *camera, vec3 point, float vertical_angle_change, float horizontal_angle_change);
+CSTRL_API void cstrl_camera_rotate_around_point(cstrl_camera *camera, vec3 point, float vertical_angle_change,
+                                                float horizontal_angle_change);
 
 CSTRL_API quat cstrl_camera_get_rotation(cstrl_camera *camera);
 

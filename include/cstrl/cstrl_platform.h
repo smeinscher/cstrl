@@ -46,6 +46,8 @@ CSTRL_API void cstrl_platform_set_should_exit(bool should_exit);
 
 CSTRL_API void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_state, bool show_cursor);
 
+CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height);
+
 /*
  *
  *  Common
@@ -72,9 +74,11 @@ CSTRL_API void cstrl_platform_set_mouse_position_callback(cstrl_platform_state *
 CSTRL_API void cstrl_platform_set_framebuffer_size_callback(cstrl_platform_state *platform_state,
                                                             cstrl_framebuffer_size_callback framebuffer_size_callback);
 
-CSTRL_API void cstrl_platform_set_mouse_button_callback(cstrl_platform_state *platform_state, cstrl_mouse_button_callback mouse_button_callback);
+CSTRL_API void cstrl_platform_set_mouse_button_callback(cstrl_platform_state *platform_state,
+                                                        cstrl_mouse_button_callback mouse_button_callback);
 
-CSTRL_API void cstrl_platform_set_mouse_wheel_callback(cstrl_platform_state *platform_state, cstrl_mouse_wheel_callback mouse_wheel_callback);
+CSTRL_API void cstrl_platform_set_mouse_wheel_callback(cstrl_platform_state *platform_state,
+                                                       cstrl_mouse_wheel_callback mouse_wheel_callback);
 
 CSTRL_API void *cstrl_platform_get_user_data(cstrl_platform_state *platform_state);
 

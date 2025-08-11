@@ -525,4 +525,9 @@ CSTRL_API void cstrl_renderer_update_ubo(unsigned int ubo, void *object, size_t 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
+CSTRL_API void cstrl_renderer_set_line_width(float line_width)
+{
+    glLineWidth(line_width);
+}
+
 #endif

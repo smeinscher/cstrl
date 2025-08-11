@@ -6,7 +6,6 @@
 #include <cstrl/cstrl_defines.h>
 
 #if defined(CSTRL_RENDER_API_OPENGL) && defined(CSTRL_PLATFORM_WINDOWS)
-
 #include "glad/glad.h"
 #include "opengl_platform.h"
 
@@ -16,6 +15,8 @@
 /*#include <GL/wglext.h>*/
 #include <gl/gl.h>
 #include <windows.h>
+
+CSTRL_API DWORD NvOptimusEnablement = 0x00000001;
 
 typedef HGLRC WINAPI wglCreateContextAttribsARB_type(HDC hdc, HGLRC h_share_context, const int *attrib_list);
 typedef bool WINAPI wglSwapIntervalEXT_type(int interval);
