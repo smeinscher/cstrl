@@ -93,8 +93,10 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
             return 0;
         }
         internal_state *internal_state = state->internal_state;
-        const int action = (HIWORD(lparam) & KF_UP) ? CSTRL_ACTION_RELEASE : CSTRL_ACTION_PRESS;
 
+        const int action = (HIWORD(lparam) & KF_UP)       ? CSTRL_ACTION_RELEASE
+                           : (HIWORD(lparam) & KF_REPEAT) ? CSTRL_ACTION_REPEAT
+                                                          : CSTRL_ACTION_PRESS;
         int scancode = HIWORD(lparam) & (KF_EXTENDED | 0xff);
 
         if (internal_state->state_common.callbacks.key != NULL)
