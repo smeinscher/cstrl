@@ -216,6 +216,16 @@ CSTRL_INLINE float cstrl_scalar_clamp(float s, float min, float max)
     return t > max ? max : t;
 }
 
+CSTRL_INLINE int cstrl_scalar_euclidian_modulo(float a, float b)
+{
+    float m = fmodf(a, b);
+    if (m < 0)
+    {
+        m = (b < 0) ? m - b : m + b;
+    }
+    return m;
+}
+
 /*
  *
  *      vec2 math functions
@@ -1112,7 +1122,8 @@ CSTRL_INLINE mat4 cstrl_mat4_broken_inverse(mat4 m)
 }
 
 // TODO: add to unit tests
-CSTRL_INLINE mat4 cstrl_mat4_shear(float shear_xy, float shear_xz, float shear_yx, float shear_yz, float shear_zx, float shear_zy)
+CSTRL_INLINE mat4 cstrl_mat4_shear(float shear_xy, float shear_xz, float shear_yx, float shear_yz, float shear_zx,
+                                   float shear_zy)
 {
     mat4 shear_matrix = cstrl_mat4_identity();
     shear_matrix.yx = shear_xy;

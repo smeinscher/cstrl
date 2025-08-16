@@ -314,6 +314,59 @@ CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, f
     glBindVertexArray(0);
 }
 
+CSTRL_API void cstrl_renderer_modify_uvs(cstrl_render_data *render_data, float *uvs, size_t start_index, size_t count)
+{
+    if (count == 0)
+    {
+        log_warn("Modifying uvs with 0 count, skipping to avoid possible undefined behavior");
+        return;
+    }
+    if (uvs == NULL)
+    {
+        log_error("UV pointer is NULL");
+        return;
+    }
+    internal_data *data = render_data->internal_data;
+    if (count + start_index > data->count * 2)
+    {
+        log_error("UV count/start out of range");
+        return;
+    }
+    data->cleared = false;
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS]);
+    glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), uvs);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+CSTRL_API void cstrl_renderer_modify_colors(cstrl_render_data *render_data, float *colors, size_t start_index,
+                                            size_t count)
+{
+    if (count == 0)
+    {
+        log_warn("Modifying colors with 0 count, skipping to avoid possible undefined behavior");
+        return;
+    }
+    if (colors == NULL)
+    {
+        log_error("Color pointer is NULL");
+        return;
+    }
+    internal_data *data = render_data->internal_data;
+    if (count + start_index > data->count * 4)
+    {
+        log_error("Color count/start out of range");
+        return;
+    }
+    data->cleared = false;
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
+    glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), colors);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
 CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int *indices, size_t start_index,
                                              size_t count)
 {

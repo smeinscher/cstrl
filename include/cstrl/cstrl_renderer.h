@@ -113,6 +113,11 @@ CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, flo
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
                                                size_t count);
 
+CSTRL_API void cstrl_renderer_modify_uvs(cstrl_render_data *render_data, float *uvs, size_t start_index, size_t count);
+
+CSTRL_API void cstrl_renderer_modify_colors(cstrl_render_data *render_data, float *colors, size_t start_index,
+                                            size_t count);
+
 CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int *indices, size_t start_index,
                                              size_t count);
 
