@@ -111,7 +111,7 @@ void *cstrl_ui_renderer_init(cstrl_platform_state *platform_state)
     cstrl_renderer_add_colors(render_state->font_render_data, colors);
 
     int width, height;
-    cstrl_platform_get_window_size(platform_state, &width, &height);
+    cstrl_platform_get_viewport_size(platform_state, &width, &height);
     render_state->projection = cstrl_mat4_ortho(0.0f, (float)width, (float)height, 0.0f, 0.1f, 100.0f);
     cstrl_set_uniform_mat4(render_state->shader.program, "projection", render_state->projection);
     cstrl_set_uniform_mat4(render_state->font_shader.program, "projection", render_state->projection);

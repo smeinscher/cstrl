@@ -389,7 +389,7 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     }
 
     int width, height;
-    cstrl_platform_get_window_size(ui_state->platform_state, &width, &height);
+    cstrl_platform_get_viewport_size(ui_state->platform_state, &width, &height);
     if (width != 0 && height != 0)
     {
         if (x < 0)

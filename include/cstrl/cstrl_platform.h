@@ -48,6 +48,8 @@ CSTRL_API void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_sta
 
 CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height);
 
+CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_state, bool fullscreen);
+
 /*
  *
  *  Common
@@ -55,6 +57,8 @@ CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height);
  */
 
 CSTRL_API void cstrl_platform_get_window_size(cstrl_platform_state *platform_state, int *width, int *height);
+
+CSTRL_API void cstrl_platform_get_viewport_size(cstrl_platform_state *platform_state, int *width, int *height);
 
 CSTRL_API void cstrl_platform_get_cursor_position(cstrl_platform_state *platform_state, int *x, int *y);
 

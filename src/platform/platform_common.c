@@ -14,6 +14,13 @@ CSTRL_API void cstrl_platform_get_window_size(cstrl_platform_state *platform_sta
     *height = state->state_common.window_height;
 }
 
+CSTRL_API void cstrl_platform_get_viewport_size(cstrl_platform_state *platform_state, int *width, int *height)
+{
+    internal_state *state = platform_state->internal_state;
+    *width = state->state_common.viewport_width;
+    *height = state->state_common.viewport_height;
+}
+
 CSTRL_API void cstrl_platform_get_cursor_position(cstrl_platform_state *platform_state, int *x, int *y)
 {
     internal_state *state = platform_state->internal_state;

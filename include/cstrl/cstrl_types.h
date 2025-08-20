@@ -9,14 +9,8 @@
 #include <limits.h>
 #include <stddef.h>
 
-typedef CSTRL_PACKED_ENUM
-{
-    CSTRL_MOUSE_BUTTON_LEFT,
-    CSTRL_MOUSE_BUTTON_RIGHT,
-    CSTRL_MOUSE_BUTTON_MIDDLE,
-    CSTRL_MOUSE_BUTTON_UNKNOWN,
-    CSTRL_MOUSE_BUTTON_MAX
-} cstrl_mouse_button;
+typedef CSTRL_PACKED_ENUM{CSTRL_MOUSE_BUTTON_LEFT, CSTRL_MOUSE_BUTTON_RIGHT, CSTRL_MOUSE_BUTTON_MIDDLE,
+                          CSTRL_MOUSE_BUTTON_UNKNOWN, CSTRL_MOUSE_BUTTON_MAX} cstrl_mouse_button;
 
 #define DEFINE_KEY(name, code) CSTRL_KEY_##name = code
 typedef enum cstrl_key
@@ -72,6 +66,31 @@ typedef enum cstrl_key
     DEFINE_KEY(Y, 89),
     DEFINE_KEY(Z, 90),
 
+    DEFINE_KEY(F1, 112),
+    DEFINE_KEY(F2, 113),
+    DEFINE_KEY(F3, 114),
+    DEFINE_KEY(F4, 115),
+    DEFINE_KEY(F5, 116),
+    DEFINE_KEY(F6, 117),
+    DEFINE_KEY(F7, 118),
+    DEFINE_KEY(F8, 119),
+    DEFINE_KEY(F9, 120),
+    DEFINE_KEY(F10, 121),
+    DEFINE_KEY(F11, 122),
+    DEFINE_KEY(F12, 123),
+    DEFINE_KEY(F13, 124),
+    DEFINE_KEY(F14, 125),
+    DEFINE_KEY(F15, 126),
+    DEFINE_KEY(F16, 127),
+    DEFINE_KEY(F17, 128),
+    DEFINE_KEY(F18, 129),
+    DEFINE_KEY(F19, 130),
+    DEFINE_KEY(F20, 131),
+    DEFINE_KEY(F21, 132),
+    DEFINE_KEY(F22, 133),
+    DEFINE_KEY(F23, 134),
+    DEFINE_KEY(F24, 135),
+
     DEFINE_KEY(MAX, 192)
 } cstrl_key;
 
@@ -85,18 +104,9 @@ typedef enum cstrl_key_modifier
     CSTRL_KEY_MOD_NUM_LOCK = 0x0020
 } cstrl_key_modifier;
 
-typedef CSTRL_PACKED_ENUM
-{
-    CSTRL_ACTION_NONE,
-    CSTRL_ACTION_PRESS,
-    CSTRL_ACTION_RELEASE,
-    CSTRL_ACTION_REPEAT
-} cstrl_action;
+typedef CSTRL_PACKED_ENUM{CSTRL_ACTION_NONE, CSTRL_ACTION_PRESS, CSTRL_ACTION_RELEASE,
+                          CSTRL_ACTION_REPEAT} cstrl_action;
 
-typedef CSTRL_PACKED_ENUM
-{
-    CSTRL_MOUSE_NORMAL,
-    CSTRL_MOUSE_DISABLED
-} cstrl_mouse_mode;
+typedef CSTRL_PACKED_ENUM{CSTRL_MOUSE_NORMAL, CSTRL_MOUSE_DISABLED} cstrl_mouse_mode;
 
 #endif // CSTRL_TYPES_H

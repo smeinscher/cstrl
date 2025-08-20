@@ -15,12 +15,15 @@
 #include <windowsx.h>
 #include <winuser.h>
 
+#define WINDOW_STYLE_WINDOWED WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME
+#define WINDOW_STYLE_FULLSCREEN WS_OVERLAPPED | WS_POPUP | WS_MAXIMIZE
+
 static double g_clock_frequency;
 static LARGE_INTEGER g_start_time;
 
 static bool g_should_exit = false;
 
-short g_win32_key_to_cstrl_key[512];
+static short g_win32_key_to_cstrl_key[512];
 
 void win32_key_to_cstrl_key_init()
 {
@@ -73,6 +76,31 @@ void win32_key_to_cstrl_key_init()
     g_win32_key_to_cstrl_key[0x58] = CSTRL_KEY_X;
     g_win32_key_to_cstrl_key[0x59] = CSTRL_KEY_Y;
     g_win32_key_to_cstrl_key[0x5A] = CSTRL_KEY_Z;
+
+    g_win32_key_to_cstrl_key[0x70] = CSTRL_KEY_F1;
+    g_win32_key_to_cstrl_key[0x71] = CSTRL_KEY_F2;
+    g_win32_key_to_cstrl_key[0x72] = CSTRL_KEY_F3;
+    g_win32_key_to_cstrl_key[0x73] = CSTRL_KEY_F4;
+    g_win32_key_to_cstrl_key[0x74] = CSTRL_KEY_F5;
+    g_win32_key_to_cstrl_key[0x75] = CSTRL_KEY_F6;
+    g_win32_key_to_cstrl_key[0x76] = CSTRL_KEY_F7;
+    g_win32_key_to_cstrl_key[0x77] = CSTRL_KEY_F8;
+    g_win32_key_to_cstrl_key[0x78] = CSTRL_KEY_F9;
+    g_win32_key_to_cstrl_key[0x79] = CSTRL_KEY_F10;
+    g_win32_key_to_cstrl_key[0x7A] = CSTRL_KEY_F11;
+    g_win32_key_to_cstrl_key[0x7B] = CSTRL_KEY_F12;
+    g_win32_key_to_cstrl_key[0x7C] = CSTRL_KEY_F13;
+    g_win32_key_to_cstrl_key[0x7D] = CSTRL_KEY_F14;
+    g_win32_key_to_cstrl_key[0x7E] = CSTRL_KEY_F15;
+    g_win32_key_to_cstrl_key[0x7F] = CSTRL_KEY_F16;
+    g_win32_key_to_cstrl_key[0x80] = CSTRL_KEY_F17;
+    g_win32_key_to_cstrl_key[0x81] = CSTRL_KEY_F18;
+    g_win32_key_to_cstrl_key[0x82] = CSTRL_KEY_F19;
+    g_win32_key_to_cstrl_key[0x83] = CSTRL_KEY_F20;
+    g_win32_key_to_cstrl_key[0x84] = CSTRL_KEY_F21;
+    g_win32_key_to_cstrl_key[0x85] = CSTRL_KEY_F22;
+    g_win32_key_to_cstrl_key[0x86] = CSTRL_KEY_F23;
+    g_win32_key_to_cstrl_key[0x87] = CSTRL_KEY_F24;
 }
 
 LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -305,12 +333,12 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
     unsigned int window_ex_style;
     if (fullscreen)
     {
-        window_style = WS_POPUP | WS_MAXIMIZE;
+        window_style = WINDOW_STYLE_FULLSCREEN;
         window_ex_style = 0;
     }
     else
     {
-        window_style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION /*| WS_MAXIMIZEBOX*/ | WS_MINIMIZEBOX | WS_THICKFRAME;
+        window_style = WINDOW_STYLE_WINDOWED;
         window_ex_style = WS_EX_APPWINDOW;
     }
 
@@ -325,8 +353,7 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
     {
         window_x = 0;
         window_y = 0;
-        window_width = width;
-        window_height = height;
+        cstrl_platform_get_screen_resolution(&window_width, &window_height);
     }
     else
     {
@@ -369,16 +396,30 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
 
     state->state_common.input.mouse_mode = CSTRL_MOUSE_NORMAL;
 
-    // TODO: get screen dimensions
-    SetCursorPos(width / 2, height / 2);
+    int screen_width, screen_height;
+    cstrl_platform_get_screen_resolution(&screen_width, &screen_height);
+    SetCursorPos(screen_width / 2, screen_height / 2);
 
-    state->state_common.input.last_mouse_x = width / 2;
-    state->state_common.input.last_mouse_y = height / 2;
+    state->state_common.input.last_mouse_x = screen_width / 2;
+    state->state_common.input.last_mouse_y = screen_height / 2;
 
     state->state_common.input.cursor_shown = true;
 
     state->state_common.window_width = window_width;
     state->state_common.window_height = window_height;
+    state->state_common.window_x = window_x;
+    state->state_common.window_y = window_y;
+
+    state->state_common.initial_window_width = window_width;
+    state->state_common.initial_window_height = window_height;
+    state->state_common.initial_window_x = window_x;
+    state->state_common.initial_window_y = window_y;
+
+    state->state_common.viewport_width = width;
+    state->state_common.viewport_height = height;
+
+    state->state_common.initial_viewport_width = width;
+    state->state_common.initial_viewport_height = height;
 
     ShowWindow(state->hwnd, SW_SHOW);
 
@@ -439,6 +480,48 @@ CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height)
 {
     *width = GetSystemMetrics(SM_CXSCREEN);
     *height = GetSystemMetrics(SM_CYSCREEN);
+}
+
+CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_state, bool fullscreen)
+{
+    internal_state *state = platform_state->internal_state;
+    if (fullscreen)
+    {
+        SetWindowLongPtr(state->hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
+        int width, height;
+        cstrl_platform_get_screen_resolution(&width, &height);
+        SetWindowLongPtr(state->hwnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN);
+        SetWindowPos(state->hwnd, HWND_TOP, 0, 0, width, height, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        state->state_common.window_width = width;
+        state->state_common.window_height = height;
+        state->state_common.window_x = 0;
+        state->state_common.window_y = 0;
+        state->state_common.viewport_width = width;
+        state->state_common.viewport_height = height;
+        DEVMODE settings;
+        EnumDisplaySettings(NULL, 0, &settings);
+        settings.dmPelsWidth = width;
+        settings.dmPelsHeight = height;
+        settings.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT;
+        ChangeDisplaySettings(&settings, CDS_FULLSCREEN);
+        ShowWindow(state->hwnd, SW_MAXIMIZE);
+    }
+    else
+    {
+        SetWindowLongPtr(state->hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW);
+        SetWindowLongPtr(state->hwnd, GWL_STYLE, WINDOW_STYLE_WINDOWED);
+        SetWindowPos(state->hwnd, HWND_TOP, state->state_common.initial_window_x, state->state_common.initial_window_y,
+                     state->state_common.initial_window_width, state->state_common.initial_window_height,
+                     /*SWP_NOMOVE | SWP_NOSIZE | */ SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        state->state_common.window_width = state->state_common.initial_window_width;
+        state->state_common.window_height = state->state_common.initial_window_height;
+        state->state_common.window_x = state->state_common.initial_window_x;
+        state->state_common.window_y = state->state_common.initial_window_y;
+        state->state_common.viewport_width = state->state_common.initial_viewport_width;
+        state->state_common.viewport_height = state->state_common.initial_viewport_height;
+        ChangeDisplaySettings(NULL, CDS_RESET);
+        ShowWindow(state->hwnd, SW_RESTORE);
+    }
 }
 
 #endif

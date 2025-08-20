@@ -32,11 +32,21 @@ typedef struct input_state
 // Platform-agnostic struct, common for all platforms
 typedef struct internal_state_common
 {
-    int window_width;
-    int window_height;
     user_callbacks callbacks;
     input_state input;
     void *user_data;
+    int window_width;
+    int window_height;
+    int window_x;
+    int window_y;
+    int initial_window_width;
+    int initial_window_height;
+    int initial_window_x;
+    int initial_window_y;
+    int viewport_width;
+    int viewport_height;
+    int initial_viewport_width;
+    int initial_viewport_height;
 } internal_state_common;
 
 #if defined(CSTRL_PLATFORM_WINDOWS)
@@ -45,9 +55,9 @@ typedef struct internal_state_common
 
 typedef struct internal_state
 {
+    internal_state_common state_common;
     HINSTANCE h_instance;
     HWND hwnd;
-    internal_state_common state_common;
 } internal_state;
 
 #endif
@@ -82,8 +92,8 @@ typedef struct internal_state
 
 #if defined(CSTRL_PLATFORM_EM_WEB)
 
-#include <GLES2/gl2.h>
 #include <EGL/egl.h>
+#include <GLES2/gl2.h>
 
 typedef struct internal_state
 {

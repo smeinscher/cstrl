@@ -78,7 +78,7 @@ CSTRL_API bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
     wglMakeCurrent(dc, rc);
 
     gladLoadGL();
-    glViewport(0, 0, state->state_common.window_width, state->state_common.window_height);
+    glViewport(0, 0, state->state_common.viewport_width, state->state_common.viewport_height);
 
     wglSwapIntervalEXT_type *wglSwapIntervalEXT = (wglSwapIntervalEXT_type *)wglGetProcAddress("wglSwapIntervalEXT");
     wglSwapIntervalEXT(1);
