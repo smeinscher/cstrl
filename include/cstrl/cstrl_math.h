@@ -210,6 +210,11 @@ CSTRL_INLINE float cstrl_scalar_interpolation(float a, float b, float t)
     return a + (b - a) * t;
 }
 
+CSTRL_INLINE float cstrl_scalar_inverse_interpolation(float a, float b, float t)
+{
+    return (t - a) / (b - a);
+}
+
 CSTRL_INLINE float cstrl_scalar_clamp(float s, float min, float max)
 {
     const float t = s < min ? min : s;
