@@ -16,7 +16,7 @@
 
 ## About The Project
 
-This is a simple game library made for educational purposes. The goal is to create my own games with this.
+cstrl is a game library written in C, with a focus on simplicity. After discovering my tendency to have to rewrite a bunch of code when starting new projects, I decided I should have a central library for supporting things such as rendering, user input, user interfaces, math functions, and interacting with the operating system.
 
 Motivation:
 * I enjoy programming, not so much learning the UI or functionality of a traditional game engine.
@@ -58,9 +58,16 @@ a stackoverflow post describing the issue with MSVC. If you want to use Visual S
    ```sh
     git clone https://github.com/smeinscher/STRL.git
     ```
-2. This step assumes you're using bash. You can build the project with the provided script:
+2. You can build the project with the provided script:
+
+Linux:
    ```sh
    ./cmake_build.sh
+   ```
+
+Windows:
+   ```powershell
+   .\cmake_build.bat
    ```
    Running without arguments defaults to Debug OPENGL.
    Possible arguments are:
@@ -72,7 +79,12 @@ a stackoverflow post describing the issue with MSVC. If you want to use Visual S
    Note that Vulkan is not supported yet so things will break if you build with that option.
    <br />
    You can build and run the tests with the script provided:
+
+Linux:
    ```sh
    ./run_tests.sh
    ```
+
+Windows (coming soon...)
+
    Instructions for alternative building methods will come soon.
