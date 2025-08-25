@@ -3,10 +3,10 @@
 <br />
 <div align="center">
 
-<h3 align="center">cstrl</h3>
+<h1 align="center">cstrl</h1>
 
   <p align="center">
-    A simple game framework.
+    A simple game library.
     <br />
     <br />
     <a href="https://github.com/smeinscher/cstrl">View Demo (coming soon...)</a>
@@ -16,7 +16,7 @@
 
 ## About The Project
 
-This is a simple game framework made for educational purposes. The goal is to create my own games with this.
+This is a simple game library made for educational purposes. The goal is to create my own games with this.
 
 Motivation:
 * I enjoy programming, not so much learning the UI or functionality of a traditional game engine.
@@ -27,7 +27,7 @@ Motivation:
 
 Graphics APIs:
 * [OpenGL](https://www.opengl.org/)
-* [Vulkan (still learning this)](https://www.vulkan.org/)
+* [Vulkan (coming soon...)](https://www.vulkan.org/)
 
 Libraries:
 * [glad](https://github.com/Dav1dde/glad)
