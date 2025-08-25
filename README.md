@@ -56,19 +56,18 @@ a stackoverflow post describing the issue with MSVC. If you want to use Visual S
 
 1. Clone the repo
    ```sh
-    git clone https://github.com/smeinscher/STRL.git
+    git clone https://github.com/smeinscher/cstrl.git
     ```
 2. You can build the project with the provided script:
 
-Linux:
-   ```sh
-   ./cmake_build.sh
-   ```
-
-Windows:
-   ```powershell
-   .\cmake_build.bat
-   ```
+    Linux:
+     ```sh
+     ./cmake_build.sh
+     ```
+    Windows:
+     ```powershell
+     .\cmake_build.bat
+     ```
    Running without arguments defaults to Debug OPENGL.
    Possible arguments are:
    <br />
@@ -80,11 +79,36 @@ Windows:
    <br />
    You can build and run the tests with the script provided:
 
-Linux:
-   ```sh
-   ./run_tests.sh
-   ```
+  Linux:
+  ```sh
+  ./run_tests.sh
+  ```
 
-Windows (coming soon...)
+  Windows (coming soon...)
 
-   Instructions for alternative building methods will come soon.
+  Instructions for alternative building methods will come soon.
+
+## 🤝 Contributing
+
+### Clone the repo
+
+```bash
+git clone https://github.com/smeinscher/cstrl@latest
+cd cstrl
+```
+
+### Build the project
+
+```sh
+./cmake_build.sh
+```
+
+### Run the tests
+
+```sh
+./run_tests.sh
+```
+
+### Submit a pull request
+
+If you'd like to contribute, please fork the repository and open a pull request to the `master` branch.
