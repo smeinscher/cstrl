@@ -6,8 +6,8 @@
 #define CSTRL_UI_H
 
 #include "cstrl/cstrl_defines.h"
-#include "cstrl_platform.h"
 #include "cstrl/cstrl_util.h"
+#include "cstrl_platform.h"
 
 #define GEN_ID(group) (((group) * 10000) + (__LINE__))
 
@@ -22,26 +22,12 @@ typedef struct cstrl_ui_color
     float r, g, b, a;
 } cstrl_ui_color;
 
-typedef CSTRL_PACKED_ENUM
-{
-    CSTRL_HORIZONTAL,
-    CSTRL_VERTICAL
-} cstrl_ui_layout_direction;
+typedef CSTRL_PACKED_ENUM{CSTRL_HORIZONTAL, CSTRL_VERTICAL} cstrl_ui_layout_direction;
 
-typedef CSTRL_PACKED_ENUM
-{
-    CSTRL_UI_ALIGN_LEFT,
-    CSTRL_UI_ALIGN_CENTER,
-    CSTRL_UI_ALIGN_RIGHT
-} cstrl_ui_alignment;
+typedef CSTRL_PACKED_ENUM{CSTRL_UI_ALIGN_LEFT, CSTRL_UI_ALIGN_CENTER, CSTRL_UI_ALIGN_RIGHT} cstrl_ui_alignment;
 
-typedef CSTRL_PACKED_ENUM
-{
-    CSTRL_UI_SIZING_FIT,
-    CSTRL_UI_SIZING_GROW,
-    CSTRL_UI_SIZING_PERCENT,
-    CSTRL_UI_SIZING_FIXED
-} cstrl_ui_sizing;
+typedef CSTRL_PACKED_ENUM{CSTRL_UI_SIZING_FIT, CSTRL_UI_SIZING_GROW, CSTRL_UI_SIZING_PERCENT,
+                          CSTRL_UI_SIZING_FIXED} cstrl_ui_sizing;
 
 typedef struct cstrl_ui_padding
 {
@@ -110,29 +96,32 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context);
 
 CSTRL_API void cstrl_ui_shutdown(cstrl_ui_context *context);
 
-CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int object_width, int object_height);
+CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int object_width,
+                                   int object_height);
 
 CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, int text_length, float scale);
 
 CSTRL_API float cstrl_ui_text_height(cstrl_ui_context *context, const char *text, int text_length, float scale);
 
-CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
-                              int h, int id, bool is_static, bool can_minimize, int order_priority, cstrl_ui_layout *layout);
+CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
+                                        int w, int h, int id, bool is_static, bool can_minimize, int order_priority,
+                                        cstrl_ui_layout *layout);
 
 CSTRL_API void cstrl_ui_container_end(cstrl_ui_context *context);
 
-CSTRL_API bool cstrl_ui_subcontainer_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h, int id, cstrl_ui_layout *layout);
+CSTRL_API bool cstrl_ui_subcontainer_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
+                                           int w, int h, int id, cstrl_ui_layout *layout);
 
 CSTRL_API void cstrl_ui_subcontainer_end(cstrl_ui_context *context);
 
-CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w, int h,
-                     int id, cstrl_ui_layout *layout);
+CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int title_length, int x, int y, int w,
+                               int h, int id, cstrl_ui_layout *layout);
 
 CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int title_length, int x, int y, int w, int h,
-                   int id, cstrl_ui_alignment alignment, cstrl_ui_layout *layout);
+                             int id, cstrl_ui_alignment alignment, cstrl_ui_layout *layout);
 
-CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x, int y,
-                         int w, int h, int id, char *buffer, size_t buffer_size);
+CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeholder, int placeholder_length, int x,
+                                   int y, int w, int h, int id, char *buffer, size_t buffer_size);
 
 CSTRL_API bool cstrl_ui_mouse_locked(cstrl_ui_context *context);
 
