@@ -80,6 +80,31 @@ void x11_key_to_cstrl_key_init(internal_state *state)
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_X)] = CSTRL_KEY_X;
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_Y)] = CSTRL_KEY_Y;
     x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_Z)] = CSTRL_KEY_Z;
+
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F1)] = CSTRL_KEY_F1;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F2)] = CSTRL_KEY_F2;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F3)] = CSTRL_KEY_F3;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F4)] = CSTRL_KEY_F4;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F5)] = CSTRL_KEY_F5;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F6)] = CSTRL_KEY_F6;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F7)] = CSTRL_KEY_F7;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F8)] = CSTRL_KEY_F8;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F9)] = CSTRL_KEY_F9;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F10)] = CSTRL_KEY_F10;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F11)] = CSTRL_KEY_F11;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F12)] = CSTRL_KEY_F12;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F13)] = CSTRL_KEY_F13;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F14)] = CSTRL_KEY_F14;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F15)] = CSTRL_KEY_F15;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F16)] = CSTRL_KEY_F16;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F17)] = CSTRL_KEY_F17;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F18)] = CSTRL_KEY_F18;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F19)] = CSTRL_KEY_F19;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F20)] = CSTRL_KEY_F20;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F21)] = CSTRL_KEY_F21;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F22)] = CSTRL_KEY_F22;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F23)] = CSTRL_KEY_F23;
+    x11_key_to_cstrl_key[XKeysymToKeycode(state->display, XK_F24)] = CSTRL_KEY_F24;
 }
 
 bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y, int width,
@@ -150,6 +175,23 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     {
         wm_fullscreen = XInternAtom(state->display, "_NET_WM_STATE_FULLSCREEN", False);
     }
+
+    state->state_common.window_width = width;
+    state->state_common.window_height = height;
+    state->state_common.window_x = x;
+    state->state_common.window_y = y;
+
+    state->state_common.initial_window_width = width;
+    state->state_common.initial_window_height = height;
+    state->state_common.initial_window_x = x;
+    state->state_common.initial_window_y = y;
+
+    state->state_common.viewport_width = width;
+    state->state_common.viewport_height = height;
+
+    state->state_common.initial_viewport_width = width;
+    state->state_common.initial_viewport_height = height;
+
     return true;
 }
 
@@ -320,6 +362,44 @@ void cstrl_platform_set_show_cursor(cstrl_platform_state *platform_state, bool s
 
     show_cursor ? XFixesShowCursor(state->display, state->main_window)
                 : XFixesHideCursor(state->display, state->main_window);
+}
+
+CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height)
+{
+    Display *display;
+    display = XOpenDisplay(NULL);
+    Screen *screen;
+    screen = XScreenOfDisplay(display, 0);
+    *width = screen->width;
+    *height = screen->height;
+}
+
+CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_state, bool fullscreen)
+{
+    internal_state *state = platform_state->internal_state;
+    if (fullscreen)
+    {
+        Screen *screen = DefaultScreenOfDisplay(state->display);
+        XMoveResizeWindow(state->display, state->main_window, 0, 0, screen->width, screen->height);
+        state->state_common.window_width = screen->width;
+        state->state_common.window_height = screen->height;
+        state->state_common.window_x = 0;
+        state->state_common.window_y = 0;
+        state->state_common.viewport_width = screen->width;
+        state->state_common.viewport_height = screen->height;
+    }
+    else
+    {
+        state->state_common.window_width = state->state_common.initial_window_width;
+        state->state_common.window_height = state->state_common.initial_window_height;
+        state->state_common.window_x = state->state_common.initial_window_x;
+        state->state_common.window_y = state->state_common.initial_window_y;
+        state->state_common.viewport_width = state->state_common.initial_viewport_width;
+        state->state_common.viewport_height = state->state_common.initial_viewport_height;
+        XMoveResizeWindow(state->display, state->main_window, state->state_common.window_x,
+                          state->state_common.window_y, state->state_common.window_width,
+                          state->state_common.window_height);
+    }
 }
 
 #endif

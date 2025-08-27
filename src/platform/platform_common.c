@@ -2,9 +2,9 @@
 // Created by 12105 on 11/27/2024.
 //
 
-#include "cstrl/cstrl_platform.h"
 #include "log.c/log.h"
 #include "platform_internal.h"
+#include <cstrl/cstrl_platform.h>
 #include <stdlib.h>
 
 CSTRL_API void cstrl_platform_get_window_size(cstrl_platform_state *platform_state, int *width, int *height)
