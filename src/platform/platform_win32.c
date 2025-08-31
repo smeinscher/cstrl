@@ -23,6 +23,9 @@ static LARGE_INTEGER g_start_time;
 
 static bool g_should_exit = false;
 
+// TODO: move this somewhere else
+static bool g_fullscreen;
+
 static short g_win32_key_to_cstrl_key[512];
 
 void win32_key_to_cstrl_key_init()
@@ -248,10 +251,40 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         }
         internal_state *internal_state = state->internal_state;
 
-        if (internal_state->state_common.window_width != width || internal_state->state_common.window_height != height)
+        unsigned int window_style;
+        unsigned int window_ex_style;
+        if (g_fullscreen)
         {
-            internal_state->state_common.window_width = width;
-            internal_state->state_common.window_height = height;
+            window_style = WINDOW_STYLE_FULLSCREEN;
+            window_ex_style = 0;
+        }
+        else
+        {
+            window_style = WINDOW_STYLE_WINDOWED;
+            window_ex_style = WS_EX_APPWINDOW;
+        }
+
+        RECT border_rect = {0};
+        AdjustWindowRectEx(&border_rect, window_style, 0, window_ex_style);
+
+        int window_width;
+        int window_height;
+        if (g_fullscreen)
+        {
+            cstrl_platform_get_screen_resolution(&window_width, &window_height);
+        }
+        else
+        {
+            window_width = width + border_rect.right - border_rect.left;
+            window_height = height + border_rect.bottom - border_rect.top;
+        }
+        if (internal_state->state_common.window_width != window_width ||
+            internal_state->state_common.window_height != window_height)
+        {
+            internal_state->state_common.window_width = window_width;
+            internal_state->state_common.window_height = window_height;
+            internal_state->state_common.viewport_width = width;
+            internal_state->state_common.viewport_height = height;
 
             if (internal_state->state_common.callbacks.framebuffer_size != NULL)
             {
@@ -328,6 +361,8 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
         MessageBoxA(0, "Window registration failed", "Error", MB_ICONEXCLAMATION | MB_OK);
         return false;
     }
+
+    g_fullscreen = fullscreen;
 
     unsigned int window_style;
     unsigned int window_ex_style;
@@ -484,6 +519,7 @@ CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height)
 
 CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_state, bool fullscreen)
 {
+    g_fullscreen = fullscreen;
     internal_state *state = platform_state->internal_state;
     if (fullscreen)
     {
@@ -522,6 +558,8 @@ CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_stat
         ChangeDisplaySettings(NULL, CDS_RESET);
         ShowWindow(state->hwnd, SW_RESTORE);
     }
+    state->state_common.callbacks.framebuffer_size(platform_state, state->state_common.viewport_width,
+                                                   state->state_common.viewport_height);
 }
 
 #endif
