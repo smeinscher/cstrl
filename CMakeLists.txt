@@ -129,12 +129,6 @@ add_executable(cstrl-test
         test/unit_tests/cstrl_renderer/test_camera.h
         test/unit_tests/unit_tests.c
         test/unit_tests/unit_tests.h
-        test/manual_tests/basic/test_4_cubes_scene.c
-        test/manual_tests/basic/test_4_cubes_scene.h
-        test/integration_tests/integration_tests.c
-        test/integration_tests/integration_tests.h
-        test/manual_tests/manual_tests.c
-        test/manual_tests/manual_tests.h
         test/unit_tests/cstrl_math/test_mat4.c
         test/unit_tests/cstrl_math/test_mat4.h
         test/unit_tests/cstrl_math/test_mat3.c
@@ -143,10 +137,16 @@ add_executable(cstrl-test
         test/unit_tests/cstrl_physics/test_collision.h
         test/unit_tests/cstrl_util/test_random.c
         test/unit_tests/cstrl_util/test_random.h
+        test/integration_tests/integration_tests.c
+        test/integration_tests/integration_tests.h
+        test/manual_tests/basic/test_4_cubes_scene.c
+        test/manual_tests/basic/test_4_cubes_scene.h
+        test/manual_tests/manual_tests.c
+        test/manual_tests/manual_tests.h
 )
 
-target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
-
+# target_compile_options(cstrl PRIVATE -Wall -Werror -Wno-missing-braces -DCSTRL_EXPORT)
+# target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
 
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES} ${OPENAL_LIBRARY})

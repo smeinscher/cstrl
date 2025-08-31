@@ -2,6 +2,8 @@
 // Created by sterling on 11/23/24.
 //
 
+#include <X11/X.h>
+#include <X11/Xlib.h>
 #include <cstrl/cstrl_platform.h>
 
 #if defined(CSTRL_PLATFORM_LINUX)
@@ -125,8 +127,9 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     int attribute_value_mask = CWBackPixel | CWEventMask;
     XSetWindowAttributes attributes = {};
     attributes.background_pixel = 0xff000000;
+    // TODO: enable ResizeRedirectMask on different WM
     attributes.event_mask = StructureNotifyMask | ExposureMask | ExposureMask | KeyPressMask | KeyReleaseMask |
-                            ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
+                            ButtonPressMask | ButtonReleaseMask | PointerMotionMask /*| ResizeRedirectMask*/;
 
     state->main_window = XCreateWindow(state->display, state->root_window, x, y, width, height, 0, 0, CopyFromParent,
                                        CopyFromParent, attribute_value_mask, &attributes);
@@ -136,6 +139,7 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     XSetWMProtocols(state->display, state->main_window, &wm_delete_message, 1);
 
     XSizeHints *size_hints = XAllocSizeHints();
+    // TODO: currently required for qtile, make this configurable
     size_hints->flags = PMinSize | PMaxSize;
     size_hints->min_width = width;
     size_hints->min_height = height;
@@ -149,9 +153,6 @@ bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *appli
     x11_key_to_cstrl_key_init(state);
 
     XWarpPointer(state->display, state->main_window, state->main_window, 0, 0, width, height, width / 2, height / 2);
-
-    state->state_common.window_width = width;
-    state->state_common.window_height = height;
 
     state->state_common.callbacks = (user_callbacks){0};
 
@@ -317,6 +318,21 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
             {
                 g_should_exit = true;
             }
+            break;
+        }
+        // TODO: Test on different WM
+        case ResizeRequest: {
+            XResizeRequestEvent *event = (XResizeRequestEvent *)&general_event;
+            state->state_common.window_width = event->width;
+            state->state_common.window_height = event->height;
+            state->state_common.viewport_width = event->width;
+            state->state_common.viewport_height = event->height;
+            if (state->state_common.callbacks.framebuffer_size != NULL)
+            {
+                state->state_common.callbacks.framebuffer_size(platform_state, state->state_common.viewport_width,
+                                                               state->state_common.viewport_height);
+            }
+            break;
         }
         default:
             break;
@@ -399,6 +415,11 @@ CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_stat
         XMoveResizeWindow(state->display, state->main_window, state->state_common.window_x,
                           state->state_common.window_y, state->state_common.window_width,
                           state->state_common.window_height);
+    }
+    if (state->state_common.callbacks.framebuffer_size != NULL)
+    {
+        state->state_common.callbacks.framebuffer_size(platform_state, state->state_common.viewport_width,
+                                                       state->state_common.viewport_height);
     }
 }
 
