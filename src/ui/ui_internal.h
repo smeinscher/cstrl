@@ -19,13 +19,16 @@ void cstrl_ui_renderer_add_rect_color(void *internal_render_state, float r, floa
 
 void cstrl_ui_renderer_draw_rects(void *internal_render_state);
 
-void cstrl_ui_renderer_add_font(void *internal_render_state, char *text, unsigned int start, unsigned int end, int start_x, int start_y, float r, float g, float b, float a);
+void cstrl_ui_renderer_add_font(void *internal_render_state, char *text, unsigned int start, unsigned int end,
+                                int start_x, int start_y, float r, float g, float b, float a);
 
 void cstrl_ui_renderer_add_font_uv(void *internal_render_state, float u0, float v0, float u1, float v1);
 
 void cstrl_ui_renderer_add_font_color(void *internal_render_state, float r, float g, float b, float a);
 
 void cstrl_ui_renderer_draw_font(void *internal_render_state);
+
+void cstrl_ui_renderer_set_viewport(void *internal_render_state, int width, int height);
 
 void cstrl_ui_renderer_shutdown(void *internal_render_state);
 

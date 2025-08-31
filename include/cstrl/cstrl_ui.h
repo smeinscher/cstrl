@@ -73,6 +73,8 @@ typedef struct cstrl_ui_layout
     unsigned short child_gap;
     cstrl_ui_alignment child_alignment;
     cstrl_ui_layout_direction layout_direction;
+    struct cstrl_ui_layout *layout_hot;
+    struct cstrl_ui_layout *layout_active;
 } cstrl_ui_layout;
 
 typedef struct cstrl_ui_element
@@ -124,5 +126,9 @@ CSTRL_API bool cstrl_ui_text_field(cstrl_ui_context *context, const char *placeh
                                    int y, int w, int h, int id, char *buffer, size_t buffer_size);
 
 CSTRL_API bool cstrl_ui_mouse_locked(cstrl_ui_context *context);
+
+CSTRL_API bool cstrl_ui_mouse_over_ui_element(cstrl_ui_context *context);
+
+CSTRL_API void cstrl_ui_set_viewport(cstrl_ui_context *context, int width, int height);
 
 #endif // CSTRL_UI_H

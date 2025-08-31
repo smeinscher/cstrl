@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FONT_SIZE 36
+#define FONT_SIZE 24
 
 typedef struct cstrl_ui_internal_render_state
 {
@@ -128,7 +128,7 @@ void *cstrl_ui_renderer_init(cstrl_platform_state *platform_state)
 
     // The real mvp https://sinf.org/opengl-text-using-stb_truetype/
     // FILE *font_file = fopen("resources/fonts/SUSE/static/SUSE-Regular.ttf", "rb");
-    FILE *font_file = fopen("resources/fonts/Jersey_20/Jersey20-Regular.ttf", "rb");
+    FILE *font_file = fopen("resources/fonts/Quantico/Quantico-Regular.ttf", "rb");
     fseek(font_file, 0, SEEK_END);
     long size = ftell(font_file);
     fseek(font_file, 0, SEEK_SET);
@@ -320,6 +320,14 @@ void cstrl_ui_renderer_draw_font(void *internal_render_state)
                                             render_state->font_uvs.array, render_state->font_colors.array,
                                             render_state->font_positions.size / 2);
     cstrl_renderer_draw(render_state->font_render_data);
+}
+
+void cstrl_ui_renderer_set_viewport(void *internal_render_state, int width, int height)
+{
+    cstrl_ui_internal_render_state *render_state = (cstrl_ui_internal_render_state *)internal_render_state;
+    render_state->projection = cstrl_mat4_ortho(0.0f, (float)width, (float)height, 0.0f, 0.1f, 100.0f);
+    cstrl_set_uniform_mat4(render_state->shader.program, "projection", render_state->projection);
+    cstrl_set_uniform_mat4(render_state->font_shader.program, "projection", render_state->projection);
 }
 
 void cstrl_ui_renderer_shutdown(void *internal_render_state)
