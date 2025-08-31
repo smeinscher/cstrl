@@ -2,8 +2,6 @@
 // Created by sterling on 11/23/24.
 //
 
-#include <X11/X.h>
-#include <X11/Xlib.h>
 #include <cstrl/cstrl_platform.h>
 
 #if defined(CSTRL_PLATFORM_LINUX)
@@ -11,8 +9,10 @@
 #include "cstrl/cstrl_types.h"
 #include "log.c/log.h"
 
+#include <X11/X.h>
 #include <X11/XKBlib.h>
 #include <X11/Xatom.h>
+#include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/keysym.h>
