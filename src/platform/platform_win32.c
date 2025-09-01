@@ -326,6 +326,13 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         }
         return 0;
     }
+    case WM_GETMINMAXINFO: {
+        MINMAXINFO *mmi = (MINMAXINFO *)lparam;
+        // TODO: make this configurable
+        mmi->ptMinTrackSize.x = 800;
+        mmi->ptMinTrackSize.y = 600;
+        return 0;
+    }
     case WM_CLOSE:
     case WM_DESTROY:
         g_should_exit = true;

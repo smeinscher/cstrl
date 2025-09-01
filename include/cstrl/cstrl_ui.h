@@ -29,6 +29,9 @@ typedef CSTRL_PACKED_ENUM{CSTRL_UI_ALIGN_LEFT, CSTRL_UI_ALIGN_CENTER, CSTRL_UI_A
 typedef CSTRL_PACKED_ENUM{CSTRL_UI_SIZING_FIT, CSTRL_UI_SIZING_GROW, CSTRL_UI_SIZING_PERCENT,
                           CSTRL_UI_SIZING_FIXED} cstrl_ui_sizing;
 
+typedef CSTRL_PACKED_ENUM{FONT_SIZE_DEFAULT, FONT_SIZE_XSMALL, FONT_SIZE_SMALL,
+                          FONT_SIZE_MEDIUM,  FONT_SIZE_LARGE,  FONT_SIZE_XLARGE} cstrl_ui_font_size;
+
 typedef struct cstrl_ui_padding
 {
     unsigned short left;
@@ -73,6 +76,7 @@ typedef struct cstrl_ui_layout
     unsigned short child_gap;
     cstrl_ui_alignment child_alignment;
     cstrl_ui_layout_direction layout_direction;
+    cstrl_ui_font_size font_size;
     struct cstrl_ui_layout *layout_hot;
     struct cstrl_ui_layout *layout_active;
 } cstrl_ui_layout;
@@ -101,9 +105,11 @@ CSTRL_API void cstrl_ui_shutdown(cstrl_ui_context *context);
 CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int object_y, int object_width,
                                    int object_height);
 
-CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, int text_length, float scale);
+CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, int text_length, float scale,
+                                    cstrl_ui_font_size font_size);
 
-CSTRL_API float cstrl_ui_text_height(cstrl_ui_context *context, const char *text, int text_length, float scale);
+CSTRL_API float cstrl_ui_text_height(cstrl_ui_context *context, const char *text, int text_length, float scale,
+                                     cstrl_ui_font_size font_size);
 
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
                                         int w, int h, int id, bool is_static, bool can_minimize, int order_priority,

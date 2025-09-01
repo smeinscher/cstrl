@@ -265,9 +265,10 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
         if (ui_state->elements.elements[index].layout->child_alignment == CSTRL_UI_ALIGN_CENTER)
         {
             int text_width = cstrl_ui_text_width(context, ui_state->elements.elements[index].text.array,
-                                                 ui_state->elements.elements[index].text.size, 1.0f);
-            int text_height = cstrl_ui_text_height(context, ui_state->elements.elements[index].text.array,
-                                                   ui_state->elements.elements[index].text.size, 1.0f);
+                                                 ui_state->elements.elements[index].text.size, 1.0f, layout->font_size);
+            int text_height =
+                cstrl_ui_text_height(context, ui_state->elements.elements[index].text.array,
+                                     ui_state->elements.elements[index].text.size, 1.0f, layout->font_size);
             margin_x = ((x1 - x0) - text_width) / 2;
             margin_y = ((y1 - y0) - text_height) / 2;
         }
@@ -275,10 +276,10 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
         cstrl_ui_renderer_add_font(context->internal_render_state, ui_state->elements.elements[index].text.array, 0,
                                    ui_state->elements.elements[index].text.size, x0 + margin_x, y0 + margin_y,
                                    layout->font_color.r, layout->font_color.g, layout->font_color.b,
-                                   layout->font_color.a);
+                                   layout->font_color.a, layout->font_size);
         cstrl_string_free(&ui_state->elements.elements[index].text);
         cstrl_ui_renderer_draw_rects(context->internal_render_state);
-        cstrl_ui_renderer_draw_font(context->internal_render_state);
+        cstrl_ui_renderer_draw_font(context->internal_render_state, layout->font_size);
         cstrl_ui_renderer_clear_data(context->internal_render_state);
     }
     if (ui_state->mouse_state.left_mouse_button_down)
@@ -318,24 +319,26 @@ CSTRL_API bool cstrl_ui_region_hit(int test_x, int test_y, int object_x, int obj
     return true;
 }
 
-CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, int text_length, float scale)
+CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text, int text_length, float scale,
+                                    cstrl_ui_font_size font_size)
 {
     int width = 0;
 
     for (int i = 0; i < text_length; i++)
     {
-        stbtt_packedchar c = cstrl_ui_renderer_get_char_data(context->internal_render_state)[(int)text[i]];
+        stbtt_packedchar c = cstrl_ui_renderer_get_char_data(context->internal_render_state, font_size)[(int)text[i]];
         width += c.xadvance;
     }
     return (float)width * scale;
 }
 
-CSTRL_API float cstrl_ui_text_height(cstrl_ui_context *context, const char *text, int text_length, float scale)
+CSTRL_API float cstrl_ui_text_height(cstrl_ui_context *context, const char *text, int text_length, float scale,
+                                     cstrl_ui_font_size font_size)
 {
     int height = 0;
     for (int i = 0; i < text_length; i++)
     {
-        stbtt_packedchar c = cstrl_ui_renderer_get_char_data(context->internal_render_state)[(int)text[i]];
+        stbtt_packedchar c = cstrl_ui_renderer_get_char_data(context->internal_render_state, font_size)[(int)text[i]];
         int tmp_height = c.y1 - c.y0;
         if (tmp_height > height)
         {
@@ -391,8 +394,8 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
         {
             x = ui_state->elements_cache.elements[cached_index].x_start;
             y = ui_state->elements_cache.elements[cached_index].y_start;
-            w = ui_state->elements_cache.elements[cached_index].x_end - x;
-            h = ui_state->elements_cache.elements[cached_index].y_end - y;
+            // w = ui_state->elements_cache.elements[cached_index].x_end - x;
+            // h = ui_state->elements_cache.elements[cached_index].y_end - y;
             order_priority = ui_state->elements_cache.elements[cached_index].order_priority;
         }
 

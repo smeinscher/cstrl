@@ -7,7 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FONT_SIZE 24
+#define XSMALL_FONT_SIZE 16
+#define SMALL_FONT_SIZE 20
+#define MEDIUM_FONT_SIZE 24
+#define LARGE_FONT_SIZE 28
+#define XLARGE_FONT_SIZE 48
 
 typedef struct cstrl_ui_internal_render_state
 {
@@ -16,8 +20,16 @@ typedef struct cstrl_ui_internal_render_state
     cstrl_texture texture;
     cstrl_render_data *font_render_data;
     cstrl_shader font_shader;
-    cstrl_texture font_texture;
-    stbtt_packedchar *char_data;
+    cstrl_texture xsmall_font_texture;
+    stbtt_packedchar *xsmall_char_data;
+    cstrl_texture small_font_texture;
+    stbtt_packedchar *small_char_data;
+    cstrl_texture medium_font_texture;
+    stbtt_packedchar *medium_char_data;
+    cstrl_texture large_font_texture;
+    stbtt_packedchar *large_char_data;
+    cstrl_texture xlarge_font_texture;
+    stbtt_packedchar *xlarge_char_data;
 
     mat4 projection;
     da_float positions;
@@ -138,13 +150,36 @@ void *cstrl_ui_renderer_init(cstrl_platform_state *platform_state)
     fclose(font_file);
 
     stbtt_pack_context pack_context;
-    render_state->char_data = calloc(126, sizeof(stbtt_packedchar));
+    render_state->xsmall_char_data = calloc(126, sizeof(stbtt_packedchar));
     unsigned char *pixels = calloc(512 * 512, sizeof(char));
     stbtt_PackBegin(&pack_context, pixels, 512, 512, 512, 1, NULL);
-    stbtt_PackFontRange(&pack_context, font_buffer, 0, FONT_SIZE, 0, 125, render_state->char_data);
+    stbtt_PackFontRange(&pack_context, font_buffer, 0, XSMALL_FONT_SIZE, 0, 125, render_state->xsmall_char_data);
     stbtt_PackEnd(&pack_context);
+    render_state->xsmall_font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512, CSTRL_RED, CSTRL_RED);
 
-    render_state->font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512, CSTRL_RED, CSTRL_RED);
+    render_state->small_char_data = calloc(126, sizeof(stbtt_packedchar));
+    stbtt_PackBegin(&pack_context, pixels, 512, 512, 512, 1, NULL);
+    stbtt_PackFontRange(&pack_context, font_buffer, 0, SMALL_FONT_SIZE, 0, 125, render_state->small_char_data);
+    stbtt_PackEnd(&pack_context);
+    render_state->small_font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512, CSTRL_RED, CSTRL_RED);
+
+    render_state->medium_char_data = calloc(126, sizeof(stbtt_packedchar));
+    stbtt_PackBegin(&pack_context, pixels, 512, 512, 512, 1, NULL);
+    stbtt_PackFontRange(&pack_context, font_buffer, 0, MEDIUM_FONT_SIZE, 0, 125, render_state->medium_char_data);
+    stbtt_PackEnd(&pack_context);
+    render_state->medium_font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512, CSTRL_RED, CSTRL_RED);
+
+    render_state->large_char_data = calloc(126, sizeof(stbtt_packedchar));
+    stbtt_PackBegin(&pack_context, pixels, 512, 512, 512, 1, NULL);
+    stbtt_PackFontRange(&pack_context, font_buffer, 0, LARGE_FONT_SIZE, 0, 125, render_state->large_char_data);
+    stbtt_PackEnd(&pack_context);
+    render_state->large_font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512, CSTRL_RED, CSTRL_RED);
+
+    render_state->xlarge_char_data = calloc(126, sizeof(stbtt_packedchar));
+    stbtt_PackBegin(&pack_context, pixels, 512, 512, 512, 1, NULL);
+    stbtt_PackFontRange(&pack_context, font_buffer, 0, XLARGE_FONT_SIZE, 0, 125, render_state->xlarge_char_data);
+    stbtt_PackEnd(&pack_context);
+    render_state->xlarge_font_texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512, CSTRL_RED, CSTRL_RED);
 
     free(pixels);
     free(font_buffer);
@@ -152,10 +187,23 @@ void *cstrl_ui_renderer_init(cstrl_platform_state *platform_state)
     return render_state;
 }
 
-stbtt_packedchar *cstrl_ui_renderer_get_char_data(void *internal_render_state)
+stbtt_packedchar *cstrl_ui_renderer_get_char_data(void *internal_render_state, cstrl_ui_font_size font_size)
 {
     cstrl_ui_internal_render_state *render_state = (cstrl_ui_internal_render_state *)internal_render_state;
-    return render_state->char_data;
+    switch (font_size)
+    {
+    case FONT_SIZE_XSMALL:
+        return render_state->xsmall_char_data;
+    case FONT_SIZE_SMALL:
+        return render_state->small_char_data;
+    case FONT_SIZE_DEFAULT:
+    case FONT_SIZE_MEDIUM:
+        return render_state->medium_char_data;
+    case FONT_SIZE_LARGE:
+        return render_state->large_char_data;
+    case FONT_SIZE_XLARGE:
+        return render_state->xlarge_char_data;
+    }
 }
 
 void cstrl_ui_renderer_clear_data(void *internal_render_state)
@@ -227,17 +275,43 @@ void cstrl_ui_renderer_draw_rects(void *internal_render_state)
 }
 
 void cstrl_ui_renderer_add_font(void *internal_render_state, char *text, unsigned int start, unsigned int end,
-                                int start_x, int start_y, float r, float g, float b, float a)
+                                int start_x, int start_y, float r, float g, float b, float a,
+                                cstrl_ui_font_size font_size)
 {
     cstrl_ui_internal_render_state *render_state = (cstrl_ui_internal_render_state *)internal_render_state;
     int next_x = start_x;
     for (int i = start; i < end; i++)
     {
-        stbtt_packedchar packedchar = render_state->char_data[text[i]];
+        stbtt_packedchar packedchar;
+        float size;
+        switch (font_size)
+        {
+        case FONT_SIZE_XSMALL:
+            packedchar = render_state->xsmall_char_data[text[i]];
+            size = XSMALL_FONT_SIZE;
+            break;
+        case FONT_SIZE_SMALL:
+            packedchar = render_state->small_char_data[text[i]];
+            size = SMALL_FONT_SIZE;
+            break;
+        case FONT_SIZE_DEFAULT:
+        case FONT_SIZE_MEDIUM:
+            packedchar = render_state->medium_char_data[text[i]];
+            size = MEDIUM_FONT_SIZE;
+            break;
+        case FONT_SIZE_LARGE:
+            packedchar = render_state->large_char_data[text[i]];
+            size = LARGE_FONT_SIZE;
+            break;
+        case FONT_SIZE_XLARGE:
+            packedchar = render_state->xlarge_char_data[text[i]];
+            size = XLARGE_FONT_SIZE;
+            break;
+        }
         float x0 = (float)next_x + packedchar.xoff;
-        float y0 = FONT_SIZE / 2.0f + (float)start_y + packedchar.yoff2;
+        float y0 = size / 2.0f + (float)start_y + packedchar.yoff2;
         float x1 = (float)next_x + (packedchar.xoff2 - packedchar.xoff);
-        float y1 = FONT_SIZE / 2.0f + (float)start_y + packedchar.yoff;
+        float y1 = size / 2.0f + (float)start_y + packedchar.yoff;
 
         cstrl_da_float_push_back(&render_state->font_positions, x0);
         cstrl_da_float_push_back(&render_state->font_positions, y1);
@@ -311,11 +385,29 @@ void cstrl_ui_renderer_add_font_color(void *internal_render_state, float r, floa
     }
 }
 
-void cstrl_ui_renderer_draw_font(void *internal_render_state)
+void cstrl_ui_renderer_draw_font(void *internal_render_state, cstrl_ui_font_size font_size)
 {
     cstrl_ui_internal_render_state *render_state = (cstrl_ui_internal_render_state *)internal_render_state;
     cstrl_use_shader(render_state->font_shader);
-    cstrl_texture_bind(render_state->font_texture);
+    switch (font_size)
+    {
+    case FONT_SIZE_XSMALL:
+        cstrl_texture_bind(render_state->xsmall_font_texture);
+        break;
+    case FONT_SIZE_SMALL:
+        cstrl_texture_bind(render_state->small_font_texture);
+        break;
+    case FONT_SIZE_DEFAULT:
+    case FONT_SIZE_MEDIUM:
+        cstrl_texture_bind(render_state->medium_font_texture);
+        break;
+    case FONT_SIZE_LARGE:
+        cstrl_texture_bind(render_state->large_font_texture);
+        break;
+    case FONT_SIZE_XLARGE:
+        cstrl_texture_bind(render_state->xlarge_font_texture);
+        break;
+    }
     cstrl_renderer_modify_render_attributes(render_state->font_render_data, render_state->font_positions.array,
                                             render_state->font_uvs.array, render_state->font_colors.array,
                                             render_state->font_positions.size / 2);
@@ -342,5 +434,9 @@ void cstrl_ui_renderer_shutdown(void *internal_render_state)
 
     cstrl_renderer_free_render_data(render_state->render_data);
     cstrl_renderer_free_render_data(render_state->font_render_data);
-    free(render_state->char_data);
+    free(render_state->xsmall_char_data);
+    free(render_state->small_char_data);
+    free(render_state->medium_char_data);
+    free(render_state->large_char_data);
+    free(render_state->xlarge_char_data);
 }
