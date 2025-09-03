@@ -374,7 +374,7 @@ static int find_cached_index(cstrl_ui_internal_state *ui_state, int id)
     return -1;
 }
 
-CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
+CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int *x, int *y,
                                         int w, int h, int id, bool is_static, bool can_minimize, int order_priority,
                                         cstrl_ui_layout *layout)
 {
@@ -392,15 +392,15 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
         int cached_index = find_cached_index(ui_state, id);
         if (cached_index != -1 && ui_state->elements_cache.element_count > cached_index)
         {
-            x = ui_state->elements_cache.elements[cached_index].x_start;
-            y = ui_state->elements_cache.elements[cached_index].y_start;
+            *x = ui_state->elements_cache.elements[cached_index].x_start;
+            *y = ui_state->elements_cache.elements[cached_index].y_start;
             // w = ui_state->elements_cache.elements[cached_index].x_end - x;
             // h = ui_state->elements_cache.elements[cached_index].y_end - y;
             order_priority = ui_state->elements_cache.elements[cached_index].order_priority;
         }
 
         if (ui_state->dragged_element_id < 0 &&
-            cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, x, y, w, h) &&
+            cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, *x, *y, w, h) &&
             ui_state->mouse_state.left_mouse_button_down)
         {
             ui_state->dragged_element_id = id;
@@ -409,8 +409,8 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
         if (ui_state->dragged_element_id == id && ui_state->mouse_state.left_mouse_button_down)
         {
             ui_state->active_item = id;
-            x -= ui_state->mouse_state.prev_mouse_x - ui_state->mouse_state.mouse_x;
-            y -= ui_state->mouse_state.prev_mouse_y - ui_state->mouse_state.mouse_y;
+            *x -= ui_state->mouse_state.prev_mouse_x - ui_state->mouse_state.mouse_x;
+            *y -= ui_state->mouse_state.prev_mouse_y - ui_state->mouse_state.mouse_y;
         }
     }
 
@@ -418,21 +418,21 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     cstrl_platform_get_viewport_size(ui_state->platform_state, &width, &height);
     if (width != 0 && height != 0)
     {
-        if (x < 0)
+        if (*x < 0)
         {
-            x = 0;
+            *x = 0;
         }
-        else if (x > width - w)
+        else if (*x > width - w)
         {
-            x = width - w;
+            *x = width - w;
         }
-        if (y < 0)
+        if (*y < 0)
         {
-            y = 0;
+            *y = 0;
         }
-        else if (y > height - h)
+        else if (*y > height - h)
         {
-            y = height - h;
+            *y = height - h;
         }
     }
 
@@ -478,14 +478,14 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
     ui_state->elements.elements[index].index = index;
     ui_state->elements.elements[index].id = id;
 
-    ui_state->elements.elements[index].x_start = x;
-    ui_state->elements.elements[index].y_start = y;
-    ui_state->elements.elements[index].x_end = x + w;
-    ui_state->elements.elements[index].y_end = y + h;
+    ui_state->elements.elements[index].x_start = *x;
+    ui_state->elements.elements[index].y_start = *y;
+    ui_state->elements.elements[index].x_end = *x + w;
+    ui_state->elements.elements[index].y_end = *y + h;
 
     ui_state->elements.elements[index].layout = layout;
 
-    if (cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, x, y, w, h))
+    if (cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, *x, *y, w, h))
     {
         ui_state->mouse_over_ui = true;
     }

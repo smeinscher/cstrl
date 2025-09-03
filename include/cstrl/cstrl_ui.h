@@ -111,7 +111,7 @@ CSTRL_API float cstrl_ui_text_width(cstrl_ui_context *context, const char *text,
 CSTRL_API float cstrl_ui_text_height(cstrl_ui_context *context, const char *text, int text_length, float scale,
                                      cstrl_ui_font_size font_size);
 
-CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
+CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int *x, int *y,
                                         int w, int h, int id, bool is_static, bool can_minimize, int order_priority,
                                         cstrl_ui_layout *layout);
 
