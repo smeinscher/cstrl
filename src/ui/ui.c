@@ -299,6 +299,15 @@ CSTRL_API void cstrl_ui_shutdown(cstrl_ui_context *context)
 
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
 
+    for (int i = 0; i < ui_state->elements.render_order.size; i++)
+    {
+        cstrl_string_free(&ui_state->elements.elements[i].text);
+    }
+    for (int i = 0; i < ui_state->elements_cache.elements_size; i++)
+    {
+        cstrl_string_free(&ui_state->elements_cache.elements[i].text);
+    }
+
     cstrl_da_int_free(&ui_state->elements.render_order);
     free(ui_state->elements.elements);
     cstrl_da_int_free(&ui_state->elements_cache.render_order);
