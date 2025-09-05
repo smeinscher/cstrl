@@ -60,6 +60,12 @@ typedef struct internal_state
     HWND hwnd;
 } internal_state;
 
+typedef struct internal_thread_state
+{
+    HANDLE thread;
+    DWORD thread_id;
+} internal_thread_state;
+
 #endif
 
 #if defined(CSTRL_PLATFORM_ANDROID)

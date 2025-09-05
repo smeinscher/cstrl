@@ -15,6 +15,8 @@
 #include <windowsx.h>
 #include <winuser.h>
 
+#include <processthreadsapi.h>
+
 #define WINDOW_STYLE_WINDOWED WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME
 #define WINDOW_STYLE_FULLSCREEN WS_OVERLAPPED | WS_POPUP | WS_MAXIMIZE
 
@@ -567,6 +569,39 @@ CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_stat
     }
     state->state_common.callbacks.framebuffer_size(platform_state, state->state_common.viewport_width,
                                                    state->state_common.viewport_height);
+}
+
+CSTRL_API void cstrl_platform_set_thread_attributes(cstrl_thread_t *thread)
+{
+}
+
+typedef struct internal_thread_params
+{
+    cstrl_thread_func *func;
+    void *args;
+} internal_thread_params;
+
+static DWORD WINAPI internal_thread_function(LPVOID lp_param)
+{
+    internal_thread_params *params = lp_param;
+    void *return_value = params->func(params->args);
+    free(params);
+    return 0;
+}
+
+CSTRL_API void cstrl_platform_thread_create(cstrl_thread_t *thread, cstrl_thread_func thread_function, void *args)
+{
+    thread->internal_thread_state = malloc(sizeof(internal_thread_state));
+    internal_thread_state *thread_state = thread->internal_thread_state;
+    internal_thread_params *params = malloc(sizeof(internal_thread_params));
+    params->func = thread_function;
+    params->args = args;
+    thread_state->thread = CreateThread(NULL, 0, internal_thread_function, params, 0, &thread_state->thread_id);
+}
+
+CSTRL_API void cstrl_platform_thread_join(cstrl_thread_t *thread)
+{
+    internal_thread_state *thread_state = thread->internal_thread_state;
 }
 
 #endif

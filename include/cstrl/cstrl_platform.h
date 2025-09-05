@@ -52,6 +52,25 @@ CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_stat
 
 /*
  *
+ *  Thread
+ *
+ */
+
+typedef struct cstrl_thread_t
+{
+    void *internal_thread_state;
+} cstrl_thread_t;
+
+typedef void *(cstrl_thread_func)(void *args);
+
+CSTRL_API void cstrl_platform_set_thread_attributes(cstrl_thread_t *thread);
+
+CSTRL_API void cstrl_platform_thread_create(cstrl_thread_t *thread, cstrl_thread_func thread_function, void *args);
+
+CSTRL_API void cstrl_platform_thread_join(cstrl_thread_t *thread);
+
+/*
+ *
  *  Common
  *
  */
