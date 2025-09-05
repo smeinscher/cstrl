@@ -388,6 +388,7 @@ CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height)
     screen = XScreenOfDisplay(display, 0);
     *width = screen->width;
     *height = screen->height;
+    XCloseDisplay(display);
 }
 
 CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_state, bool fullscreen)
