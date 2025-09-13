@@ -5,6 +5,7 @@
 #include <cstrl/cstrl_util.h>
 
 #include <cstrl/cstrl_platform.h>
+#include <string.h>
 
 #if defined(CSTRL_PLATFORM_WINDOWS)
 
@@ -346,14 +347,22 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
 }
 
 CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y,
-                                   int width, int height, bool fullscreen)
+                                   int width, int height, bool fullscreen, const char *icon_path)
 {
     platform_state->internal_state = malloc(sizeof(internal_state));
     internal_state *state = platform_state->internal_state;
 
     state->h_instance = GetModuleHandleA(0);
 
-    HICON icon = LoadIcon(state->h_instance, IDI_APPLICATION);
+    HICON icon;
+    if (strlen(icon_path) != 0)
+    {
+        icon = LoadImage(state->h_instance, icon_path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+    }
+    else
+    {
+        icon = LoadIcon(state->h_instance, IDI_APPLICATION);
+    }
     WNDCLASSA wc = {0};
     wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
     wc.lpfnWndProc = win32_process_messages;

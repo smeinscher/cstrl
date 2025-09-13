@@ -165,7 +165,7 @@ static void mouse_position_callback(cstrl_platform_state *state, int xpos, int y
 int test_4_cubes_scene()
 {
     cstrl_platform_state state;
-    if (!cstrl_platform_init(&state, "cstrl window test", 560, 240, 800, 600, false))
+    if (!cstrl_platform_init(&state, "cstrl window test", 560, 240, 800, 600, false, ""))
     {
         cstrl_platform_shutdown(&state);
         return cstrl_test_failure;

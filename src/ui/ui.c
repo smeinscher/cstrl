@@ -412,8 +412,8 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
             cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, *x, *y, w, h) &&
             ui_state->mouse_state.left_mouse_button_down)
         {
-            ui_state->dragged_element_id = id;
             ui_state->active_item = id;
+            ui_state->dragged_element_id = id;
         }
         if (ui_state->dragged_element_id == id && ui_state->mouse_state.left_mouse_button_down)
         {
