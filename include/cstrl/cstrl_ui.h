@@ -89,9 +89,10 @@ typedef struct cstrl_ui_element
     int id;
     int index;
     int parent_index;
-    unsigned short x_start, x_end;
-    unsigned short y_start, y_end;
     int order_priority;
+    int x_start, x_end;
+    int y_start, y_end;
+    bool is_static;
 } cstrl_ui_element;
 
 CSTRL_API void cstrl_ui_init(cstrl_ui_context *context, cstrl_platform_state *platform_state);
