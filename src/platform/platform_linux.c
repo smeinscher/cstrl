@@ -110,7 +110,7 @@ void x11_key_to_cstrl_key_init(internal_state *state)
 }
 
 bool cstrl_platform_init(cstrl_platform_state *platform_state, const char *application_name, int x, int y, int width,
-                         int height, bool fullscreen)
+                         int height, bool fullscreen, const char *icon_path)
 {
     platform_state->internal_state = malloc(sizeof(internal_state));
     internal_state *state = platform_state->internal_state;
