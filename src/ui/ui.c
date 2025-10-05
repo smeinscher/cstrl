@@ -408,6 +408,12 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
             order_priority = ui_state->elements_cache.elements[cached_index].order_priority;
         }
 
+        if (ui_state->dragged_element_id == id && ui_state->active_item == id &&
+            ui_state->mouse_state.left_mouse_button_down)
+        {
+            *x -= ui_state->mouse_state.prev_mouse_x - ui_state->mouse_state.mouse_x;
+            *y -= ui_state->mouse_state.prev_mouse_y - ui_state->mouse_state.mouse_y;
+        }
         if ((ui_state->dragged_element_id < 0 ||
              order_priority <
                  ui_state->elements_cache.elements[find_cached_index(ui_state, ui_state->dragged_element_id)]
@@ -417,12 +423,6 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
         {
             ui_state->active_item = id;
             ui_state->dragged_element_id = id;
-        }
-        if (ui_state->dragged_element_id == id && ui_state->mouse_state.left_mouse_button_down)
-        {
-            ui_state->active_item = id;
-            *x -= ui_state->mouse_state.prev_mouse_x - ui_state->mouse_state.mouse_x;
-            *y -= ui_state->mouse_state.prev_mouse_y - ui_state->mouse_state.mouse_y;
         }
     }
 
