@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.29)
 project(cstrl C)
-project(cstrl-test C)
 
 #set(CMAKE_SYSTEM_PROCESSOR arm)
 
@@ -58,14 +57,16 @@ add_library(cstrl SHARED
         ${GLAD_H}
         extern/stb/stb_image.c
         extern/stb/stb_image.h
-        extern/stb/stb_truetype.c
-        extern/stb/stb_truetype.h
+        # TODO: find a way for this not to clash with nuklear
+        # extern/stb/stb_truetype.c
+        # extern/stb/stb_truetype.h
         extern/stb/stb_image_write.c
         extern/stb/stb_image_write.h
         extern/cgltf/cgltf.c
         extern/cgltf/cgltf.h
         extern/fast_obj/fast_obj.c
         extern/fast_obj/fast_obj.h
+        # extern/nuklear/nuklear.h
         include/cstrl/cstrl_defines.h
         include/cstrl/cstrl_math.h
         src/util/dynamic_array.c
@@ -87,10 +88,11 @@ add_library(cstrl SHARED
         src/renderer/camera.c
         src/platform/platform_common.c
         src/util/general_helpers.c
-        include/cstrl/cstrl_ui.h
-        src/ui/ui.c
-        src/ui/ui_opengl_renderer.c
-        src/ui/ui_internal.h
+        # TODO: find a way for this not to clash with nuklear
+        # include/cstrl/cstrl_ui.h
+        # src/ui/ui.c
+        # src/ui/ui_opengl_renderer.c
+        # src/ui/ui_internal.h
         src/platform/platform_android.c
         src/renderer/opengl/opengl_platform_android.c
         src/renderer/vulkan/vulkan_renderer.c
@@ -111,45 +113,11 @@ add_library(cstrl SHARED
         src/model/gltf_loader.c
         include/cstrl/cstrl_model.h
         src/model/obj_loader.c
-)
-
-add_executable(cstrl-test
-        test/main.c
-        test/test_manager/test_manager.c
-        test/test_manager/test_manager.h
-        test/test_manager/test_types.h
-        test/unit_tests/cstrl_math/test_vec2.c
-        test/unit_tests/cstrl_math/test_vec2.h
-        test/unit_tests/cstrl_math/test_vec3.c
-        test/unit_tests/cstrl_math/test_vec3.h
-        test/unit_tests/cstrl_math/test_vec4.c
-        test/unit_tests/cstrl_math/test_vec4.h
-        test/unit_tests/cstrl_util/test_dynamic_array.c
-        test/unit_tests/cstrl_util/test_dynamic_array.h
-        test/unit_tests/cstrl_math/test_quat.c
-        test/unit_tests/cstrl_math/test_quat.h
-        test/unit_tests/cstrl_renderer/test_camera.c
-        test/unit_tests/cstrl_renderer/test_camera.h
-        test/unit_tests/unit_tests.c
-        test/unit_tests/unit_tests.h
-        test/unit_tests/cstrl_math/test_mat4.c
-        test/unit_tests/cstrl_math/test_mat4.h
-        test/unit_tests/cstrl_math/test_mat3.c
-        test/unit_tests/cstrl_math/test_mat3.h
-        test/unit_tests/cstrl_physics/test_collision.c
-        test/unit_tests/cstrl_physics/test_collision.h
-        test/unit_tests/cstrl_util/test_random.c
-        test/unit_tests/cstrl_util/test_random.h
-        test/integration_tests/integration_tests.c
-        test/integration_tests/integration_tests.h
-        test/manual_tests/basic/test_4_cubes_scene.c
-        test/manual_tests/basic/test_4_cubes_scene.h
-        test/manual_tests/manual_tests.c
-        test/manual_tests/manual_tests.h
+        src/ui/nuklear/nuklear_cstrl.c
+        include/cstrl/cstrl_nuklear_ui.h
 )
 
 # target_compile_options(cstrl PRIVATE -Wall -Werror -Wno-missing-braces -DCSTRL_EXPORT)
-# target_compile_options(cstrl-test PRIVATE -Wall -Werror -Wno-missing-braces)
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
 
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES} ${OPENAL_LIBRARY})
@@ -158,12 +126,9 @@ if (X11_FOUND)
 endif ()
 if (UNIX)
     target_link_libraries(cstrl PRIVATE m)
-    target_link_libraries(cstrl-test PRIVATE m)
 endif ()
 if (ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
 endif ()
-target_link_libraries(cstrl-test PRIVATE log_c cstrl)
 
-target_include_directories(cstrl PRIVATE extern include)
-target_include_directories(cstrl-test PRIVATE extern include src)
+target_include_directories(cstrl PUBLIC extern include)

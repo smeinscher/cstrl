@@ -501,6 +501,14 @@ CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data)
     glDrawElements(GL_TRIANGLES, internal_data->indices_count, GL_UNSIGNED_INT, 0);
 }
 
+CSTRL_API void cstrl_renderer_draw_indices_by_count_and_offset(cstrl_render_data *data, int count, int *offset)
+{
+    internal_data *internal_data = data->internal_data;
+    glBindVertexArray(internal_data->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, internal_data->ebo);
+    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, offset);
+}
+
 CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data)
 {
     internal_data *internal_data = data->internal_data;
@@ -533,6 +541,11 @@ CSTRL_API void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state)
     cstrl_opengl_platform_swap_buffers(platform_state);
 }
 
+CSTRL_API bool cstrl_renderer_depth_test_enabled()
+{
+    return glIsEnabled(GL_DEPTH_TEST);
+}
+
 CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled)
 {
     if (enabled)
@@ -543,6 +556,11 @@ CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled)
     {
         glDisable(GL_DEPTH_TEST);
     }
+}
+
+CSTRL_API bool cstrl_renderer_cull_face_enabled()
+{
+    return glIsEnabled(GL_CULL_FACE);
 }
 
 CSTRL_API void cstrl_renderer_set_cull_face_enabled(bool enabled)
@@ -581,6 +599,40 @@ CSTRL_API void cstrl_renderer_update_ubo(unsigned int ubo, void *object, size_t 
 CSTRL_API void cstrl_renderer_set_line_width(float line_width)
 {
     glLineWidth(line_width);
+}
+
+CSTRL_API float *cstrl_renderer_map_positions_range(cstrl_render_data *render_data)
+{
+    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    internal_data *internal_data = render_data->internal_data;
+    glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS], internal_data->count * 2, 0, flags);
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS], internal_data->count * 2, 0,
+                                 flags);
+}
+
+CSTRL_API float *cstrl_renderer_map_uvs_range(cstrl_render_data *render_data)
+{
+    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    internal_data *internal_data = render_data->internal_data;
+    glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS], internal_data->count * 2, 0, flags);
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS], internal_data->count * 2, 0, flags);
+}
+
+CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data)
+{
+    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    internal_data *internal_data = render_data->internal_data;
+    glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], internal_data->count * 4, 0, flags);
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], internal_data->count * 4, 0,
+                                 flags);
+}
+
+CSTRL_API int *cstrl_renderer_map_indices_range(cstrl_render_data *render_data)
+{
+    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    internal_data *internal_data = render_data->internal_data;
+    glNamedBufferStorage(internal_data->ebo, internal_data->indices_count, 0, flags);
+    return glMapNamedBufferRange(internal_data->ebo, internal_data->indices_count, 0, flags);
 }
 
 #endif

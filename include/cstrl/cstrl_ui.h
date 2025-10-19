@@ -93,6 +93,7 @@ typedef struct cstrl_ui_element
     int x_start, x_end;
     int y_start, y_end;
     bool is_static;
+    bool is_collapsed;
 } cstrl_ui_element;
 
 CSTRL_API void cstrl_ui_init(cstrl_ui_context *context, cstrl_platform_state *platform_state);
@@ -113,7 +114,7 @@ CSTRL_API float cstrl_ui_text_height(cstrl_ui_context *context, const char *text
                                      cstrl_ui_font_size font_size);
 
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int *x, int *y,
-                                        int w, int h, int id, bool is_static, bool can_minimize, int order_priority,
+                                        int w, int h, int id, bool is_static, bool can_collapse, int order_priority,
                                         cstrl_ui_layout *layout);
 
 CSTRL_API void cstrl_ui_container_end(cstrl_ui_context *context);

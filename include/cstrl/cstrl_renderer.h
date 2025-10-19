@@ -130,6 +130,8 @@ CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data);
 
+CSTRL_API void cstrl_renderer_draw_indices_by_count_and_offset(cstrl_render_data *data, int count, int *offset);
+
 CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_draw_lines_indices(cstrl_render_data *data);
@@ -140,7 +142,11 @@ CSTRL_API void cstrl_renderer_shutdown(cstrl_platform_state *platform_state);
 
 CSTRL_API void cstrl_renderer_swap_buffers(cstrl_platform_state *platform_state);
 
+CSTRL_API bool cstrl_renderer_depth_test_enabled();
+
 CSTRL_API void cstrl_renderer_set_depth_test_enabled(bool enabled);
+
+CSTRL_API bool cstrl_renderer_cull_face_enabled();
 
 CSTRL_API void cstrl_renderer_set_cull_face_enabled(bool enabled);
 
@@ -149,6 +155,14 @@ CSTRL_API unsigned int cstrl_renderer_add_ubo(size_t size);
 CSTRL_API void cstrl_renderer_update_ubo(unsigned int ubo, void *object, size_t size, size_t offset);
 
 CSTRL_API void cstrl_renderer_set_line_width(float line_width);
+
+CSTRL_API float *cstrl_renderer_map_positions_range(cstrl_render_data *render_data);
+
+CSTRL_API float *cstrl_renderer_map_uvs_range(cstrl_render_data *render_data);
+
+CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data);
+
+CSTRL_API int *cstrl_renderer_map_indices_range(cstrl_render_data *render_data);
 
 /*
  *

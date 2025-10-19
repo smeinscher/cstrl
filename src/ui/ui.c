@@ -250,17 +250,20 @@ CSTRL_API void cstrl_ui_end(cstrl_ui_context *context)
         ui_state->elements_cache.elements[index].parent_index = ui_state->elements.elements[index].parent_index;
         ui_state->elements_cache.elements[index].order_priority = ui_state->elements.elements[index].order_priority;
         ui_state->elements_cache.elements[index].id = ui_state->elements.elements[index].id;
+        ui_state->elements_cache.elements[index].is_collapsed = ui_state->elements.elements[index].is_collapsed;
         size_t string_size = ui_state->elements.elements[index].text.size;
         cstrl_string_init(&ui_state->elements_cache.elements[index].text, string_size != 0 ? string_size : 1);
         if (string_size == 0)
         {
+            cstrl_ui_renderer_draw_rects(context->internal_render_state);
+            cstrl_ui_renderer_clear_data(context->internal_render_state);
             continue;
         }
         cstrl_string_push_back(&ui_state->elements_cache.elements[index].text,
                                ui_state->elements.elements[index].text.array,
                                ui_state->elements.elements[index].text.size);
 
-        int margin_x = 6;
+        int margin_x = 25;
         int margin_y = 8;
         if (ui_state->elements.elements[index].layout->child_alignment == CSTRL_UI_ALIGN_CENTER)
         {
@@ -383,8 +386,64 @@ static int find_cached_index(cstrl_ui_internal_state *ui_state, int id)
     return -1;
 }
 
+static int build_child_rect(cstrl_ui_internal_state *ui_state, const char *title, int title_length, int x, int y, int w,
+                            int h, int id, cstrl_ui_layout *layout)
+{
+    expand_elements_if_needed(ui_state);
+
+    int index = ui_state->elements.element_count;
+
+    ui_state->elements.elements[index] = (cstrl_ui_element){0};
+
+    ui_state->elements.elements[index].index = index;
+    ui_state->elements.elements[index].id = id;
+
+    if (title_length > 0)
+    {
+        cstrl_string_init(&ui_state->elements.elements[index].text, title_length);
+        cstrl_string_push_back(&ui_state->elements.elements[index].text, title, title_length);
+    }
+
+    int parent_index = ui_state->parent_stack.array[ui_state->parent_stack.size - 1];
+    ui_state->elements.elements[index].parent_index = parent_index;
+    ui_state->elements.element_count++;
+
+    // if (ui_state->active_item != ui_state->elements.elements[parent_index].id)
+    // {
+    //     cstrl_da_int_insert(&ui_state->elements.render_order, index, ui_state->elements.render_order.size - 1);
+    // }
+    // else
+    // {
+    //     cstrl_da_int_insert(&ui_state->elements.render_order, index, 0);
+    // }
+    for (int i = 0; i < ui_state->elements.render_order.size; i++)
+    {
+        if (parent_index == ui_state->elements.render_order.array[i])
+        {
+            cstrl_da_int_insert(&ui_state->elements.render_order, index, i);
+            break;
+        }
+    }
+
+    int parent_x = ui_state->elements.elements[parent_index].x_start;
+    int parent_y = ui_state->elements.elements[parent_index].y_start;
+    ui_state->elements.elements[index].x_start = x + parent_x;
+    ui_state->elements.elements[index].y_start = y + parent_y;
+    ui_state->elements.elements[index].x_end = x + parent_x + w;
+    ui_state->elements.elements[index].y_end = y + parent_y + h;
+
+    ui_state->elements.elements[index].layout = layout;
+
+    if (cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, x, y, w, h))
+    {
+        ui_state->mouse_over_ui = true;
+    }
+
+    return index;
+}
+
 CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *title, int title_length, int *x, int *y,
-                                        int w, int h, int id, bool is_static, bool can_minimize, int order_priority,
+                                        int w, int h, int id, bool is_static, bool can_collapse, int order_priority,
                                         cstrl_ui_layout *layout)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
@@ -406,23 +465,42 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
             // w = ui_state->elements_cache.elements[cached_index].x_end - x;
             // h = ui_state->elements_cache.elements[cached_index].y_end - y;
             order_priority = ui_state->elements_cache.elements[cached_index].order_priority;
+            ui_state->elements.elements[index].is_collapsed =
+                ui_state->elements_cache.elements[cached_index].is_collapsed;
         }
 
-        if (ui_state->dragged_element_id == id && ui_state->active_item == id &&
-            ui_state->mouse_state.left_mouse_button_down)
+        bool moveable = true;
+        if (can_collapse &&
+            cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, *x, *y, 25, 25) &&
+            ui_state->mouse_state.left_mouse_button_down && !ui_state->mouse_state.left_mouse_button_processed)
         {
-            *x -= ui_state->mouse_state.prev_mouse_x - ui_state->mouse_state.mouse_x;
-            *y -= ui_state->mouse_state.prev_mouse_y - ui_state->mouse_state.mouse_y;
+            ui_state->elements.elements[index].is_collapsed = !ui_state->elements.elements[index].is_collapsed;
+            moveable = false;
         }
-        if ((ui_state->dragged_element_id < 0 ||
-             order_priority <
-                 ui_state->elements_cache.elements[find_cached_index(ui_state, ui_state->dragged_element_id)]
-                     .order_priority) &&
-            cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, *x, *y, w, h) &&
-            ui_state->mouse_state.left_mouse_button_down)
+        if (ui_state->elements.elements[index].is_collapsed)
         {
-            ui_state->active_item = id;
-            ui_state->dragged_element_id = id;
+            w = cstrl_ui_text_width(context, title, title_length, 1.0f, layout->font_size) + 50;
+            h = cstrl_ui_text_height(context, title, title_length, 1.0f, layout->font_size) + 25;
+        }
+
+        if (moveable)
+        {
+            if (ui_state->dragged_element_id == id && ui_state->active_item == id &&
+                ui_state->mouse_state.left_mouse_button_down)
+            {
+                *x -= ui_state->mouse_state.prev_mouse_x - ui_state->mouse_state.mouse_x;
+                *y -= ui_state->mouse_state.prev_mouse_y - ui_state->mouse_state.mouse_y;
+            }
+            if ((ui_state->dragged_element_id < 0 ||
+                 order_priority <
+                     ui_state->elements_cache.elements[find_cached_index(ui_state, ui_state->dragged_element_id)]
+                         .order_priority) &&
+                cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, *x, *y, w, h) &&
+                ui_state->mouse_state.left_mouse_button_down)
+            {
+                ui_state->active_item = id;
+                ui_state->dragged_element_id = id;
+            }
         }
     }
 
@@ -522,6 +600,13 @@ CSTRL_API bool cstrl_ui_container_begin(cstrl_ui_context *context, const char *t
         ui_state->mouse_over_ui = true;
     }
 
+    build_child_rect(ui_state, "", 0, 0, 0, 25, 25, GEN_ID(69), layout);
+
+    if (ui_state->elements.elements[index].is_collapsed)
+    {
+        return false;
+    }
+
     return true;
 }
 
@@ -531,64 +616,12 @@ CSTRL_API void cstrl_ui_container_end(cstrl_ui_context *context)
     cstrl_da_int_pop_back(&ui_state->parent_stack);
 }
 
-static void build_child_rect(cstrl_ui_internal_state *ui_state, int index, const char *title, int title_length, int x,
-                             int y, int w, int h, int id, cstrl_ui_layout *layout)
-{
-    expand_elements_if_needed(ui_state);
-
-    ui_state->elements.elements[index] = (cstrl_ui_element){0};
-
-    ui_state->elements.elements[index].index = index;
-    ui_state->elements.elements[index].id = id;
-
-    if (title_length > 0)
-    {
-        cstrl_string_init(&ui_state->elements.elements[index].text, title_length);
-        cstrl_string_push_back(&ui_state->elements.elements[index].text, title, title_length);
-    }
-
-    int parent_index = ui_state->parent_stack.array[ui_state->parent_stack.size - 1];
-    ui_state->elements.elements[index].parent_index = parent_index;
-    ui_state->elements.element_count++;
-
-    // if (ui_state->active_item != ui_state->elements.elements[parent_index].id)
-    // {
-    //     cstrl_da_int_insert(&ui_state->elements.render_order, index, ui_state->elements.render_order.size - 1);
-    // }
-    // else
-    // {
-    //     cstrl_da_int_insert(&ui_state->elements.render_order, index, 0);
-    // }
-    for (int i = 0; i < ui_state->elements.render_order.size; i++)
-    {
-        if (parent_index == ui_state->elements.render_order.array[i])
-        {
-            cstrl_da_int_insert(&ui_state->elements.render_order, index, i);
-            break;
-        }
-    }
-
-    int parent_x = ui_state->elements.elements[parent_index].x_start;
-    int parent_y = ui_state->elements.elements[parent_index].y_start;
-    ui_state->elements.elements[index].x_start = x + parent_x;
-    ui_state->elements.elements[index].y_start = y + parent_y;
-    ui_state->elements.elements[index].x_end = x + parent_x + w;
-    ui_state->elements.elements[index].y_end = y + parent_y + h;
-
-    ui_state->elements.elements[index].layout = layout;
-
-    if (cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, x, y, w, h))
-    {
-        ui_state->mouse_over_ui = true;
-    }
-}
-
 CSTRL_API bool cstrl_ui_subcontainer_begin(cstrl_ui_context *context, const char *title, int title_length, int x, int y,
                                            int w, int h, int id, cstrl_ui_layout *layout)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
     int index = ui_state->elements.element_count;
-    build_child_rect(ui_state, index, title, title_length, x, y, w, h, id, layout);
+    build_child_rect(ui_state, title, title_length, x, y, w, h, id, layout);
 
     cstrl_da_int_push_back(&ui_state->parent_stack, index);
     return true;
@@ -604,12 +637,33 @@ CSTRL_API bool cstrl_ui_button(cstrl_ui_context *context, const char *title, int
                                int h, int id, cstrl_ui_layout *layout)
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
-    int index = ui_state->elements.element_count;
-    build_child_rect(ui_state, index, title, title_length, x, y, w, h, id, layout);
+    int index = build_child_rect(ui_state, title, title_length, x, y, w, h, id, layout);
+    int parent_index = ui_state->parent_stack.array[ui_state->parent_stack.size - 1];
     x = ui_state->elements.elements[index].x_start;
     y = ui_state->elements.elements[index].y_start;
     if (cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, x, y, w, h))
     {
+        for (int i = 0; i < ui_state->elements.render_order.size; i++)
+        {
+            if (ui_state->elements.render_order.array[i] == index)
+            {
+                break;
+            }
+            int render_item_index = ui_state->elements.render_order.array[i];
+            if (ui_state->elements.elements[render_item_index].id == ui_state->active_item)
+            {
+                int render_item_x = ui_state->elements.elements[render_item_index].x_start;
+                int render_item_y = ui_state->elements.elements[render_item_index].y_start;
+                int render_item_w = ui_state->elements.elements[render_item_index].x_end - render_item_x;
+                int render_item_h = ui_state->elements.elements[render_item_index].y_end - render_item_y;
+                if (cstrl_ui_region_hit(ui_state->mouse_state.mouse_x, ui_state->mouse_state.mouse_y, render_item_x,
+                                        render_item_y, render_item_w, render_item_h))
+                {
+                    return false;
+                }
+                break;
+            }
+        }
         ui_state->hot_item = index;
         if (ui_state->mouse_state.left_mouse_button_down)
         {
@@ -629,7 +683,7 @@ CSTRL_API bool cstrl_ui_text(cstrl_ui_context *context, const char *text, int te
 {
     cstrl_ui_internal_state *ui_state = context->internal_ui_state;
     int index = ui_state->elements.element_count;
-    build_child_rect(ui_state, index, text, text_length, x, y, 0, 0, id, layout);
+    build_child_rect(ui_state, text, text_length, x, y, 0, 0, id, layout);
     return true;
 }
 
