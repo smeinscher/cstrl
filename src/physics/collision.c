@@ -233,6 +233,10 @@ CSTRL_API void cstrl_collision_aabb_tree_update_node(aabb_tree_t *tree, int node
 
 CSTRL_API void cstrl_collision_aabb_tree_query(aabb_tree_t *tree, vec3 *aabb, da_int *intersecting_nodes)
 {
+    if (tree->node_count == 0)
+    {
+        return;
+    }
     query(tree, aabb, intersecting_nodes, tree->root_index);
 }
 
@@ -303,13 +307,12 @@ CSTRL_API void cstrl_collision_aabb_tree_remove(aabb_tree_t *tree, int node_inde
         tree->root_index = -1;
         tree->node_count = 0;
     }
-    free(tree->nodes[node_index].user_data);
-    tree->nodes[node_index].user_data = NULL;
     tree->nodes[node_index].active = false;
 }
 
 CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree, vec3 ray_origin, vec3 ray_direction,
-                                                               float max_distance, da_int *excluded_nodes)
+                                                               float max_distance, da_int *excluded_nodes,
+                                                               da_int *intersected_nodes)
 {
     ray_cast_result_t result;
     result.hit = false;
@@ -350,6 +353,10 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
             else
             {
                 t = ray_aabb_result.y;
+            }
+            if (intersected_nodes != NULL)
+            {
+                cstrl_da_int_push_back(intersected_nodes, node_index);
             }
             if (t > max_distance || (result.hit && result.t < t))
             {

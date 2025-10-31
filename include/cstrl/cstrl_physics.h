@@ -42,6 +42,8 @@ CSTRL_API int cstrl_collision_aabb_tree_insert(aabb_tree_t *tree, void *user_dat
 
 CSTRL_API void cstrl_collision_aabb_tree_remove(aabb_tree_t *tree, int node_index);
 
-CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree, vec3 ray_origin, vec3 ray_direction, float max_distance, da_int *excluded_nodes);
+CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree, vec3 ray_origin, vec3 ray_direction,
+                                                               float max_distance, da_int *excluded_nodes,
+                                                               da_int *intersected_nodes);
 
 #endif // CSTRL_PHYSICS_H

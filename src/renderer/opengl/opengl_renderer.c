@@ -296,20 +296,14 @@ CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, f
     internal_data *data = render_data->internal_data;
     data->cleared = false;
 
-    if (positions != NULL)
+    if (count + start_index > data->count * data->dimensions)
     {
-        glBindVertexArray(data->vao);
-        glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
-        if (count + start_index > data->count * data->dimensions)
-        {
-            data->count = (count + start_index) / data->dimensions;
-            glBufferData(GL_ARRAY_BUFFER, data->count * data->dimensions * sizeof(float), positions, GL_DYNAMIC_DRAW);
-        }
-        else
-        {
-            glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), positions);
-        }
+        log_error("Position count/start out of range");
+        return;
     }
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
+    glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), positions);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
