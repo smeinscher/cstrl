@@ -217,6 +217,12 @@ static vec2 ray_intersects(vec3 ray_origin, vec3 ray_direction, vec3 *aabb)
     return (vec2){tnear, tfar};
 }
 
+static bool ray_origin_in_aabb(vec3 ray_origin, vec3 *aabb)
+{
+    return ray_origin.x >= aabb[0].x && ray_origin.x <= aabb[1].x && ray_origin.y >= aabb[0].y &&
+           ray_origin.y <= aabb[1].y && ray_origin.z >= aabb[0].z && ray_origin.z <= aabb[1].z;
+}
+
 CSTRL_API void cstrl_collision_aabb_tree_update_node(aabb_tree_t *tree, int node_index, vec3 *new_aabb)
 {
     tree->nodes[node_index].aabb[0] = new_aabb[0];
@@ -340,6 +346,32 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
             continue;
         }
 
+        if (ray_origin_in_aabb(ray_origin, !is_leaf_node(tree->nodes[node_index]) ? tree->nodes[node_index].fat_aabb
+                                                                                  : tree->nodes[node_index].aabb))
+        {
+            if (!is_leaf_node(tree->nodes[node_index]))
+            {
+                cstrl_da_int_push_back(&nodes, tree->nodes[node_index].child0);
+                cstrl_da_int_push_back(&nodes, tree->nodes[node_index].child1);
+                continue;
+            }
+            else
+            {
+                // TODO: figure out how to handle when inside other object
+                result.hit = true;
+                result.node_index = node_index;
+                result.t = 0.0f;
+                result.intersection = ray_origin;
+                vec3 center_distance = cstrl_vec3_mult_scalar(
+                    cstrl_vec3_sub(tree->nodes[node_index].aabb[1], tree->nodes[node_index].aabb[0]), 0.5f);
+                vec3 center = cstrl_vec3_add(center_distance, tree->nodes[node_index].aabb[0]);
+                result.aabb_center = center;
+                vec3 normal = cstrl_vec3_div_scalar(cstrl_vec3_sub(result.intersection, center),
+                                                    cstrl_vec3_length(center_distance));
+                result.normal = cstrl_vec3_normalize(normal);
+            }
+        }
+
         vec2 ray_aabb_result = ray_intersects(ray_origin, ray_direction,
                                               !is_leaf_node(tree->nodes[node_index]) ? tree->nodes[node_index].fat_aabb
                                                                                      : tree->nodes[node_index].aabb);
@@ -362,7 +394,7 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
             {
                 continue;
             }
-            if (tree->nodes[node_index].child0 == -1 && tree->nodes[node_index].child1 == -1)
+            if (is_leaf_node(tree->nodes[node_index]))
             {
                 if (result.hit)
                 {
