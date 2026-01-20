@@ -16,6 +16,8 @@
 #define cstrl_pi_180 0.0174532925f
 #define cstrl_180_pi 57.295779513f
 
+#define cstrl_e 2.718281828f
+
 #define cstrl_epsilon 1.19e-7
 #define cstrl_epsilon_double 2.22e-16
 
