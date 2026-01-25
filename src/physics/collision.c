@@ -386,7 +386,7 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
             {
                 t = ray_aabb_result.y;
             }
-            if (intersected_nodes != NULL)
+            if (intersected_nodes != NULL && is_leaf_node(tree->nodes[node_index]))
             {
                 cstrl_da_int_push_back(intersected_nodes, node_index);
             }
