@@ -18,6 +18,7 @@ typedef struct aabb_tree_node_t
 
 typedef struct aabb_tree_t
 {
+    da_int freed_nodes;
     aabb_tree_node_t *nodes;
     int node_count;
     int node_capacity;
@@ -34,7 +35,7 @@ typedef struct ray_cast_result_t
     vec3 aabb_center;
 } ray_cast_result_t;
 
-CSTRL_API void cstrl_collision_aabb_tree_update_node(aabb_tree_t *tree, int node_index, vec3 *new_aabb);
+CSTRL_API int cstrl_collision_aabb_tree_update_node(aabb_tree_t *tree, int node_index, vec3 *new_aabb);
 
 CSTRL_API void cstrl_collision_aabb_tree_query(aabb_tree_t *tree, vec3 *aabb, da_int *intersecting_nodes);
 

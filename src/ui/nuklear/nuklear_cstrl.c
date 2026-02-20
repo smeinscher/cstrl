@@ -1,4 +1,3 @@
-#include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_nuklear_ui.h"
 #include "cstrl/cstrl_platform.h"
 #include "cstrl/cstrl_renderer.h"
@@ -122,11 +121,10 @@ static void opengl_create()
     glBindVertexArray(0);
 }
 
-CSTRL_API void cstrl_nuklear_init(struct nk_context *context, cstrl_platform_state *platform_state)
+CSTRL_API void cstrl_nuklear_init(struct nk_context *context, struct nk_font *font)
 {
     opengl_create();
-
-    nk_init_default(context, 0);
+    nk_init_default(context, font != NULL ? &font->handle : 0);
 }
 
 static void upload_atlas(const void *image, int width, int height)

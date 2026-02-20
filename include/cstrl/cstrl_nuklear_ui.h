@@ -17,7 +17,7 @@ typedef struct cstrl_nuklear_context {
     struct nk_context nk_context;
 } cstrl_nuklear_context;
 
-CSTRL_API void cstrl_nuklear_init(struct nk_context *context, cstrl_platform_state *platform_state);
+CSTRL_API void cstrl_nuklear_init(struct nk_context *context, struct nk_font *font);
 
 CSTRL_API void cstrl_nuklear_font_stash_begin(struct nk_font_atlas **atlas);
 
