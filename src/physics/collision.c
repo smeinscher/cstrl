@@ -5,7 +5,7 @@
 #include <float.h>
 #include <stdlib.h>
 
-static const vec3 g_fat_aabb_margin = {0.025f, 0.025f, 0.025f};
+static const vec3 g_fat_aabb_margin = {0.05f, 0.05f, 0.05f};
 
 static bool is_leaf_node(aabb_tree_node_t node)
 {
@@ -383,11 +383,9 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
     {
         cstrl_da_int_push_back(&nodes, tree->root_index);
     }
-    int visited = 0;
     while (nodes.size != 0)
     {
         int node_index = cstrl_da_int_pop_front(&nodes);
-        visited++;
 
         if (excluded_nodes != NULL &&
             cstrl_da_int_find_first(excluded_nodes, node_index) != CSTRL_DA_INT_ITEM_NOT_FOUND)
@@ -503,7 +501,6 @@ CSTRL_API ray_cast_result_t cstrl_collision_aabb_tree_ray_cast(aabb_tree_t *tree
             }
         }
     }
-    log_debug("Visisted: %d", visited);
     cstrl_da_int_free(&nodes);
     return result;
 }

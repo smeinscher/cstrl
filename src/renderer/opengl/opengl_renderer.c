@@ -599,9 +599,16 @@ CSTRL_API float *cstrl_renderer_map_positions_range(cstrl_render_data *render_da
 {
     GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
-    glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS], internal_data->count * 2, 0, flags);
-    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS], internal_data->count * 2, 0,
-                                 flags);
+    glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS],
+                         internal_data->count * internal_data->dimensions, 0, flags);
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS], 0,
+                                 internal_data->count * internal_data->dimensions, flags);
+}
+
+CSTRL_API void cstrl_renderer_unmap_positions_range(cstrl_render_data *render_data)
+{
+    internal_data *internal_data = render_data->internal_data;
+    glUnmapNamedBuffer(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
 }
 
 CSTRL_API float *cstrl_renderer_map_uvs_range(cstrl_render_data *render_data)
@@ -609,7 +616,13 @@ CSTRL_API float *cstrl_renderer_map_uvs_range(cstrl_render_data *render_data)
     GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS], internal_data->count * 2, 0, flags);
-    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS], internal_data->count * 2, 0, flags);
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS], 0, internal_data->count * 2, flags);
+}
+
+CSTRL_API void cstrl_renderer_unmap_uvs_range(cstrl_render_data *render_data)
+{
+    internal_data *internal_data = render_data->internal_data;
+    glUnmapNamedBuffer(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS]);
 }
 
 CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data)
@@ -617,8 +630,14 @@ CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data)
     GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], internal_data->count * 4, 0, flags);
-    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], internal_data->count * 4, 0,
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], 0, internal_data->count * 4,
                                  flags);
+}
+
+CSTRL_API void cstrl_renderer_unmap_colors_range(cstrl_render_data *render_data)
+{
+    internal_data *internal_data = render_data->internal_data;
+    glUnmapNamedBuffer(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
 }
 
 CSTRL_API int *cstrl_renderer_map_indices_range(cstrl_render_data *render_data)
@@ -626,7 +645,13 @@ CSTRL_API int *cstrl_renderer_map_indices_range(cstrl_render_data *render_data)
     GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->ebo, internal_data->indices_count, 0, flags);
-    return glMapNamedBufferRange(internal_data->ebo, internal_data->indices_count, 0, flags);
+    return glMapNamedBufferRange(internal_data->ebo, 0, internal_data->indices_count, flags);
+}
+
+CSTRL_API void cstrl_renderer_unmap_indices_range(cstrl_render_data *render_data)
+{
+    internal_data *internal_data = render_data->internal_data;
+    glUnmapNamedBuffer(internal_data->ebo);
 }
 
 #endif
