@@ -156,19 +156,19 @@ CSTRL_API void cstrl_renderer_update_ubo(unsigned int ubo, void *object, size_t 
 
 CSTRL_API void cstrl_renderer_set_line_width(float line_width);
 
-CSTRL_API float *cstrl_renderer_map_positions_range(cstrl_render_data *render_data);
+CSTRL_API float *cstrl_renderer_map_positions_range(cstrl_render_data *render_data, float *data);
 
 CSTRL_API void cstrl_renderer_unmap_positions_range(cstrl_render_data *render_data);
 
-CSTRL_API float *cstrl_renderer_map_uvs_range(cstrl_render_data *render_data);
+CSTRL_API float *cstrl_renderer_map_uvs_range(cstrl_render_data *render_data, float *data);
 
 CSTRL_API void cstrl_renderer_unmap_uvs_range(cstrl_render_data *render_data);
 
-CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data);
+CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data, float *data);
 
 CSTRL_API void cstrl_renderer_unmap_colors_range(cstrl_render_data *render_data);
 
-CSTRL_API int *cstrl_renderer_map_indices_range(cstrl_render_data *render_data);
+CSTRL_API int *cstrl_renderer_map_indices_range(cstrl_render_data *render_data, int *data);
 
 CSTRL_API void cstrl_renderer_unmap_indices_range(cstrl_render_data *render_data);
 
