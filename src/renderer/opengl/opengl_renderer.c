@@ -224,6 +224,20 @@ CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *
     glBindVertexArray(0);
 }
 
+CSTRL_API void cstrl_renderer_add_colors_instanced(cstrl_render_data *render_data, float *colors, size_t instance_count)
+{
+    internal_data *data = render_data->internal_data;
+    data->cleared = false;
+
+    glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
+    glBufferData(GL_ARRAY_BUFFER, instance_count * 4 * sizeof(float), colors, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_COLORS, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_COLORS);
+    glVertexAttribDivisor(CSTRL_RENDER_ATTRIBUTE_COLORS, 1);
+}
+
 CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals)
 {
     internal_data *data = render_data->internal_data;
@@ -283,6 +297,21 @@ CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, flo
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+}
+
+CSTRL_API void cstrl_renderer_add_offsets_instanced(cstrl_render_data *render_data, float *offsets,
+                                                    size_t instance_count)
+{
+    internal_data *data = render_data->internal_data;
+    data->cleared = false;
+
+    glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
+    glBufferData(GL_ARRAY_BUFFER, instance_count * data->dimensions * sizeof(float), offsets, GL_STATIC_DRAW);
+    glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_OFFSETS, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_OFFSETS);
+    glVertexAttribDivisor(CSTRL_RENDER_ATTRIBUTE_OFFSETS, 1);
 }
 
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
@@ -503,6 +532,14 @@ CSTRL_API void cstrl_renderer_draw_indices_by_count_and_offset(cstrl_render_data
     glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, offset);
 }
 
+CSTRL_API void cstrl_renderer_draw_indices_instanced(cstrl_render_data *data, int instances)
+{
+    internal_data *internal_data = data->internal_data;
+    glBindVertexArray(internal_data->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, internal_data->ebo);
+    glDrawElementsInstanced(GL_TRIANGLES, internal_data->indices_count, GL_UNSIGNED_INT, 0, instances);
+}
+
 CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data)
 {
     internal_data *internal_data = data->internal_data;
@@ -637,6 +674,15 @@ CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data,
                                  internal_data->count * 4 * sizeof(float), flags);
 }
 
+CSTRL_API float *cstrl_renderer_map_colors_range_instanced(cstrl_render_data *render_data, float *data, size_t size)
+{
+    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    internal_data *internal_data = render_data->internal_data;
+    glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], size * 4 * sizeof(float), data, flags);
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], 0, size * 4 * sizeof(float),
+                                 flags);
+}
+
 CSTRL_API void cstrl_renderer_unmap_colors_range(cstrl_render_data *render_data)
 {
     internal_data *internal_data = render_data->internal_data;
@@ -655,6 +701,21 @@ CSTRL_API void cstrl_renderer_unmap_indices_range(cstrl_render_data *render_data
 {
     internal_data *internal_data = render_data->internal_data;
     glUnmapNamedBuffer(internal_data->ebo);
+}
+
+CSTRL_API float *cstrl_renderer_map_offsets_range_instanced(cstrl_render_data *render_data, float *data, size_t size)
+{
+    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    internal_data *internal_data = render_data->internal_data;
+    glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS], size * 3 * sizeof(float), data, flags);
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS], 0, size * 3 * sizeof(float),
+                                 flags);
+}
+
+CSTRL_API void cstrl_renderer_unmap_offsets_range(cstrl_render_data *render_data)
+{
+    internal_data *internal_data = render_data->internal_data;
+    glUnmapNamedBuffer(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
 }
 
 #endif

@@ -23,6 +23,7 @@ typedef enum cstrl_render_attribute_type
     CSTRL_RENDER_ATTRIBUTE_NORMALS,
     CSTRL_RENDER_ATTRIBUTE_TANGENTS,
     CSTRL_RENDER_ATTRIBUTE_BITANGENTS,
+    CSTRL_RENDER_ATTRIBUTE_OFFSETS,
     CSTRL_RENDER_ATTRIBUTE_MAX
 } cstrl_render_attribute_type;
 
@@ -102,13 +103,17 @@ CSTRL_API void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs
 
 CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors);
 
+CSTRL_API void cstrl_renderer_add_colors_instanced(cstrl_render_data *render_data, float *colors, size_t instance_count);
+
 CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals);
 
-CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t vertex_count);
+CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t indices_count);
 
 CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float *tangents);
 
 CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, float *bitangents);
+
+CSTRL_API void cstrl_renderer_add_offsets_instanced(cstrl_render_data *render_data, float *offsets, size_t instance_count);
 
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
                                                size_t count);
@@ -131,6 +136,8 @@ CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data);
 CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_draw_indices_by_count_and_offset(cstrl_render_data *data, int count, int *offset);
+
+CSTRL_API void cstrl_renderer_draw_indices_instanced(cstrl_render_data *data, int instances);
 
 CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data);
 
@@ -166,11 +173,17 @@ CSTRL_API void cstrl_renderer_unmap_uvs_range(cstrl_render_data *render_data);
 
 CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data, float *data);
 
+CSTRL_API float *cstrl_renderer_map_colors_range_instanced(cstrl_render_data *render_data, float *data, size_t size);
+
 CSTRL_API void cstrl_renderer_unmap_colors_range(cstrl_render_data *render_data);
 
 CSTRL_API int *cstrl_renderer_map_indices_range(cstrl_render_data *render_data, int *data);
 
 CSTRL_API void cstrl_renderer_unmap_indices_range(cstrl_render_data *render_data);
+
+CSTRL_API float *cstrl_renderer_map_offsets_range_instanced(cstrl_render_data *render_data, float *data, size_t size);
+
+CSTRL_API void cstrl_renderer_unmap_offsets_range(cstrl_render_data *render_data);
 
 /*
  *

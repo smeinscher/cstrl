@@ -3,6 +3,7 @@
 
 #include "cstrl/cstrl_defines.h"
 #include "cstrl/cstrl_renderer.h"
+#include "cstrl/cstrl_util.h"
 
 /*
 *
@@ -10,15 +11,19 @@
 *
 */
 
+#define MAX_TEXTURES 8
+
 typedef struct mesh_t
 {
-    cstrl_texture textures;
-    // int texture_count;
+    cstrl_texture textures[MAX_TEXTURES];
+    da_int objects_vertex_offset;
+    da_int objects_index_offset;
     float *positions;
     float *uvs;
     float *colors;
     float *normals;
     int *indices;
+    int texture_count;
     int vertex_count;
     int indices_count;
 } mesh_t;

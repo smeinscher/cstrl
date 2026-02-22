@@ -132,6 +132,14 @@ CSTRL_API mesh_t cstrl_model_generate_mesh_from_obj_file(const char *path)
         }
         indices_index += face_vertices;
     }
+    cstrl_da_int_init(&mesh.objects_vertex_offset, 2);
+    cstrl_da_int_init(&mesh.objects_index_offset, 2);
+    for (int i = 1; i < fast_obj_mesh->object_count; i++)
+    {
+        // TODO: replace hardcoded 3 with dynamic value
+        cstrl_da_int_push_back(&mesh.objects_vertex_offset, fast_obj_mesh->objects[i].index_offset * 6 / 12);
+        cstrl_da_int_push_back(&mesh.objects_index_offset, fast_obj_mesh->objects[i].index_offset);
+    }
     mesh.positions = malloc(sizeof(float) * positions.size);
     mesh.uvs = malloc(sizeof(float) * uvs.size);
     mesh.colors = malloc(sizeof(float) * colors.size);
@@ -146,6 +154,11 @@ CSTRL_API mesh_t cstrl_model_generate_mesh_from_obj_file(const char *path)
         cstrl_da_float_free(&normals);
         cstrl_da_float_free(&colors);
         cstrl_da_int_free(&indices);
+        free(mesh.positions);
+        free(mesh.uvs);
+        free(mesh.colors);
+        free(mesh.normals);
+        free(mesh.indices);
         return (mesh_t){0};
     }
     memcpy(mesh.positions, positions.array, sizeof(float) * positions.size);
@@ -161,9 +174,19 @@ CSTRL_API mesh_t cstrl_model_generate_mesh_from_obj_file(const char *path)
     cstrl_da_float_free(&colors);
     cstrl_da_int_free(&indices);
 
+    mesh.texture_count = fast_obj_mesh->texture_count - 1;
     if (fast_obj_mesh->texture_count > 1)
     {
-        mesh.textures = cstrl_texture_generate_from_path(fast_obj_mesh->textures[1].path, CSTRL_TEXTURE_FILTER_NEAREST);
+        for (int i = 1; i < fast_obj_mesh->texture_count; i++)
+        {
+            if (i >= MAX_TEXTURES)
+            {
+                log_warn("Reached max texture count");
+                break;
+            }
+            mesh.textures[i - 1] =
+                cstrl_texture_generate_from_path(fast_obj_mesh->textures[i].path, CSTRL_TEXTURE_FILTER_NEAREST);
+        }
     }
 
     fast_obj_destroy(fast_obj_mesh);
