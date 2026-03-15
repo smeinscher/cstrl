@@ -185,6 +185,16 @@ CSTRL_API float *cstrl_renderer_map_offsets_range_instanced(cstrl_render_data *r
 
 CSTRL_API void cstrl_renderer_unmap_offsets_range(cstrl_render_data *render_data);
 
+CSTRL_API void cstrl_renderer_set_stencil_test_enabled(bool enabled);
+
+CSTRL_API void cstrl_renderer_set_stencil_mask(unsigned int mask);
+
+CSTRL_API void cstrl_renderer_start_stencil_write();
+
+CSTRL_API void cstrl_renderer_start_stencil_draw();
+
+CSTRL_API void cstrl_renderer_end_stencil_write();
+
 /*
  *
  *  Shader

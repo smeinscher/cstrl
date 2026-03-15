@@ -54,7 +54,7 @@ CSTRL_API bool cstrl_opengl_platform_init(cstrl_platform_state *platform_state)
         0,
         0,              // accum bits ignored
         32,             // 32-bit z-buffer
-        0,              // no stencil buffer
+        8,              // yes stencil buffer
         0,              // no auxiliary buffer
         PFD_MAIN_PLANE, // main layer
         0,              // reserved

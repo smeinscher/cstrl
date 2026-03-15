@@ -86,7 +86,7 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a)
 {
     glClearColor(r, g, b, a);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
 CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height)
@@ -716,6 +716,33 @@ CSTRL_API void cstrl_renderer_unmap_offsets_range(cstrl_render_data *render_data
 {
     internal_data *internal_data = render_data->internal_data;
     glUnmapNamedBuffer(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
+}
+
+CSTRL_API void cstrl_renderer_set_stencil_test_enabled(bool enabled)
+{
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+}
+
+CSTRL_API void cstrl_renderer_set_stencil_mask(unsigned int mask)
+{
+    glStencilMask(mask);
+}
+
+CSTRL_API void cstrl_renderer_start_stencil_write()
+{
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+}
+
+CSTRL_API void cstrl_renderer_start_stencil_draw()
+{
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+}
+
+CSTRL_API void cstrl_renderer_end_stencil_write()
+{
+    glStencilFunc(GL_ALWAYS, 0, 0xFF);
 }
 
 #endif
