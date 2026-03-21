@@ -153,7 +153,12 @@ CSTRL_API void cstrl_retained_ui_init(cstrl_platform_state *platform_state, cons
     g_font_buffer_colors = cstrl_renderer_map_colors_range(g_font_render_data, font_colors);
     g_font_buffer_layers = cstrl_renderer_map_layers_range(g_font_render_data, font_layers);
 
+#ifdef CSTRL_PLATFORM_WINDOWS
+    FILE *font_file;
+    fopen_s(&font_file, font_path, "rb");
+#else
     FILE *font_file = fopen(font_path, "rb");
+#endif
     fseek(font_file, 0, SEEK_END);
     long size = ftell(font_file);
     fseek(font_file, 0, SEEK_SET);
@@ -217,7 +222,11 @@ CSTRL_API cstrl_retained_ui_element_t *cstrl_retained_ui_create(cstrl_retained_u
     element->parent_id = -1;
     element->label = malloc((strlen(label) + 1) * sizeof(char));
     element->_label_max_length = strlen(label);
+#ifdef CSTRL_PLATFORM_WINDOWS
+    strcpy_s(element->label, (element->_label_max_length + 1) * sizeof(char), label);
+#else
     strcpy(element->label, label);
+#endif
     element->label_index = g_manager.text_count;
     g_manager.text_count += strlen(label);
     element->color = (cstrl_retained_ui_color_t){1.0f, 1.0f, 1.0f, 1.0f};
