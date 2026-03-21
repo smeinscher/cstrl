@@ -24,6 +24,7 @@ typedef enum cstrl_render_attribute_type
     CSTRL_RENDER_ATTRIBUTE_TANGENTS,
     CSTRL_RENDER_ATTRIBUTE_BITANGENTS,
     CSTRL_RENDER_ATTRIBUTE_OFFSETS,
+    CSTRL_RENDER_ATTRIBUTE_LAYERS,
     CSTRL_RENDER_ATTRIBUTE_MAX
 } cstrl_render_attribute_type;
 
@@ -57,6 +58,11 @@ typedef struct cstrl_texture
     const char *path;
     time_t last_modified_timestamp;
 } cstrl_texture;
+
+typedef struct cstrl_texture_array
+{
+    unsigned int id;
+} cstrl_texture_array;
 
 typedef enum cstrl_texture_format
 {
@@ -103,7 +109,8 @@ CSTRL_API void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs
 
 CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors);
 
-CSTRL_API void cstrl_renderer_add_colors_instanced(cstrl_render_data *render_data, float *colors, size_t instance_count);
+CSTRL_API void cstrl_renderer_add_colors_instanced(cstrl_render_data *render_data, float *colors,
+                                                   size_t instance_count);
 
 CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals);
 
@@ -113,7 +120,10 @@ CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float
 
 CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, float *bitangents);
 
-CSTRL_API void cstrl_renderer_add_offsets_instanced(cstrl_render_data *render_data, float *offsets, size_t instance_count);
+CSTRL_API void cstrl_renderer_add_offsets_instanced(cstrl_render_data *render_data, float *offsets,
+                                                    size_t instance_count);
+
+CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *layers);
 
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
                                                size_t count);
@@ -184,6 +194,10 @@ CSTRL_API void cstrl_renderer_unmap_indices_range(cstrl_render_data *render_data
 CSTRL_API float *cstrl_renderer_map_offsets_range_instanced(cstrl_render_data *render_data, float *data, size_t size);
 
 CSTRL_API void cstrl_renderer_unmap_offsets_range(cstrl_render_data *render_data);
+
+CSTRL_API float *cstrl_renderer_map_layers_range(cstrl_render_data *render_data, float *data);
+
+CSTRL_API void cstrl_renderer_unmap_layers_range(cstrl_render_data *render_data);
 
 CSTRL_API void cstrl_renderer_set_stencil_test_enabled(bool enabled);
 
@@ -256,11 +270,18 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap
                                                            cstrl_texture_format format,
                                                            cstrl_texture_format internal_format);
 
+CSTRL_API cstrl_texture_array cstrl_texture_array_generate_from_bitmaps(unsigned int bitmap_count,
+                                                                        unsigned char **bitmaps, int width, int height,
+                                                                        cstrl_texture_format format,
+                                                                        cstrl_texture_format internal_format);
+
 CSTRL_API cstrl_texture cstrl_texture_cube_map_generate_from_folder(const char *folder, bool alpha_channel);
 
 CSTRL_API void cstrl_texture_hot_reload(cstrl_texture *texture);
 
 CSTRL_API void cstrl_texture_bind(cstrl_texture texture);
+
+CSTRL_API void cstrl_texture_array_bind(cstrl_texture_array texture);
 
 CSTRL_API void cstrl_texture_cube_map_bind(cstrl_texture texture);
 

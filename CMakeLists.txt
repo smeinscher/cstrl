@@ -13,44 +13,44 @@ find_package(OpenGL)
 
 find_package(Vulkan)
 
-if (WIN32)
+if(WIN32)
     set(OPENAL_SDK "C:/Program Files (x86)/OpenAL 1.1 SDK")
     include_directories("${OPENAL_SDK}/include")
     link_directories("${OPENAL_SDK}/libs/Win64")
     set(OPENAL_LIBRARY "OpenAL32.lib")
-else ()
+else()
     find_package(OpenAL)
     set(OPENAL_LIBRARY OpenAL::OpenAL)
-endif ()
+endif()
 
 find_package(X11 QUIET)
 
 add_library(log_c STATIC
         extern/log.c/log.c
         extern/log.c/log.h)
-if (UNIX)
+if(UNIX)
     target_compile_options(log_c PRIVATE -DLOG_USE_COLOR -fPIC)
-else ()
+else()
     target_compile_options(log_c PRIVATE -DLOG_USE_COLOR)
 endif()
 
-if (NOT DEFINED RENDER_API)
+if(NOT DEFINED RENDER_API)
     set(RENDER_API "OPENGL")
-endif ()
+endif()
 
-if (${RENDER_API} STREQUAL "OPENGL")
+if(${RENDER_API} STREQUAL "OPENGL")
     add_compile_definitions(CSTRL_RENDER_API_OPENGL)
-elseif (${RENDER_API} STREQUAL "VULKAN")
+elseif(${RENDER_API} STREQUAL "VULKAN")
     add_compile_definitions(CSTRL_RENDER_API_VULKAN)
-endif ()
+endif()
 
-if (ANDROID OR EMSCRIPTEN)
+if(ANDROID OR EMSCRIPTEN)
     set(GLAD_C extern/glad/gles3/glad.c)
     set(GLAD_H extern/glad/gles3/glad.h extern/glad/gles3/KHR/khrplatform.h)
-else ()
+else()
     set(GLAD_C extern/glad/glad.c)
     set(GLAD_H extern/glad/glad.h)
-endif ()
+endif()
 
 add_library(cstrl SHARED
         ${GLAD_C}
@@ -58,8 +58,8 @@ add_library(cstrl SHARED
         extern/stb/stb_image.c
         extern/stb/stb_image.h
         # TODO: find a way for this not to clash with nuklear
-        # extern/stb/stb_truetype.c
-        # extern/stb/stb_truetype.h
+        extern/stb/stb_truetype.c
+        extern/stb/stb_truetype.h
         extern/stb/stb_image_write.c
         extern/stb/stb_image_write.h
         extern/cgltf/cgltf.c
@@ -113,22 +113,25 @@ add_library(cstrl SHARED
         src/model/gltf_loader.c
         include/cstrl/cstrl_model.h
         src/model/obj_loader.c
-        src/ui/nuklear/nuklear_cstrl.c
-        include/cstrl/cstrl_nuklear_ui.h
+        # src/ui/nuklear/nuklear_cstrl.c
+        # include/cstrl/cstrl_nuklear_ui.h
+        src/ui/retained/retained_ui.c
+        include/cstrl/cstrl_retained_ui.h
 )
 
-# target_compile_options(cstrl PRIVATE -Wall -Werror -Wno-missing-braces -DCSTRL_EXPORT)
+# target_compile_options(
+#   cstrl PRIVATE -Wall -Werror -Wno-missing-braces -DCSTRL_EXPORT)
 target_compile_options(cstrl PRIVATE -DCSTRL_EXPORT)
 
 target_link_libraries(cstrl PRIVATE log_c ${OPENGL_LIBRARIES} ${OPENAL_LIBRARY})
-if (X11_FOUND)
+if(X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)
-endif ()
-if (UNIX)
+endif()
+if(UNIX)
     target_link_libraries(cstrl PRIVATE m)
-endif ()
-if (ANDROID)
+endif()
+if(ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
-endif ()
+endif()
 
 target_include_directories(cstrl PUBLIC extern include)

@@ -308,10 +308,26 @@ CSTRL_API void cstrl_renderer_add_offsets_instanced(cstrl_render_data *render_da
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
-    glBufferData(GL_ARRAY_BUFFER, instance_count * data->dimensions * sizeof(float), offsets, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, instance_count * data->dimensions * sizeof(float), offsets, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_OFFSETS, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_OFFSETS);
     glVertexAttribDivisor(CSTRL_RENDER_ATTRIBUTE_OFFSETS, 1);
+}
+
+CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *layers)
+{
+    internal_data *data = render_data->internal_data;
+    data->cleared = false;
+
+    glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_LAYERS]);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_LAYERS]);
+    glBufferData(GL_ARRAY_BUFFER, data->count * sizeof(float), layers, GL_STATIC_DRAW);
+    glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_LAYERS, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void *)0);
+    glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_LAYERS);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 }
 
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
@@ -716,6 +732,22 @@ CSTRL_API void cstrl_renderer_unmap_offsets_range(cstrl_render_data *render_data
 {
     internal_data *internal_data = render_data->internal_data;
     glUnmapNamedBuffer(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
+}
+
+CSTRL_API float *cstrl_renderer_map_layers_range(cstrl_render_data *render_data, float *data)
+{
+    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    internal_data *internal_data = render_data->internal_data;
+    glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_LAYERS], internal_data->count * sizeof(float), data,
+                         flags);
+    return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_LAYERS], 0,
+                                 internal_data->count * sizeof(float), flags);
+}
+
+CSTRL_API void cstrl_renderer_unmap_layers_range(cstrl_render_data *render_data)
+{
+    internal_data *internal_data = render_data->internal_data;
+    glUnmapNamedBuffer(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_LAYERS]);
 }
 
 CSTRL_API void cstrl_renderer_set_stencil_test_enabled(bool enabled)

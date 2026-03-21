@@ -137,6 +137,59 @@ CSTRL_API cstrl_texture cstrl_texture_generate_from_bitmap(unsigned char *bitmap
     return texture;
 }
 
+CSTRL_API cstrl_texture_array cstrl_texture_array_generate_from_bitmaps(unsigned int bitmap_count,
+                                                                        unsigned char **bitmaps, int width, int height,
+                                                                        cstrl_texture_format format,
+                                                                        cstrl_texture_format internal_format)
+{
+    cstrl_texture_array texture_array = {0};
+    unsigned int texture_array_id;
+    glGenTextures(1, &texture_array_id);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array_id);
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    GLuint gl_format;
+    GLuint gl_internal_format;
+    switch (format)
+    {
+    case CSTRL_RED:
+        gl_format = GL_RED;
+        break;
+    case CSTRL_RGB:
+        gl_format = GL_RGB;
+        break;
+    case CSTRL_RGBA:
+        gl_format = GL_RGBA;
+        break;
+    }
+    switch (internal_format)
+    {
+    case CSTRL_RED:
+        gl_internal_format = GL_R8;
+        break;
+    case CSTRL_RGB:
+        gl_internal_format = GL_RGB;
+        break;
+    case CSTRL_RGBA:
+        gl_internal_format = GL_RGBA;
+        break;
+    }
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, gl_internal_format, width, height, bitmap_count, 0, gl_format,
+                 GL_UNSIGNED_BYTE, NULL);
+    for (int i = 0; i < bitmap_count; i++)
+    {
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, width, height, 1, gl_format, GL_UNSIGNED_BYTE, bitmaps[i]);
+    }
+
+    // glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+    texture_array.id = texture_array_id;
+    return texture_array;
+}
+
 CSTRL_API cstrl_texture cstrl_texture_cube_map_generate_from_folder(const char *folder, bool alpha_channel)
 {
     cstrl_texture texture = {0};
@@ -188,6 +241,11 @@ CSTRL_API void cstrl_texture_hot_reload(cstrl_texture *texture)
 CSTRL_API void cstrl_texture_bind(cstrl_texture texture)
 {
     glBindTexture(GL_TEXTURE_2D, texture.id);
+}
+
+CSTRL_API void cstrl_texture_array_bind(cstrl_texture_array texture_array)
+{
+    glBindTexture(GL_TEXTURE_2D_ARRAY, texture_array.id);
 }
 
 CSTRL_API void cstrl_texture_cube_map_bind(cstrl_texture texture)
