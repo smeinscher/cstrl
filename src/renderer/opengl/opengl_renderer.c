@@ -164,6 +164,10 @@ CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data()
 
 CSTRL_API void cstrl_renderer_free_render_data(cstrl_render_data *render_data)
 {
+    if (render_data == NULL)
+    {
+        return;
+    }
     internal_data *internal_data = render_data->internal_data;
     glDeleteVertexArrays(1, &internal_data->vao);
     glDeleteBuffers(1, &internal_data->vbos[0]);

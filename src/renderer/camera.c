@@ -5,36 +5,26 @@
 #include "cstrl/cstrl_camera.h"
 #include "cstrl/cstrl_math.h"
 
-#include <stdlib.h>
-
-CSTRL_API cstrl_camera *cstrl_camera_create(float viewport_width, float viewport_height, bool is_orthographic)
+CSTRL_API void cstrl_camera_create(cstrl_camera *camera, float viewport_width, float viewport_height,
+                                   bool is_orthographic)
 {
-    cstrl_camera *new_camera = malloc(sizeof(cstrl_camera));
+    camera->is_orthographic = is_orthographic;
+    camera->fov = 45.0f * cstrl_pi_180;
+    camera->near = 0.1f;
+    camera->far = 100.0f;
+    camera->speed = 1.0f;
+    camera->viewport.x = viewport_width;
+    camera->viewport.y = viewport_height;
+    camera->offset.x = 0.0f;
+    camera->offset.y = 0.0f;
+    camera->forward = (vec3){0.0f, 0.0f, -1.0f};
+    camera->up = (vec3){0.0f, 1.0f, 0.0f};
+    camera->right = (vec3){1.0f, 0.0f, 0.0f};
+    camera->view = cstrl_mat4_identity();
+    camera->projection = cstrl_mat4_identity();
+    camera->position = (vec3){0.0f, 0.0f, 1.0f};
 
-    new_camera->is_orthographic = is_orthographic;
-    new_camera->fov = 45.0f * cstrl_pi_180;
-    new_camera->near = 0.1f;
-    new_camera->far = 100.0f;
-    new_camera->speed = 1.0f;
-    new_camera->viewport.x = viewport_width;
-    new_camera->viewport.y = viewport_height;
-    new_camera->offset.x = 0.0f;
-    new_camera->offset.y = 0.0f;
-    new_camera->forward = (vec3){0.0f, 0.0f, -1.0f};
-    new_camera->up = (vec3){0.0f, 1.0f, 0.0f};
-    new_camera->right = (vec3){1.0f, 0.0f, 0.0f};
-    new_camera->view = cstrl_mat4_identity();
-    new_camera->projection = cstrl_mat4_identity();
-    new_camera->position = (vec3){0.0f, 0.0f, 1.0f};
-
-    cstrl_camera_update(new_camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
-
-    return new_camera;
-}
-
-CSTRL_API void cstrl_camera_free(cstrl_camera *camera)
-{
-    free(camera);
+    cstrl_camera_update(camera, CSTRL_CAMERA_DIRECTION_NONE, CSTRL_CAMERA_DIRECTION_NONE);
 }
 
 CSTRL_API void cstrl_camera_update(cstrl_camera *camera, cstrl_camera_direction_mask movement,

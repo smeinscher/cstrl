@@ -9,7 +9,7 @@
 #include <string.h>
 
 #define MAX_UI_ELEMENTS 128
-#define MAX_TEXT_COUNT 2048
+#define MAX_TEXT_COUNT 4096
 
 static struct manager_t
 {
