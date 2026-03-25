@@ -536,6 +536,13 @@ CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data)
     glDrawArrays(GL_TRIANGLES, 0, internal_data->count);
 }
 
+CSTRL_API void cstrl_renderer_draw_custom_count(cstrl_render_data *data, int count)
+{
+    internal_data *internal_data = data->internal_data;
+    glBindVertexArray(internal_data->vao);
+    glDrawArrays(GL_TRIANGLES, 0, count);
+}
+
 CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data)
 {
     internal_data *internal_data = data->internal_data;
@@ -573,6 +580,14 @@ CSTRL_API void cstrl_renderer_draw_lines_indices(cstrl_render_data *data)
     glBindVertexArray(internal_data->vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, internal_data->ebo);
     glDrawElements(GL_LINES, internal_data->indices_count, GL_UNSIGNED_INT, 0);
+}
+
+CSTRL_API void cstrl_renderer_draw_lines_indices_by_count_and_offset(cstrl_render_data *data, int count, int *offset)
+{
+    internal_data *internal_data = data->internal_data;
+    glBindVertexArray(internal_data->vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, internal_data->ebo);
+    glDrawElements(GL_LINES, count, GL_UNSIGNED_INT, offset);
 }
 
 CSTRL_API void cstrl_renderer_draw_patches(cstrl_render_data *data)

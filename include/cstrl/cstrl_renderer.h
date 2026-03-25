@@ -143,6 +143,8 @@ CSTRL_API void cstrl_renderer_clear_render_attributes(cstrl_render_data *render_
 
 CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data);
 
+CSTRL_API void cstrl_renderer_draw_custom_count(cstrl_render_data *data, int count);
+
 CSTRL_API void cstrl_renderer_draw_indices(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_draw_indices_by_count_and_offset(cstrl_render_data *data, int count, int *offset);
@@ -152,6 +154,8 @@ CSTRL_API void cstrl_renderer_draw_indices_instanced(cstrl_render_data *data, in
 CSTRL_API void cstrl_renderer_draw_lines(cstrl_render_data *data);
 
 CSTRL_API void cstrl_renderer_draw_lines_indices(cstrl_render_data *data);
+
+CSTRL_API void cstrl_renderer_draw_lines_indices_by_count_and_offset(cstrl_render_data *data, int count, int *offset);
 
 CSTRL_API void cstrl_renderer_draw_patches(cstrl_render_data *data);
 
