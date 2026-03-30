@@ -201,9 +201,10 @@ static void tree_insert(aabb_tree_t *tree, int node_index)
 
         tree_insert(tree, node_index);
     }
+    // TODO: be more descriptive with message
     if (parent_index == node_index)
     {
-        printf("Oof\n");
+        log_warn("Oof (TODO: be more descriptive)\n");
     }
     update_aabb(tree, parent_index);
 }

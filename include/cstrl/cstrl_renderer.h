@@ -90,13 +90,21 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state);
 
 CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a);
 
+CSTRL_API void cstrl_renderer_get_viewport(int *viewport);
+
 CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height);
 
 CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao);
 
 CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo);
 
+CSTRL_API void cstrl_renderer_bind_renderbuffer(unsigned int rbo);
+
+CSTRL_API void cstrl_renderer_draw_buffers(unsigned int *attachment, unsigned int count);
+
 CSTRL_API void cstrl_renderer_framebuffer_draw(unsigned int vao);
+
+CSTRL_API void cstrl_renderer_free_framebuffer(unsigned int *fbo, unsigned int *rbo, unsigned int *vao);
 
 CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data();
 
@@ -213,6 +221,8 @@ CSTRL_API void cstrl_renderer_start_stencil_draw();
 
 CSTRL_API void cstrl_renderer_end_stencil_write();
 
+CSTRL_API bool cstrl_renderer_take_screenshot(const char *filename);
+
 /*
  *
  *  Shader
@@ -266,7 +276,7 @@ CSTRL_API void cstrl_shader_hot_reload(cstrl_shader *shader);
 
 CSTRL_API void cstrl_texture_set_flip_vertically(bool flip_vertically);
 
-CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height);
+CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height, int color_attachment);
 
 CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path, cstrl_texture_filter texture_filter);
 

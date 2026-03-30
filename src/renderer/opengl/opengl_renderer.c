@@ -15,6 +15,7 @@
 #include "opengl_platform.h"
 
 #include <cstrl/cstrl_renderer.h>
+#include <stb/stb_image_write.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -89,6 +90,11 @@ CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
+CSTRL_API void cstrl_renderer_get_viewport(int *viewport)
+{
+    glGetIntegerv(GL_VIEWPORT, viewport);
+}
+
 CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height)
 {
     glViewport(x, y, width, height);
@@ -127,6 +133,7 @@ CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
 }
 
 CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo)
@@ -134,10 +141,32 @@ CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo)
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 }
 
+CSTRL_API void cstrl_renderer_bind_renderbuffer(unsigned int rbo)
+{
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+}
+
+CSTRL_API void cstrl_renderer_draw_buffers(unsigned int *attachments, unsigned int count)
+{
+    for (int i = 0; i < count; i++)
+    {
+        attachments[i] += GL_COLOR_ATTACHMENT0;
+    }
+    glDrawBuffers(count, attachments);
+}
+
 CSTRL_API void cstrl_renderer_framebuffer_draw(unsigned int vao)
 {
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+}
+
+CSTRL_API void cstrl_renderer_free_framebuffer(unsigned int *fbo, unsigned int *rbo, unsigned int *vao)
+{
+    glDeleteFramebuffers(1, fbo);
+    glDeleteRenderbuffers(1, rbo);
+    glDeleteVertexArrays(1, vao);
 }
 
 CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data()
@@ -794,6 +823,27 @@ CSTRL_API void cstrl_renderer_start_stencil_draw()
 CSTRL_API void cstrl_renderer_end_stencil_write()
 {
     glStencilFunc(GL_ALWAYS, 0, 0xFF);
+}
+
+CSTRL_API bool cstrl_renderer_take_screenshot(const char *filename)
+{
+    GLint viewport[4];
+    cstrl_renderer_get_viewport(viewport);
+
+    char *data = malloc(viewport[2] * viewport[3] * 3);
+    if (!data)
+    {
+        return false;
+    }
+
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(viewport[0], viewport[1], viewport[2], viewport[3], GL_RGB, GL_UNSIGNED_BYTE, data);
+    stbi_flip_vertically_on_write(true);
+    int saved = stbi_write_png(filename, viewport[2], viewport[3], 3, data, 0);
+
+    free(data);
+
+    return saved == 1;
 }
 
 #endif
