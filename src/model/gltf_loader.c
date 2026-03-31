@@ -142,9 +142,9 @@ CSTRL_API scene_t cstrl_model_generate_scene_from_gltf_file(const char *path)
         }
     }
 
-    cstrl_renderer_add_positions(scene.render_datum[0], positions.array, 3, positions.size / 3);
-    cstrl_renderer_add_colors(scene.render_datum[0], colors.array);
-    cstrl_renderer_add_indices(scene.render_datum[0], indices.array, indices.size);
+    cstrl_renderer_add_positions(scene.render_datum[0], positions.array, 3, positions.size / 3, CSTRL_USAGE_DYNAMIC);
+    cstrl_renderer_add_colors(scene.render_datum[0], colors.array, CSTRL_USAGE_DYNAMIC);
+    cstrl_renderer_add_indices(scene.render_datum[0], indices.array, indices.size, CSTRL_USAGE_DYNAMIC);
 
     cstrl_da_float_free(&positions);
     cstrl_da_float_free(&colors);

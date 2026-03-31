@@ -247,8 +247,8 @@ int test_4_cubes_scene()
     {
         uvs_final[i] = uvs[i % 72];
     }
-    cstrl_renderer_add_positions(render_data, vertices_final, 3, 144);
-    cstrl_renderer_add_uvs(render_data, uvs_final);
+    cstrl_renderer_add_positions(render_data, vertices_final, 3, 144, CSTRL_USAGE_STATIC);
+    cstrl_renderer_add_uvs(render_data, uvs_final, CSTRL_USAGE_STATIC);
 
     g_main_camera = cstrl_camera_create(800, 600, false);
     g_main_camera->position = (vec3){0.0f, 0.0f, 5.0f};

@@ -71,7 +71,17 @@ typedef enum cstrl_texture_format
     CSTRL_RGBA
 } cstrl_texture_format;
 
-typedef CSTRL_PACKED_ENUM{CSTRL_TEXTURE_FILTER_LINEAR, CSTRL_TEXTURE_FILTER_NEAREST} cstrl_texture_filter;
+typedef enum cstrl_texture_filter
+{
+    CSTRL_TEXTURE_FILTER_LINEAR,
+    CSTRL_TEXTURE_FILTER_NEAREST
+} cstrl_texture_filter;
+
+typedef enum cstrl_usage
+{
+    CSTRL_USAGE_STATIC,
+    CSTRL_USAGE_DYNAMIC
+} cstrl_usage;
 
 #endif
 
@@ -94,7 +104,8 @@ CSTRL_API void cstrl_renderer_get_viewport(int *viewport);
 
 CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height);
 
-CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao);
+CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao,
+                                        cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo);
 
@@ -111,30 +122,31 @@ CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data();
 CSTRL_API void cstrl_renderer_free_render_data(cstrl_render_data *render_data);
 
 CSTRL_API void cstrl_renderer_add_positions(cstrl_render_data *render_data, float *positions, unsigned int dimensions,
-                                            unsigned int vertex_count);
+                                            unsigned int vertex_count, cstrl_usage usage);
 
-CSTRL_API void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs);
+CSTRL_API void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs, cstrl_usage usage);
 
-CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors);
+CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors, cstrl_usage usage);
 
-CSTRL_API void cstrl_renderer_add_colors_instanced(cstrl_render_data *render_data, float *colors,
-                                                   size_t instance_count);
+CSTRL_API void cstrl_renderer_add_colors_instanced(cstrl_render_data *render_data, float *colors, size_t instance_count,
+                                                   cstrl_usage usage);
 
-CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals);
+CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals, cstrl_usage usage);
 
-CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t indices_count);
+CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t indices_count,
+                                          cstrl_usage usage);
 
-CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float *tangents);
+CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float *tangents, cstrl_usage usage);
 
-CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, float *bitangents);
+CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, float *bitangents, cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_add_offsets_instanced(cstrl_render_data *render_data, float *offsets,
-                                                    size_t instance_count);
+                                                    size_t instance_count, cstrl_usage usage);
 
-CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *layers);
+CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *layers, cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
-                                               size_t count);
+                                               size_t count, cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_modify_uvs(cstrl_render_data *render_data, float *uvs, size_t start_index, size_t count);
 
@@ -142,12 +154,7 @@ CSTRL_API void cstrl_renderer_modify_colors(cstrl_render_data *render_data, floa
                                             size_t count);
 
 CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int *indices, size_t start_index,
-                                             size_t count);
-
-CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions,
-                                                       const float *uvs, const float *colors, size_t count);
-
-CSTRL_API void cstrl_renderer_clear_render_attributes(cstrl_render_data *render_data);
+                                             size_t count, cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data);
 
@@ -179,7 +186,7 @@ CSTRL_API bool cstrl_renderer_cull_face_enabled();
 
 CSTRL_API void cstrl_renderer_set_cull_face_enabled(bool enabled);
 
-CSTRL_API unsigned int cstrl_renderer_add_ubo(size_t size);
+CSTRL_API unsigned int cstrl_renderer_add_ubo(size_t size, cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_update_ubo(unsigned int ubo, void *object, size_t size, size_t offset);
 

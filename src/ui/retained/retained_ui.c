@@ -60,19 +60,19 @@ CSTRL_API void cstrl_retained_ui_init(cstrl_platform_state *platform_state, cons
     float uvs[MAX_UI_ELEMENTS * 12] = {0};
     float colors[MAX_UI_ELEMENTS * 24] = {0};
 
-    cstrl_renderer_add_positions(g_rect_render_data, positions, 2, 6 * MAX_UI_ELEMENTS);
-    cstrl_renderer_add_uvs(g_rect_render_data, uvs);
-    cstrl_renderer_add_colors(g_rect_render_data, colors);
+    cstrl_renderer_add_positions(g_rect_render_data, positions, 2, 6 * MAX_UI_ELEMENTS, CSTRL_USAGE_DYNAMIC);
+    cstrl_renderer_add_uvs(g_rect_render_data, uvs, CSTRL_USAGE_DYNAMIC);
+    cstrl_renderer_add_colors(g_rect_render_data, colors, CSTRL_USAGE_DYNAMIC);
 
     float font_positions[MAX_TEXT_COUNT * 12] = {0};
     float font_uvs[MAX_TEXT_COUNT * 12] = {0};
     float font_colors[MAX_TEXT_COUNT * 24] = {0};
     float font_layers[MAX_TEXT_COUNT * 6] = {0};
 
-    cstrl_renderer_add_positions(g_font_render_data, font_positions, 2, 6 * MAX_TEXT_COUNT);
-    cstrl_renderer_add_uvs(g_font_render_data, font_uvs);
-    cstrl_renderer_add_colors(g_font_render_data, font_colors);
-    cstrl_renderer_add_layers(g_font_render_data, font_layers);
+    cstrl_renderer_add_positions(g_font_render_data, font_positions, 2, 6 * MAX_TEXT_COUNT, CSTRL_USAGE_DYNAMIC);
+    cstrl_renderer_add_uvs(g_font_render_data, font_uvs, CSTRL_USAGE_DYNAMIC);
+    cstrl_renderer_add_colors(g_font_render_data, font_colors, CSTRL_USAGE_DYNAMIC);
+    cstrl_renderer_add_layers(g_font_render_data, font_layers, CSTRL_USAGE_STATIC);
 
     const char *vertex_shader_source = "                            \
         #version 460 core\n                                         \

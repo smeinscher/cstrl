@@ -29,7 +29,6 @@ typedef struct internal_data
     size_t count;
     unsigned int dimensions;
     size_t indices_count;
-    bool cleared;
 } internal_data;
 
 #if defined(CSTRL_DEBUG)
@@ -54,6 +53,18 @@ static void debug_callback(GLenum source, GLenum type, GLuint id, GLenum severit
     }
 }
 #endif
+
+static unsigned int cstrl_usage_to_opengl_usage(cstrl_usage usage)
+{
+    if (usage == CSTRL_USAGE_DYNAMIC)
+    {
+        return GL_DYNAMIC_DRAW;
+    }
+    else
+    {
+        return GL_STATIC_DRAW;
+    }
+}
 
 CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 {
@@ -100,7 +111,8 @@ CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, uns
     glViewport(x, y, width, height);
 }
 
-CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao)
+CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao,
+                                        cstrl_usage usage)
 {
     glGenFramebuffers(1, fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
@@ -128,7 +140,7 @@ CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo
     glGenBuffers(1, &vbo);
     glBindVertexArray(*vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
@@ -184,7 +196,6 @@ CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data()
     internal_data->count = 0;
     internal_data->dimensions = 2;
     internal_data->indices_count = 0;
-    internal_data->cleared = false;
 
     glGenVertexArrays(1, &internal_data->vao);
 
@@ -208,17 +219,17 @@ CSTRL_API void cstrl_renderer_free_render_data(cstrl_render_data *render_data)
 }
 
 CSTRL_API void cstrl_renderer_add_positions(cstrl_render_data *render_data, float *positions, unsigned int dimensions,
-                                            unsigned int vertex_count)
+                                            unsigned int vertex_count, cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
     data->dimensions = dimensions;
     data->count = vertex_count;
 
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
-    glBufferData(GL_ARRAY_BUFFER, vertex_count * dimensions * sizeof(float), positions, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertex_count * dimensions * sizeof(float), positions,
+                 cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(0, dimensions, GL_FLOAT, GL_FALSE, dimensions * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
 
@@ -226,14 +237,13 @@ CSTRL_API void cstrl_renderer_add_positions(cstrl_render_data *render_data, floa
     glBindVertexArray(0);
 }
 
-CSTRL_API void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs)
+CSTRL_API void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs, cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS]);
-    glBufferData(GL_ARRAY_BUFFER, data->count * 2 * sizeof(float), uvs, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 2 * sizeof(float), uvs, cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(1);
 
@@ -241,15 +251,14 @@ CSTRL_API void cstrl_renderer_add_uvs(cstrl_render_data *render_data, float *uvs
     glBindVertexArray(0);
 }
 
-CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors)
+CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *colors, cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
-    glBufferData(GL_ARRAY_BUFFER, data->count * 4 * sizeof(float), colors, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 4 * sizeof(float), colors, cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(2);
 
@@ -257,29 +266,28 @@ CSTRL_API void cstrl_renderer_add_colors(cstrl_render_data *render_data, float *
     glBindVertexArray(0);
 }
 
-CSTRL_API void cstrl_renderer_add_colors_instanced(cstrl_render_data *render_data, float *colors, size_t instance_count)
+CSTRL_API void cstrl_renderer_add_colors_instanced(cstrl_render_data *render_data, float *colors, size_t instance_count,
+                                                   cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
-    glBufferData(GL_ARRAY_BUFFER, instance_count * 4 * sizeof(float), colors, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, instance_count * 4 * sizeof(float), colors, cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_COLORS, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_COLORS);
     glVertexAttribDivisor(CSTRL_RENDER_ATTRIBUTE_COLORS, 1);
 }
 
-CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals)
+CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float *normals, cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_NORMALS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_NORMALS]);
-    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), normals, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), normals, cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(3);
 
@@ -287,28 +295,27 @@ CSTRL_API void cstrl_renderer_add_normals(cstrl_render_data *render_data, float 
     glBindVertexArray(0);
 }
 
-CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t indices_count)
+CSTRL_API void cstrl_renderer_add_indices(cstrl_render_data *render_data, int *indices, size_t indices_count,
+                                          cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
     data->indices_count = indices_count;
     glGenBuffers(1, &data->ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data->ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_count * sizeof(int), indices, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_count * sizeof(int), indices, cstrl_usage_to_opengl_usage(usage));
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 
-CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float *tangents)
+CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float *tangents, cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_TANGENTS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_TANGENTS]);
-    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), tangents, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), tangents, cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_TANGENTS, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_TANGENTS);
 
@@ -316,15 +323,14 @@ CSTRL_API void cstrl_renderer_add_tangents(cstrl_render_data *render_data, float
     glBindVertexArray(0);
 }
 
-CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, float *bitangents)
+CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, float *bitangents, cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_BITANGENTS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_BITANGENTS]);
-    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), bitangents, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data->count * 3 * sizeof(float), bitangents, cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_BITANGENTS, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_BITANGENTS);
 
@@ -333,29 +339,28 @@ CSTRL_API void cstrl_renderer_add_bitangents(cstrl_render_data *render_data, flo
 }
 
 CSTRL_API void cstrl_renderer_add_offsets_instanced(cstrl_render_data *render_data, float *offsets,
-                                                    size_t instance_count)
+                                                    size_t instance_count, cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS]);
-    glBufferData(GL_ARRAY_BUFFER, instance_count * data->dimensions * sizeof(float), offsets, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, instance_count * data->dimensions * sizeof(float), offsets,
+                 cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_OFFSETS, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_OFFSETS);
     glVertexAttribDivisor(CSTRL_RENDER_ATTRIBUTE_OFFSETS, 1);
 }
 
-CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *layers)
+CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *layers, cstrl_usage usage)
 {
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_LAYERS]);
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_LAYERS]);
-    glBufferData(GL_ARRAY_BUFFER, data->count * sizeof(float), layers, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, data->count * sizeof(float), layers, cstrl_usage_to_opengl_usage(usage));
     glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_LAYERS, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void *)0);
     glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_LAYERS);
 
@@ -364,7 +369,7 @@ CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *
 }
 
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
-                                               size_t count)
+                                               size_t count, cstrl_usage usage)
 {
     if (count == 0)
     {
@@ -372,7 +377,6 @@ CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, f
         return;
     }
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     if (count + start_index > data->count * data->dimensions)
     {
@@ -404,7 +408,6 @@ CSTRL_API void cstrl_renderer_modify_uvs(cstrl_render_data *render_data, float *
         log_error("UV count/start out of range");
         return;
     }
-    data->cleared = false;
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS]);
     glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), uvs);
@@ -431,7 +434,6 @@ CSTRL_API void cstrl_renderer_modify_colors(cstrl_render_data *render_data, floa
         log_error("Color count/start out of range");
         return;
     }
-    data->cleared = false;
     glBindVertexArray(data->vao);
     glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
     glBufferSubData(GL_ARRAY_BUFFER, start_index * sizeof(float), count * sizeof(float), colors);
@@ -440,7 +442,7 @@ CSTRL_API void cstrl_renderer_modify_colors(cstrl_render_data *render_data, floa
 }
 
 CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int *indices, size_t start_index,
-                                             size_t count)
+                                             size_t count, cstrl_usage usage)
 {
     if (count == 0)
     {
@@ -448,7 +450,6 @@ CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int
         return;
     }
     internal_data *data = render_data->internal_data;
-    data->cleared = false;
 
     if (indices != NULL)
     {
@@ -456,7 +457,8 @@ CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int
         if (start_index + count > data->indices_count)
         {
             data->indices_count = start_index + count;
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, data->indices_count * sizeof(int), indices, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, data->indices_count * sizeof(int), indices,
+                         cstrl_usage_to_opengl_usage(usage));
         }
         else
         {
@@ -466,96 +468,6 @@ CSTRL_API void cstrl_renderer_modify_indices(cstrl_render_data *render_data, int
     }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-}
-
-CSTRL_API void cstrl_renderer_modify_render_attributes(cstrl_render_data *render_data, const float *positions,
-                                                       const float *uvs, const float *colors, size_t count)
-{
-    if (count == 0)
-    {
-        log_warn("Modifying render data with 0 count, skipping to avoid possible undefined behavior");
-        return;
-    }
-    internal_data *data = render_data->internal_data;
-    data->cleared = false;
-
-    // if (count != data->count && (positions == NULL || (uvs == NULL && data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS] != 0) ||
-    //                              (colors == NULL && data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS] != 0)))
-    // {
-    //     log_error("When adding or removing data, need all attributes to be present");
-    //     return;
-    // }
-    glBindVertexArray(data->vao);
-    if (uvs != NULL)
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS]);
-        if (count == data->count)
-        {
-            glBufferSubData(GL_ARRAY_BUFFER, 0, count * 2 * sizeof(float), uvs);
-        }
-        else
-        {
-            glBufferData(GL_ARRAY_BUFFER, count * 2 * sizeof(float), uvs, GL_DYNAMIC_DRAW);
-        }
-    }
-    if (colors != NULL)
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
-        if (count == data->count)
-        {
-            glBufferSubData(GL_ARRAY_BUFFER, 0, count * 4 * sizeof(float), colors);
-        }
-        else
-        {
-            glBufferData(GL_ARRAY_BUFFER, count * 4 * sizeof(float), colors, GL_DYNAMIC_DRAW);
-        }
-    }
-    if (positions != NULL)
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
-        if (count == data->count)
-        {
-            glBufferSubData(GL_ARRAY_BUFFER, 0, count * data->dimensions * sizeof(float), positions);
-        }
-        else
-        {
-            glBufferData(GL_ARRAY_BUFFER, count * data->dimensions * sizeof(float), positions, GL_DYNAMIC_DRAW);
-            data->count = count;
-        }
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-}
-
-CSTRL_API void cstrl_renderer_clear_render_attributes(cstrl_render_data *render_data)
-{
-#if !defined(CSTRL_PLATFORM_ANDROID) && !defined(CSTRL_PLATFORM_EM_WEB)
-    internal_data *data = render_data->internal_data;
-    if (data->cleared)
-    {
-        return;
-    }
-    data->cleared = true;
-    data->count = 0;
-    float zero_float = 0.0f;
-    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS]);
-    glClearBufferData(GL_ARRAY_BUFFER, GL_R32F, GL_RED, GL_FLOAT, &zero_float);
-    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS]);
-    glClearBufferData(GL_ARRAY_BUFFER, GL_R32F, GL_RED, GL_FLOAT, &zero_float);
-    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS]);
-    glClearBufferData(GL_ARRAY_BUFFER, GL_R32F, GL_RED, GL_FLOAT, &zero_float);
-    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_NORMALS]);
-    glClearBufferData(GL_ARRAY_BUFFER, GL_R32F, GL_RED, GL_FLOAT, &zero_float);
-    int zero_int = 0;
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data->ebo);
-    glClearBufferData(GL_ELEMENT_ARRAY_BUFFER, GL_R32I, GL_RED, GL_INT, &zero_int);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-#else
-    log_error("Can not clear render data on android/web (yet)");
-#endif
 }
 
 CSTRL_API void cstrl_renderer_draw(cstrl_render_data *data)
@@ -670,13 +582,13 @@ CSTRL_API void cstrl_renderer_set_cull_face_enabled(bool enabled)
     }
 }
 
-CSTRL_API unsigned int cstrl_renderer_add_ubo(size_t size)
+CSTRL_API unsigned int cstrl_renderer_add_ubo(size_t size, cstrl_usage usage)
 {
     unsigned int ubo;
     glGenBuffers(1, &ubo);
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, size, NULL, cstrl_usage_to_opengl_usage(usage));
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, 0, size);
