@@ -204,6 +204,27 @@ void cstrl_platform_shutdown(cstrl_platform_state *platform_state)
     free(state);
 }
 
+static void get_mods(unsigned int state, int *mods)
+{
+    *mods = 0;
+    if (state & ShiftMask)
+    {
+        *mods |= CSTRL_KEY_MOD_SHIFT;
+    }
+    if (state & ControlMask)
+    {
+        *mods |= CSTRL_KEY_MOD_CONTROL;
+    }
+    if (state & Mod1Mask)
+    {
+        *mods |= CSTRL_KEY_MOD_ALT;
+    }
+    if (state & LockMask)
+    {
+        *mods |= CSTRL_KEY_MOD_CAPS_LOCK;
+    }
+}
+
 void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
 {
     internal_state *state = platform_state->internal_state;
@@ -230,8 +251,10 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
 
             if (state->state_common.callbacks.key != NULL)
             {
+                int mods;
+                get_mods(event->state, &mods);
                 state->state_common.callbacks.key(platform_state, x11_key_to_cstrl_key[event->keycode], event->keycode,
-                                                  action, 0);
+                                                  action, mods);
             }
             if (action == CSTRL_ACTION_PRESS)
             {
@@ -278,24 +301,8 @@ void cstrl_platform_pump_messages(cstrl_platform_state *platform_state)
 
             if (state->state_common.callbacks.mouse_button != NULL)
             {
-                int mods = 0;
-                if (event->state & ShiftMask)
-                {
-                    mods |= CSTRL_KEY_MOD_SHIFT;
-                }
-                if (event->state & ControlMask)
-                {
-                    mods |= CSTRL_KEY_MOD_CONTROL;
-                }
-                if (event->state & Mod1Mask)
-                {
-                    mods |= CSTRL_KEY_MOD_ALT;
-                }
-                if (event->state & LockMask)
-                {
-                    mods |= CSTRL_KEY_MOD_CAPS_LOCK;
-                }
-
+                int mods;
+                get_mods(event->state, &mods);
                 if (state->state_common.callbacks.mouse_button != NULL)
                 {
                     state->state_common.callbacks.mouse_button(platform_state, button, action, mods);
