@@ -98,7 +98,8 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state)
 CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a)
 {
     glClearColor(r, g, b, a);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    // TODO: determine what we need to clear by the user
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT /*| GL_STENCIL_BUFFER_BIT*/);
 }
 
 CSTRL_API void cstrl_renderer_get_viewport(int *viewport)
@@ -600,7 +601,7 @@ CSTRL_API void cstrl_renderer_set_line_width(float line_width)
 
 CSTRL_API float *cstrl_renderer_map_positions_range(cstrl_render_data *render_data, float *data)
 {
-    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_POSITIONS],
                          internal_data->count * internal_data->dimensions * sizeof(float), data, flags);
@@ -616,7 +617,7 @@ CSTRL_API void cstrl_renderer_unmap_positions_range(cstrl_render_data *render_da
 
 CSTRL_API float *cstrl_renderer_map_uvs_range(cstrl_render_data *render_data, float *data)
 {
-    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_UVS], internal_data->count * 2 * sizeof(float),
                          data, flags);
@@ -632,7 +633,7 @@ CSTRL_API void cstrl_renderer_unmap_uvs_range(cstrl_render_data *render_data)
 
 CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data, float *data)
 {
-    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], internal_data->count * 4 * sizeof(float),
                          data, flags);
@@ -642,7 +643,7 @@ CSTRL_API float *cstrl_renderer_map_colors_range(cstrl_render_data *render_data,
 
 CSTRL_API float *cstrl_renderer_map_colors_range_instanced(cstrl_render_data *render_data, float *data, size_t size)
 {
-    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], size * 4 * sizeof(float), data, flags);
     return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_COLORS], 0, size * 4 * sizeof(float),
@@ -657,7 +658,7 @@ CSTRL_API void cstrl_renderer_unmap_colors_range(cstrl_render_data *render_data)
 
 CSTRL_API int *cstrl_renderer_map_indices_range(cstrl_render_data *render_data, int *data)
 {
-    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->ebo, internal_data->indices_count * sizeof(int), data, flags);
     return glMapNamedBufferRange(internal_data->ebo, 0, internal_data->indices_count * sizeof(int), flags);
@@ -671,7 +672,7 @@ CSTRL_API void cstrl_renderer_unmap_indices_range(cstrl_render_data *render_data
 
 CSTRL_API float *cstrl_renderer_map_offsets_range_instanced(cstrl_render_data *render_data, float *data, size_t size)
 {
-    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS], size * 3 * sizeof(float), data, flags);
     return glMapNamedBufferRange(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_OFFSETS], 0, size * 3 * sizeof(float),
@@ -686,7 +687,7 @@ CSTRL_API void cstrl_renderer_unmap_offsets_range(cstrl_render_data *render_data
 
 CSTRL_API float *cstrl_renderer_map_layers_range(cstrl_render_data *render_data, float *data)
 {
-    GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
     internal_data *internal_data = render_data->internal_data;
     glNamedBufferStorage(internal_data->vbos[CSTRL_RENDER_ATTRIBUTE_LAYERS], internal_data->count * sizeof(float), data,
                          flags);
