@@ -298,11 +298,11 @@ CSTRL_API void cstrl_retained_ui_render()
     {
         cstrl_retained_ui_element_t *element = &g_manager.elements[i];
 
-        memset(g_rect_buffer_positions + i * 12, 0, 12 * sizeof(float));
-        int idx = element->label_index;
-        memset(g_font_buffer_positions + idx * 12, 0, element->_label_max_length * 12 * sizeof(float));
+        int label_index = element->label_index;
         if (!element->visible)
         {
+            memset(g_rect_buffer_colors + i * 24, 0, 24 * sizeof(float));
+            memset(g_font_buffer_colors + label_index * 24, 0, element->_label_max_length * 24 * sizeof(float));
             continue;
         }
         float x0 = element->x;
@@ -342,8 +342,19 @@ CSTRL_API void cstrl_retained_ui_render()
         float next_x = x0 + element->label_x;
         float start_y = y0 + element->label_y;
         int font_size_index = element->_font_size;
-        for (int j = 0; j < strlen(element->label); j++)
+        for (int j = 0; j < element->_label_max_length; j++)
         {
+            if (j >= strlen(element->label))
+            {
+                for (int k = 0; k < 6; k++)
+                {
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4] = 0.0f;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 1] = 0.0f;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 2] = 0.0f;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 3] = 0.0f;
+                }
+                continue;
+            }
             x0 = (float)next_x + g_char_data[font_size_index][element->label[j]].xoff;
             y0 = g_font_size_array[font_size_index] / 2.0f + (float)start_y +
                  g_char_data[font_size_index][element->label[j]].yoff2;
@@ -352,42 +363,42 @@ CSTRL_API void cstrl_retained_ui_render()
             y1 = g_font_size_array[font_size_index] / 2.0f + (float)start_y +
                  g_char_data[font_size_index][element->label[j]].yoff;
             next_x += g_char_data[font_size_index][element->label[j]].xadvance;
-            g_font_buffer_positions[idx * 12 + j * 12] = x0;
-            g_font_buffer_positions[idx * 12 + j * 12 + 1] = y1;
-            g_font_buffer_positions[idx * 12 + j * 12 + 2] = x1;
-            g_font_buffer_positions[idx * 12 + j * 12 + 3] = y0;
-            g_font_buffer_positions[idx * 12 + j * 12 + 4] = x0;
-            g_font_buffer_positions[idx * 12 + j * 12 + 5] = y0;
-            g_font_buffer_positions[idx * 12 + j * 12 + 6] = x0;
-            g_font_buffer_positions[idx * 12 + j * 12 + 7] = y1;
-            g_font_buffer_positions[idx * 12 + j * 12 + 8] = x1;
-            g_font_buffer_positions[idx * 12 + j * 12 + 9] = y0;
-            g_font_buffer_positions[idx * 12 + j * 12 + 10] = x1;
-            g_font_buffer_positions[idx * 12 + j * 12 + 11] = y1;
+            g_font_buffer_positions[label_index * 12 + j * 12] = x0;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 1] = y1;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 2] = x1;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 3] = y0;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 4] = x0;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 5] = y0;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 6] = x0;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 7] = y1;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 8] = x1;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 9] = y0;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 10] = x1;
+            g_font_buffer_positions[label_index * 12 + j * 12 + 11] = y1;
             u0 = (float)g_char_data[font_size_index][element->label[j]].x0 / 512.0f;
             v0 = (float)g_char_data[font_size_index][element->label[j]].y1 / 512.0f;
             u1 = (float)g_char_data[font_size_index][element->label[j]].x1 / 512.0f;
             v1 = (float)g_char_data[font_size_index][element->label[j]].y0 / 512.0f;
-            g_font_buffer_uvs[idx * 12 + j * 12] = u0;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 1] = v1;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 2] = u1;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 3] = v0;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 4] = u0;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 5] = v0;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 6] = u0;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 7] = v1;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 8] = u1;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 9] = v0;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 10] = u1;
-            g_font_buffer_uvs[idx * 12 + j * 12 + 11] = v1;
+            g_font_buffer_uvs[label_index * 12 + j * 12] = u0;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 1] = v1;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 2] = u1;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 3] = v0;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 4] = u0;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 5] = v0;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 6] = u0;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 7] = v1;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 8] = u1;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 9] = v0;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 10] = u1;
+            g_font_buffer_uvs[label_index * 12 + j * 12 + 11] = v1;
             if (element->hovered)
             {
                 for (int k = 0; k < 6; k++)
                 {
-                    g_font_buffer_colors[idx * 24 + j * 24 + k * 4] = element->font_hovered_color.r;
-                    g_font_buffer_colors[idx * 24 + j * 24 + k * 4 + 1] = element->font_hovered_color.g;
-                    g_font_buffer_colors[idx * 24 + j * 24 + k * 4 + 2] = element->font_hovered_color.b;
-                    g_font_buffer_colors[idx * 24 + j * 24 + k * 4 + 3] = element->font_hovered_color.a;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4] = element->font_hovered_color.r;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 1] = element->font_hovered_color.g;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 2] = element->font_hovered_color.b;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 3] = element->font_hovered_color.a;
                 }
             }
             else
@@ -395,10 +406,10 @@ CSTRL_API void cstrl_retained_ui_render()
 
                 for (int k = 0; k < 6; k++)
                 {
-                    g_font_buffer_colors[idx * 24 + j * 24 + k * 4] = element->font_color.r;
-                    g_font_buffer_colors[idx * 24 + j * 24 + k * 4 + 1] = element->font_color.g;
-                    g_font_buffer_colors[idx * 24 + j * 24 + k * 4 + 2] = element->font_color.b;
-                    g_font_buffer_colors[idx * 24 + j * 24 + k * 4 + 3] = element->font_color.a;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4] = element->font_color.r;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 1] = element->font_color.g;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 2] = element->font_color.b;
+                    g_font_buffer_colors[label_index * 24 + j * 24 + k * 4 + 3] = element->font_color.a;
                 }
             }
         }

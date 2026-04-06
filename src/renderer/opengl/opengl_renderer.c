@@ -111,19 +111,10 @@ CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, uns
     glViewport(x, y, width, height);
 }
 
-CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao,
-                                        cstrl_usage usage)
+CSTRL_API void cstrl_create_framebuffer(unsigned int *fbo, unsigned int *vao, cstrl_usage usage)
 {
     glGenFramebuffers(1, fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
-
-    glGenRenderbuffers(1, rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, *rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *rbo);
-
-    unsigned int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    CSTRL_ASSERT(status == GL_FRAMEBUFFER_COMPLETE, "Error creating framebuffer object");
 
     float x0 = -1.0f;
     float y0 = -1.0f;
@@ -174,10 +165,9 @@ CSTRL_API void cstrl_renderer_framebuffer_draw(unsigned int vao)
     glBindVertexArray(0);
 }
 
-CSTRL_API void cstrl_renderer_free_framebuffer(unsigned int *fbo, unsigned int *rbo, unsigned int *vao)
+CSTRL_API void cstrl_renderer_free_framebuffer(unsigned int *fbo, unsigned int *vao)
 {
     glDeleteFramebuffers(1, fbo);
-    glDeleteRenderbuffers(1, rbo);
     glDeleteVertexArrays(1, vao);
 }
 

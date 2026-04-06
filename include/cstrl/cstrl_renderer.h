@@ -104,8 +104,7 @@ CSTRL_API void cstrl_renderer_get_viewport(int *viewport);
 
 CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height);
 
-CSTRL_API void cstrl_create_framebuffer(int width, int height, unsigned int *fbo, unsigned int *rbo, unsigned int *vao,
-                                        cstrl_usage usage);
+CSTRL_API void cstrl_create_framebuffer(unsigned int *fbo, unsigned int *vao, cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo);
 
@@ -115,7 +114,7 @@ CSTRL_API void cstrl_renderer_draw_buffers(unsigned int *attachment, unsigned in
 
 CSTRL_API void cstrl_renderer_framebuffer_draw(unsigned int vao);
 
-CSTRL_API void cstrl_renderer_free_framebuffer(unsigned int *fbo, unsigned int *rbo, unsigned int *vao);
+CSTRL_API void cstrl_renderer_free_framebuffer(unsigned int *fbo, unsigned int *vao);
 
 CSTRL_API cstrl_render_data *cstrl_renderer_create_render_data();
 
