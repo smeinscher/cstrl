@@ -117,6 +117,7 @@ add_library(cstrl SHARED
         # include/cstrl/cstrl_nuklear_ui.h
         src/ui/retained/retained_ui.c
         include/cstrl/cstrl_retained_ui.h
+        src/renderer/opengl/opengl_font_renderer.c
 )
 
 # target_compile_options(

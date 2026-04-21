@@ -90,6 +90,11 @@ typedef struct cstrl_render_data
     void *internal_data;
 } cstrl_render_data;
 
+typedef struct cstrl_font_data
+{
+    void *internal_data;
+} cstrl_font_data;
+
 /*
  *
  *  Render Functions
@@ -228,6 +233,26 @@ CSTRL_API void cstrl_renderer_start_stencil_draw();
 CSTRL_API void cstrl_renderer_end_stencil_write();
 
 CSTRL_API bool cstrl_renderer_take_screenshot(const char *filename);
+
+/*
+ *
+ * Font
+ *
+ */
+
+CSTRL_API cstrl_font_data *cstrl_font_renderer_create_font_data(const char *font_path, float font_size);
+
+CSTRL_API void cstrl_font_renderer_set_position(cstrl_font_data *font_data, int text_block, float x, float y);
+
+CSTRL_API void cstrl_font_renderer_set_color(cstrl_font_data *font_data, int text_block, float r, float g, float b,
+                                             float a);
+
+CSTRL_API void cstrl_font_renderer_set_text(cstrl_font_data *font_data, int text_block, const char *text, float x,
+                                            float y, float r, float g, float b, float a);
+
+CSTRL_API void cstrl_font_renderer_draw(cstrl_font_data *font_data, int block_count, mat4 view, mat4 projection);
+
+CSTRL_API void cstrl_font_renderer_free(cstrl_font_data *font_data);
 
 /*
  *
