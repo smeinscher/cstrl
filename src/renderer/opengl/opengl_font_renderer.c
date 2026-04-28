@@ -132,10 +132,22 @@ CSTRL_API void cstrl_font_renderer_set_color(cstrl_font_data *font_data, int tex
     internal_data *internal_data = font_data->internal_data;
     for (int i = text_block * TEXT_BLOCK_SIZE * 6; i < (text_block + 1) * TEXT_BLOCK_SIZE * 6; i++)
     {
-        internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][i * 4] = r;
-        internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][i * 4 + 1] = g;
-        internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][i * 4 + 2] = b;
-        internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][i * 4 + 3] = a;
+        if (r >= 0.0f)
+        {
+            internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][i * 4] = r;
+        }
+        if (g >= 0.0f)
+        {
+            internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][i * 4 + 1] = g;
+        }
+        if (b >= 0.0f)
+        {
+            internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][i * 4 + 2] = b;
+        }
+        if (a >= 0.0f)
+        {
+            internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][i * 4 + 3] = a;
+        }
     }
 }
 
