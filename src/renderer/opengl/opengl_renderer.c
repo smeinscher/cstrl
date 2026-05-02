@@ -599,6 +599,64 @@ CSTRL_API void cstrl_renderer_set_line_width(float line_width)
     glLineWidth(line_width);
 }
 
+CSTRL_API void cstrl_renderer_map_buffer_init(cstrl_render_data *render_data, unsigned int dimensions,
+                                              unsigned int count)
+{
+    internal_data *internal_data = render_data->internal_data;
+    internal_data->dimensions = dimensions;
+    internal_data->count = count;
+}
+
+CSTRL_API float *cstrl_renderer_map_buffer(cstrl_render_data *render_data, float *data,
+                                           cstrl_render_attribute_type attribute_type)
+{
+    internal_data *internal_data = render_data->internal_data;
+    int size;
+    switch (attribute_type)
+    {
+    case CSTRL_RENDER_ATTRIBUTE_POSITIONS:
+        size = internal_data->dimensions;
+        break;
+    case CSTRL_RENDER_ATTRIBUTE_UVS:
+        size = 2;
+        break;
+    case CSTRL_RENDER_ATTRIBUTE_COLORS:
+        size = 4;
+        break;
+    case CSTRL_RENDER_ATTRIBUTE_NORMALS:
+    case CSTRL_RENDER_ATTRIBUTE_TANGENTS:
+    case CSTRL_RENDER_ATTRIBUTE_BITANGENTS:
+    case CSTRL_RENDER_ATTRIBUTE_OFFSETS:
+        size = 3;
+        break;
+    case CSTRL_RENDER_ATTRIBUTE_LAYERS:
+        size = 1;
+        break;
+    default:
+        log_error("cstrl_renderer_map_buffer: unknown attribute type");
+        return NULL;
+    }
+    glBindVertexArray(internal_data->vao);
+    glCreateBuffers(1, &internal_data->vbos[attribute_type]);
+    glBindBuffer(GL_ARRAY_BUFFER, internal_data->vbos[attribute_type]);
+    glVertexAttribPointer(attribute_type, size, GL_FLOAT, GL_FALSE, size * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(attribute_type);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+    glNamedBufferStorage(internal_data->vbos[attribute_type], internal_data->count * size * sizeof(float), data, flags);
+    return glMapNamedBufferRange(internal_data->vbos[attribute_type], 0, internal_data->count * size * sizeof(float),
+                                 flags);
+}
+
+CSTRL_API void cstrl_renderer_unmap_buffer(cstrl_render_data *render_data, cstrl_render_attribute_type attribute_type)
+{
+    internal_data *internal_data = render_data->internal_data;
+    glUnmapNamedBuffer(internal_data->vbos[attribute_type]);
+}
+
 CSTRL_API float *cstrl_renderer_map_positions_range(cstrl_render_data *render_data, float *data)
 {
     GLbitfield flags = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
@@ -736,6 +794,7 @@ CSTRL_API bool cstrl_renderer_take_screenshot(const char *filename)
     char *data = malloc(viewport[2] * viewport[3] * 3);
     if (!data)
     {
+        // TODO: logging
         return false;
     }
 
@@ -747,6 +806,25 @@ CSTRL_API bool cstrl_renderer_take_screenshot(const char *filename)
     free(data);
 
     return saved == 1;
+}
+
+CSTRL_API void cstrl_renderer_fence_sync(cstrl_render_fence *fence)
+{
+    fence->internal_data = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+}
+
+#define FENCE_TIMEOUT_NS 1000000000
+
+CSTRL_API bool cstrl_renderer_fence_client_wait_sync(cstrl_render_fence *fence)
+{
+    if (fence->internal_data == NULL)
+    {
+        return true;
+    }
+    GLenum result = glClientWaitSync(fence->internal_data, GL_SYNC_FLUSH_COMMANDS_BIT, FENCE_TIMEOUT_NS);
+    glDeleteSync(fence->internal_data);
+    fence->internal_data = NULL;
+    return result == GL_CONDITION_SATISFIED || result == GL_ALREADY_SIGNALED;
 }
 
 #endif

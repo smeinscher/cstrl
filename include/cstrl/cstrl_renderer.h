@@ -95,6 +95,11 @@ typedef struct cstrl_font_data
     void *internal_data;
 } cstrl_font_data;
 
+typedef struct cstrl_render_fence
+{
+    void *internal_data;
+} cstrl_render_fence;
+
 /*
  *
  *  Render Functions
@@ -196,6 +201,14 @@ CSTRL_API void cstrl_renderer_update_ubo(unsigned int ubo, void *object, size_t 
 
 CSTRL_API void cstrl_renderer_set_line_width(float line_width);
 
+CSTRL_API void cstrl_renderer_map_buffer_init(cstrl_render_data *render_data, unsigned int dimensions,
+                                              unsigned int count);
+
+CSTRL_API float *cstrl_renderer_map_buffer(cstrl_render_data *render_data, float *data,
+                                           cstrl_render_attribute_type attribute_type);
+
+CSTRL_API void cstrl_renderer_unmap_buffer(cstrl_render_data *render_data, cstrl_render_attribute_type attribute_type);
+
 CSTRL_API float *cstrl_renderer_map_positions_range(cstrl_render_data *render_data, float *data);
 
 CSTRL_API void cstrl_renderer_unmap_positions_range(cstrl_render_data *render_data);
@@ -233,6 +246,10 @@ CSTRL_API void cstrl_renderer_start_stencil_draw();
 CSTRL_API void cstrl_renderer_end_stencil_write();
 
 CSTRL_API bool cstrl_renderer_take_screenshot(const char *filename);
+
+CSTRL_API void cstrl_renderer_fence_sync(cstrl_render_fence *fence);
+
+CSTRL_API bool cstrl_renderer_fence_client_wait_sync(cstrl_render_fence *fence);
 
 /*
  *
