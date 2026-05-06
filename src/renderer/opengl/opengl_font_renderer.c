@@ -1,3 +1,4 @@
+#include "cstrl/cstrl_math.h"
 #include <cstrl/cstrl_renderer.h>
 #include <stb/stb_truetype.h>
 #include <stdio.h>
@@ -7,6 +8,7 @@
 // TODO: dynamic size
 #define MAX_TEXT_COUNT 4096
 #define TEXT_BLOCK_SIZE 32
+#define FONT_RESOLUTION 1024
 
 typedef enum font_buffer_type
 {
@@ -100,16 +102,30 @@ CSTRL_API cstrl_font_data *cstrl_font_renderer_create_font_data(const char *font
 
     stbtt_pack_context pack_context;
     internal_data->char_data = calloc(126, sizeof(stbtt_packedchar));
-    unsigned char *pixels = calloc(512 * 512, sizeof(char));
-    stbtt_PackBegin(&pack_context, pixels, 512, 512, 512, 1, NULL);
+    unsigned char *pixels = calloc(FONT_RESOLUTION * FONT_RESOLUTION, sizeof(char));
+    stbtt_PackBegin(&pack_context, pixels, FONT_RESOLUTION, FONT_RESOLUTION, FONT_RESOLUTION, 1, NULL);
     stbtt_PackFontRange(&pack_context, font_buffer, 0, font_size, 0, 125, internal_data->char_data);
     stbtt_PackEnd(&pack_context);
 
-    internal_data->texture = cstrl_texture_generate_from_bitmap(pixels, 512, 512, CSTRL_RED, CSTRL_RED);
+    internal_data->texture =
+        cstrl_texture_generate_from_bitmap(pixels, FONT_RESOLUTION, FONT_RESOLUTION, CSTRL_RED, CSTRL_RED);
 
     free(pixels);
     free(font_buffer);
     return data;
+}
+
+CSTRL_API void cstrl_font_renderer_get_text_size(const char *text, cstrl_font_data *font_data, float *width,
+                                                 float *height)
+{
+    internal_data *internal_data = font_data->internal_data;
+    *width = 0.0f;
+    *height = 0.0f;
+    for (int j = 0; j < strlen(text); j++)
+    {
+        *width += internal_data->char_data[text[j]].xadvance;
+        *height = fmaxf(internal_data->char_data[text[j]].y1 - internal_data->char_data[text[j]].y0, *height);
+    }
 }
 
 CSTRL_API void cstrl_font_renderer_set_position(cstrl_font_data *font_data, int text_block, float x, float y)
@@ -180,10 +196,10 @@ CSTRL_API void cstrl_font_renderer_set_text(cstrl_font_data *font_data, int text
         internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][index * 12 + 10] = x1;
         internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][index * 12 + 11] = y1;
 
-        float u0 = (float)internal_data->char_data[text[i]].x0 / 512.0f;
-        float v0 = (float)internal_data->char_data[text[i]].y1 / 512.0f;
-        float u1 = (float)internal_data->char_data[text[i]].x1 / 512.0f;
-        float v1 = (float)internal_data->char_data[text[i]].y0 / 512.0f;
+        float u0 = (float)internal_data->char_data[text[i]].x0 / FONT_RESOLUTION;
+        float v0 = (float)internal_data->char_data[text[i]].y1 / FONT_RESOLUTION;
+        float u1 = (float)internal_data->char_data[text[i]].x1 / FONT_RESOLUTION;
+        float v1 = (float)internal_data->char_data[text[i]].y0 / FONT_RESOLUTION;
         internal_data->font_buffers[FONT_BUFFER_TYPE_UVS][index * 12] = u0;
         internal_data->font_buffers[FONT_BUFFER_TYPE_UVS][index * 12 + 1] = v1;
         internal_data->font_buffers[FONT_BUFFER_TYPE_UVS][index * 12 + 2] = u1;
