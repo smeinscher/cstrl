@@ -257,7 +257,7 @@ CSTRL_API bool cstrl_renderer_fence_client_wait_sync(cstrl_render_fence *fence);
  *
  */
 
-CSTRL_API cstrl_font_data *cstrl_font_renderer_create_font_data(const char *font_path, float font_size);
+CSTRL_API cstrl_font_data *cstrl_font_renderer_create_font_data(const char *font_path, float font_size, float kern);
 
 CSTRL_API void cstrl_font_renderer_get_text_size(const char *text, cstrl_font_data *font_data, float *width,
                                                  float *height);

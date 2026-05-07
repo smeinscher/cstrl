@@ -7,7 +7,7 @@
 
 // TODO: dynamic size
 #define MAX_TEXT_COUNT 4096
-#define TEXT_BLOCK_SIZE 32
+#define TEXT_BLOCK_SIZE 64
 #define FONT_RESOLUTION 1024
 
 typedef enum font_buffer_type
@@ -26,6 +26,7 @@ typedef struct internal_data
     cstrl_render_data *render_data;
     stbtt_packedchar *char_data;
     float font_size;
+    float kern;
 } internal_data;
 
 const char *font_vertex_shader_source = "                           \
@@ -62,7 +63,7 @@ const char *font_fragment_shader_source = "                         \
         }";
 
 // TODO: check malloc/calloc failure
-CSTRL_API cstrl_font_data *cstrl_font_renderer_create_font_data(const char *font_path, float font_size)
+CSTRL_API cstrl_font_data *cstrl_font_renderer_create_font_data(const char *font_path, float font_size, float kern)
 {
     cstrl_font_data *data = malloc(sizeof(cstrl_font_data));
     data->internal_data = malloc(sizeof(internal_data));
@@ -110,6 +111,8 @@ CSTRL_API cstrl_font_data *cstrl_font_renderer_create_font_data(const char *font
     internal_data->texture =
         cstrl_texture_generate_from_bitmap(pixels, FONT_RESOLUTION, FONT_RESOLUTION, CSTRL_RED, CSTRL_RED);
 
+    internal_data->kern = kern;
+
     free(pixels);
     free(font_buffer);
     return data;
@@ -121,9 +124,10 @@ CSTRL_API void cstrl_font_renderer_get_text_size(const char *text, cstrl_font_da
     internal_data *internal_data = font_data->internal_data;
     *width = 0.0f;
     *height = 0.0f;
-    for (int j = 0; j < strlen(text); j++)
+    size_t len = strlen(text);
+    for (int j = 0; j < len; j++)
     {
-        *width += internal_data->char_data[text[j]].xadvance;
+        *width += internal_data->char_data[text[j]].xadvance + internal_data->kern;
         *height = fmaxf(internal_data->char_data[text[j]].y1 - internal_data->char_data[text[j]].y0, *height);
     }
 }
@@ -182,7 +186,7 @@ CSTRL_API void cstrl_font_renderer_set_text(cstrl_font_data *font_data, int text
         float y0 = internal_data->font_size / 2.0f + (float)start_y + internal_data->char_data[text[i]].yoff2;
         float x1 = (float)next_x + (internal_data->char_data[text[i]].xoff2 - internal_data->char_data[text[i]].xoff);
         float y1 = internal_data->font_size / 2.0f + (float)start_y + internal_data->char_data[text[i]].yoff;
-        next_x += internal_data->char_data[text[i]].xadvance;
+        next_x += internal_data->char_data[text[i]].xadvance + internal_data->kern;
         internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][index * 12] = x0;
         internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][index * 12 + 1] = y1;
         internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][index * 12 + 2] = x1;
