@@ -176,10 +176,11 @@ CSTRL_API void cstrl_font_renderer_set_text(cstrl_font_data *font_data, int text
 {
     internal_data *internal_data = font_data->internal_data;
     memset(internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS] + text_block * TEXT_BLOCK_SIZE * 24, 0,
-           TEXT_BLOCK_SIZE * 24);
+           TEXT_BLOCK_SIZE * 24 * sizeof(float));
     int next_x = x;
     int start_y = y;
-    for (int i = 0; i < cstrl_min(TEXT_BLOCK_SIZE, strlen(text)); i++)
+    int min = cstrl_min(TEXT_BLOCK_SIZE, strlen(text));
+    for (int i = 0; i < min; i++)
     {
         int index = text_block * TEXT_BLOCK_SIZE + i;
         float x0 = (float)next_x + internal_data->char_data[text[i]].xoff;
