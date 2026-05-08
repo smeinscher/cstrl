@@ -7,8 +7,8 @@
 
 // TODO: dynamic size
 #define MAX_TEXT_COUNT 4096
-#define TEXT_BLOCK_SIZE 64
-#define FONT_RESOLUTION 1024
+#define TEXT_BLOCK_SIZE 32
+#define FONT_RESOLUTION 512
 
 typedef enum font_buffer_type
 {
