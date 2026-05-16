@@ -20,7 +20,7 @@
  *
  */
 
-#define CSTRL_DA_INT_ITEM_NOT_FOUND INT_MAX
+#define CSTRL_DA_INT_ITEM_NOT_FOUND -1
 
 typedef struct dynamic_array_int
 {
