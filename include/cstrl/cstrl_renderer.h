@@ -25,6 +25,8 @@ typedef enum cstrl_render_attribute_type
     CSTRL_RENDER_ATTRIBUTE_BITANGENTS,
     CSTRL_RENDER_ATTRIBUTE_OFFSETS,
     CSTRL_RENDER_ATTRIBUTE_LAYERS,
+    CSTRL_RENDER_ATTRIBUTE_BONE_IDS,
+    CSTRL_RENDER_ATTRIBUTE_WEIGHTS,
     CSTRL_RENDER_ATTRIBUTE_MAX
 } cstrl_render_attribute_type;
 
@@ -153,6 +155,10 @@ CSTRL_API void cstrl_renderer_add_offsets_instanced(cstrl_render_data *render_da
                                                     size_t instance_count, cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *layers, cstrl_usage usage);
+
+CSTRL_API void cstrl_renderer_add_bone_ids(cstrl_render_data *render_data, int *bone_ids, cstrl_usage usage);
+
+CSTRL_API void cstrl_renderer_add_weights(cstrl_render_data *render_data, float *weights, cstrl_usage usage);
 
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
                                                size_t count, cstrl_usage usage);

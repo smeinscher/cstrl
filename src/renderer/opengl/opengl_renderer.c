@@ -359,6 +359,36 @@ CSTRL_API void cstrl_renderer_add_layers(cstrl_render_data *render_data, float *
     glBindVertexArray(0);
 }
 
+CSTRL_API void cstrl_renderer_add_bone_ids(cstrl_render_data *render_data, int *bone_ids, cstrl_usage usage)
+{
+    internal_data *data = render_data->internal_data;
+
+    glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_BONE_IDS]);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_BONE_IDS]);
+    glBufferData(GL_ARRAY_BUFFER, 4 * data->count * sizeof(int), bone_ids, cstrl_usage_to_opengl_usage(usage));
+    glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_BONE_IDS, 4, GL_INT, GL_FALSE, 4 * sizeof(int), (void *)0);
+    glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_BONE_IDS);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
+CSTRL_API void cstrl_renderer_add_weights(cstrl_render_data *render_data, float *weights, cstrl_usage usage)
+{
+    internal_data *data = render_data->internal_data;
+
+    glGenBuffers(1, &data->vbos[CSTRL_RENDER_ATTRIBUTE_WEIGHTS]);
+    glBindVertexArray(data->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, data->vbos[CSTRL_RENDER_ATTRIBUTE_WEIGHTS]);
+    glBufferData(GL_ARRAY_BUFFER, 4 * data->count * sizeof(float), weights, cstrl_usage_to_opengl_usage(usage));
+    glVertexAttribPointer(CSTRL_RENDER_ATTRIBUTE_WEIGHTS, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(CSTRL_RENDER_ATTRIBUTE_WEIGHTS);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+}
+
 CSTRL_API void cstrl_renderer_modify_positions(cstrl_render_data *render_data, float *positions, size_t start_index,
                                                size_t count, cstrl_usage usage)
 {

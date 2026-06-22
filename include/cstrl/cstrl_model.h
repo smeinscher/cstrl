@@ -6,10 +6,10 @@
 #include "cstrl/cstrl_util.h"
 
 /*
-*
-*   cgltf loader
-*
-*/
+ *
+ *   cgltf loader
+ *
+ */
 
 #define MAX_TEXTURES 8
 
@@ -45,6 +45,8 @@ typedef struct scene_t
     void *scene_internal;
     cstrl_render_data **render_datum;
     int render_data_count;
+    // TODO: get rid of this
+    mat4 tmp_bone_matrices[100];
 } scene_t;
 
 CSTRL_API mesh_t cstrl_model_generate_mesh_from_obj_file(const char *path);
