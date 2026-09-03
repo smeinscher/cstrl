@@ -184,8 +184,10 @@ CSTRL_API mesh_t cstrl_model_generate_mesh_from_obj_file(const char *path)
                 log_warn("Reached max texture count");
                 break;
             }
+            cstrl_texture_set_flip_vertically(true);
             mesh.textures[i - 1] =
                 cstrl_texture_generate_from_path(fast_obj_mesh->textures[i].path, CSTRL_TEXTURE_FILTER_NEAREST);
+            cstrl_texture_set_flip_vertically(false);
         }
     }
 
