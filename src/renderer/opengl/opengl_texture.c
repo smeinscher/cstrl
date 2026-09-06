@@ -54,6 +54,26 @@ CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height
     return texture;
 }
 
+CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate_depth(int width, int height)
+{
+    cstrl_texture texture = {0};
+    unsigned int texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {1.0, 1.0, 1.0, 1.0};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture_id, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    texture.id = texture_id;
+    return texture;
+}
+
 CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path, cstrl_texture_filter texture_filter)
 {
     cstrl_texture texture = {0};

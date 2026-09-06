@@ -102,6 +102,11 @@ CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT /*| GL_STENCIL_BUFFER_BIT*/);
 }
 
+CSTRL_API void cstrl_renderer_clear_depth_buffer()
+{
+    glClear(GL_DEPTH_BUFFER_BIT);
+}
+
 CSTRL_API void cstrl_renderer_get_viewport(int *viewport)
 {
     glGetIntegerv(GL_VIEWPORT, viewport);
@@ -138,6 +143,12 @@ CSTRL_API void cstrl_create_framebuffer(unsigned int *fbo, unsigned int *vao, cs
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
     glBindVertexArray(0);
+}
+
+CSTRL_API void cstrl_create_framebuffer_depth(unsigned int *fbo)
+{
+    glGenFramebuffers(1, fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
 }
 
 CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo)

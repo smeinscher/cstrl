@@ -112,11 +112,15 @@ CSTRL_API bool cstrl_renderer_init(cstrl_platform_state *platform_state);
 
 CSTRL_API void cstrl_renderer_clear(float r, float g, float b, float a);
 
+CSTRL_API void cstrl_renderer_clear_depth_buffer();
+
 CSTRL_API void cstrl_renderer_get_viewport(int *viewport);
 
 CSTRL_API void cstrl_renderer_set_viewport(int x, int y, unsigned int width, unsigned int height);
 
 CSTRL_API void cstrl_create_framebuffer(unsigned int *fbo, unsigned int *vao, cstrl_usage usage);
+
+CSTRL_API void cstrl_create_framebuffer_depth(unsigned int *fbo);
 
 CSTRL_API void cstrl_renderer_bind_framebuffer(unsigned int fbo);
 
@@ -334,6 +338,8 @@ CSTRL_API void cstrl_shader_hot_reload(cstrl_shader *shader);
 CSTRL_API void cstrl_texture_set_flip_vertically(bool flip_vertically);
 
 CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate(int width, int height, int color_attachment);
+
+CSTRL_API cstrl_texture cstrl_texture_framebuffer_generate_depth(int width, int height);
 
 CSTRL_API cstrl_texture cstrl_texture_generate_from_path(const char *path, cstrl_texture_filter texture_filter);
 
