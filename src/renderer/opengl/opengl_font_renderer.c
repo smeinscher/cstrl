@@ -175,6 +175,10 @@ CSTRL_API void cstrl_font_renderer_set_text(cstrl_font_data *font_data, int text
                                             float y, float r, float g, float b, float a)
 {
     internal_data *internal_data = font_data->internal_data;
+    memset(internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS] + text_block * TEXT_BLOCK_SIZE * 12, 0,
+           TEXT_BLOCK_SIZE * 24 * sizeof(float));
+    memset(internal_data->font_buffers[FONT_BUFFER_TYPE_UVS] + text_block * TEXT_BLOCK_SIZE * 12, 0,
+           TEXT_BLOCK_SIZE * 24 * sizeof(float));
     memset(internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS] + text_block * TEXT_BLOCK_SIZE * 24, 0,
            TEXT_BLOCK_SIZE * 24 * sizeof(float));
     int next_x = x;
