@@ -109,15 +109,15 @@ void win32_key_to_cstrl_key_init()
     g_win32_key_to_cstrl_key[0x87] = CSTRL_KEY_F24;
 }
 
-static void get_mods(WPARAM wparam, int *mods)
+static void get_mods(int *mods)
 {
     // TODO: support all modifiers windows supports
     *mods = 0;
-    if (wparam & MK_SHIFT)
+    if (HIBYTE(GetKeyState(VK_SHIFT)) & 0x80)
     {
         *mods |= CSTRL_KEY_MOD_SHIFT;
     }
-    if (wparam & MK_CONTROL)
+    if (HIBYTE(GetKeyState(VK_CONTROL)) & 0x80)
     {
         *mods |= CSTRL_KEY_MOD_CONTROL;
     }
@@ -154,7 +154,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         if (internal_state->state_common.callbacks.key != NULL)
         {
             int mods;
-            get_mods(wparam, &mods);
+            get_mods(&mods);
             internal_state->state_common.callbacks.key(state, g_win32_key_to_cstrl_key[wparam], scancode, action, mods);
         }
         if (action == CSTRL_ACTION_PRESS)
@@ -216,7 +216,7 @@ LRESULT CALLBACK win32_process_messages(HWND hwnd, UINT msg, WPARAM wparam, LPAR
         if (internal_state->state_common.callbacks.mouse_button != NULL)
         {
             int mods;
-            get_mods(wparam, &mods);
+            get_mods(&mods);
             internal_state->state_common.callbacks.mouse_button(state, button, action, mods);
         }
         return 0;
