@@ -52,6 +52,17 @@ CSTRL_API void cstrl_da_string_init(da_string *da, size_t initial_size)
     da->capacity = initial_size;
 }
 
+CSTRL_API void cstrl_da_void_init(da_void *da, size_t initial_size)
+{
+    da->size = 0;
+    da->array = malloc(sizeof(void *) * initial_size);
+    CSTRL_ASSERT(da->array, "Failed to allocate dynamic string array");
+    for (int i = 0; i < initial_size; i++)
+    {
+        da->array[i] = NULL;
+    }
+    da->capacity = initial_size;
+}
 #define CHECK_DYNAMIC_ARRAY(da_struct, da_array)                                                                       \
     if (da_struct == NULL)                                                                                             \
     {                                                                                                                  \
@@ -130,6 +141,25 @@ CSTRL_API bool cstrl_da_string_reserve(da_string *da, size_t new_capacity)
     return true;
 }
 
+CSTRL_API bool cstrl_da_void_reserve(da_void *da, size_t new_capacity)
+{
+    CHECK_DYNAMIC_ARRAY(da, da->array);
+    if (new_capacity >= SIZE_MAX / sizeof(float))
+    {
+        log_error("New capacity is too large");
+        return false;
+    }
+    void **temp = realloc(da->array, new_capacity * sizeof(float));
+    if (temp == NULL)
+    {
+        log_error("Failed to allocate memory for dynamic float array");
+        return false;
+    }
+    da->array = temp;
+    da->capacity = new_capacity;
+    return true;
+}
+
 CSTRL_API void cstrl_da_int_push_back(da_int *da, int element)
 {
     if (da->size >= da->capacity && !cstrl_da_int_reserve(da, da->capacity * GROWTH_FACTOR))
@@ -172,6 +202,15 @@ CSTRL_API void cstrl_da_string_push_back(da_string *da, string element)
     da->size++;
 }
 
+CSTRL_API void cstrl_da_void_push_back(da_void *da, void *element)
+{
+    if (da->size >= da->capacity && !cstrl_da_void_reserve(da, da->capacity * GROWTH_FACTOR))
+    {
+        return;
+    }
+    da->array[da->size++] = element;
+}
+
 // TODO: unit test
 CSTRL_API void cstrl_da_int_insert(da_int *da, int element, size_t index)
 {
@@ -203,6 +242,11 @@ CSTRL_API void cstrl_string_insert(string *str, const char *element, size_t leng
 CSTRL_API void cstrl_da_string_insert(da_string *da, string element, size_t index)
 {
     log_fatal("da_string_insert not implemented");
+}
+
+CSTRL_API void cstrl_da_void_insert(da_void *da, void *element, size_t index)
+{
+    log_fatal("da_void_insert not implemented");
 }
 
 CSTRL_API void cstrl_da_int_remove(da_int *da, int index)
@@ -271,6 +315,26 @@ CSTRL_API void cstrl_da_string_remove(da_string *da, int index)
     da->size--;
 }
 
+CSTRL_API void cstrl_da_void_remove(da_void *da, int index)
+{
+    if (index >= da->size || index < 0)
+    {
+        log_error("Dynamic int array remove index out of bounds");
+        return;
+    }
+    int temp_index = 0;
+    for (int i = 0; i < da->size; i++)
+    {
+        if (i == index)
+        {
+            continue;
+        }
+        da->array[temp_index] = da->array[i];
+        temp_index++;
+    }
+    da->size--;
+}
+
 CSTRL_API int cstrl_da_int_find_first(da_int *da, int value)
 {
     for (int i = 0; i < da->size; i++)
@@ -312,6 +376,13 @@ CSTRL_API string cstrl_da_string_pop_back(da_string *da)
     return da->array[da->size];
 }
 
+CSTRL_API void *cstrl_da_void_pop_back(da_void *da)
+{
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop back. Size of array is 0 for da_int");
+    da->size--;
+    return da->array[da->size];
+}
+
 CSTRL_API int cstrl_da_int_pop_front(da_int *da)
 {
     CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_int");
@@ -333,6 +404,14 @@ CSTRL_API string cstrl_da_string_pop_front(da_string *da)
     CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_string");
     string temp = da->array[0];
     cstrl_da_string_remove(da, 0);
+    return temp;
+}
+
+CSTRL_API void *cstrl_da_void_pop_front(da_void *da)
+{
+    CSTRL_ASSERT(da->size != 0, "Can not perform pop front. Size of array is 0 for da_int");
+    void *temp = da->array[0];
+    cstrl_da_void_remove(da, 0);
     return temp;
 }
 
@@ -365,6 +444,13 @@ CSTRL_API void cstrl_da_string_clear(da_string *da)
         cstrl_string_free(&da->array[i]);
         da->array[i].array = NULL;
     }
+    da->size = 0;
+}
+
+// TODO: if da_void owns the void *, it should free it
+CSTRL_API void cstrl_da_void_clear(da_void *da)
+{
+    memset(da->array, 0, sizeof(float) * da->size);
     da->size = 0;
 }
 
@@ -403,6 +489,14 @@ CSTRL_API void cstrl_da_string_free(da_string *da)
         cstrl_string_free(&da->array[i]);
     }
     free(da->array);
+    da->size = 0;
+    da->capacity = 0;
+}
+
+CSTRL_API void cstrl_da_void_free(da_void *da)
+{
+    free(da->array);
+    da->array = NULL;
     da->size = 0;
     da->capacity = 0;
 }

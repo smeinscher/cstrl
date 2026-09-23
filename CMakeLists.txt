@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.29)
 project(cstrl C)
+project(cstrl_test C)
 
 #set(CMAKE_SYSTEM_PROCESSOR arm)
 
@@ -118,6 +119,44 @@ add_library(cstrl SHARED
         src/ui/retained/retained_ui.c
         include/cstrl/cstrl_retained_ui.h
         src/renderer/opengl/opengl_font_renderer.c
+        src/util/priority_queue.c
+)
+
+add_executable(cstrl_test
+        test/main.c
+        test/test_manager/test_manager.c
+        test/test_manager/test_manager.h
+        test/test_manager/test_types.h
+        test/unit_tests/cstrl_math/test_vec2.c
+        test/unit_tests/cstrl_math/test_vec2.h
+        test/unit_tests/cstrl_math/test_vec3.c
+        test/unit_tests/cstrl_math/test_vec3.h
+        test/unit_tests/cstrl_math/test_vec4.c
+        test/unit_tests/cstrl_math/test_vec4.h
+        test/unit_tests/cstrl_util/test_dynamic_array.c
+        test/unit_tests/cstrl_util/test_dynamic_array.h
+        test/unit_tests/cstrl_math/test_quat.c
+        test/unit_tests/cstrl_math/test_quat.h
+        # test/unit_tests/cstrl_renderer/test_camera.c
+        # test/unit_tests/cstrl_renderer/test_camera.h
+        test/unit_tests/unit_tests.c
+        test/unit_tests/unit_tests.h
+        # test/manual_tests/basic/test_4_cubes_scene.c
+        # test/manual_tests/basic/test_4_cubes_scene.h
+        # test/integration_tests/integration_tests.c
+        # test/integration_tests/integration_tests.h
+        # test/manual_tests/manual_tests.c
+        # test/manual_tests/manual_tests.h
+        # test/unit_tests/cstrl_math/test_mat4.c
+        # test/unit_tests/cstrl_math/test_mat4.h
+        # test/unit_tests/cstrl_math/test_mat3.c
+        # test/unit_tests/cstrl_math/test_mat3.h
+        # test/unit_tests/cstrl_physics/test_collision.c
+        # test/unit_tests/cstrl_physics/test_collision.h
+        test/unit_tests/cstrl_util/test_random.c
+        test/unit_tests/cstrl_util/test_random.h
+        test/unit_tests/cstrl_util/test_priority_queue.c
+        test/unit_tests/cstrl_util/test_priority_queue.h
 )
 
 # target_compile_options(
@@ -135,4 +174,7 @@ if(ANDROID)
     target_link_libraries(cstrl PRIVATE EGL)
 endif()
 
+target_link_libraries(cstrl_test PRIVATE log_c cstrl)
+
 target_include_directories(cstrl PUBLIC extern include)
+target_include_directories(cstrl_test PUBLIC extern include src)

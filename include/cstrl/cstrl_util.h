@@ -52,6 +52,13 @@ typedef struct dynamic_array_string
     size_t capacity;
 } da_string;
 
+typedef struct dynamic_array_void
+{
+    void **array;
+    size_t size;
+    size_t capacity;
+} da_void;
+
 CSTRL_API void cstrl_da_int_init(da_int *da, size_t initial_size);
 
 CSTRL_API void cstrl_da_float_init(da_float *da, size_t initial_size);
@@ -59,6 +66,8 @@ CSTRL_API void cstrl_da_float_init(da_float *da, size_t initial_size);
 CSTRL_API void cstrl_string_init(string *str, size_t initial_size);
 
 CSTRL_API void cstrl_da_string_init(da_string *da, size_t initial_size);
+
+CSTRL_API void cstrl_da_void_init(da_void *da, size_t initial_size);
 
 CSTRL_API bool cstrl_da_int_reserve(da_int *da, size_t new_capacity);
 
@@ -68,6 +77,8 @@ CSTRL_API bool cstrl_string_reserve(string *str, size_t new_capacity);
 
 CSTRL_API bool cstrl_da_string_reserve(da_string *da, size_t new_capacity);
 
+CSTRL_API bool cstrl_da_void_reserve(da_void *da, size_t new_capacity);
+
 CSTRL_API void cstrl_da_int_push_back(da_int *da, int element);
 
 CSTRL_API void cstrl_da_float_push_back(da_float *da, float element);
@@ -75,6 +86,8 @@ CSTRL_API void cstrl_da_float_push_back(da_float *da, float element);
 CSTRL_API void cstrl_string_push_back(string *str, const char *characters, size_t length);
 
 CSTRL_API void cstrl_da_string_push_back(da_string *da, string element);
+
+CSTRL_API void cstrl_da_void_push_back(da_void *da, void *element);
 
 CSTRL_API void cstrl_da_int_insert(da_int *da, int element, size_t index);
 
@@ -84,6 +97,8 @@ CSTRL_API void cstrl_string_insert(string *str, const char *element, size_t leng
 
 CSTRL_API void cstrl_da_string_insert(da_string *da, string element, size_t index);
 
+CSTRL_API void cstrl_da_void_insert(da_void *da, void *element, size_t index);
+
 CSTRL_API void cstrl_da_int_remove(da_int *da, int index);
 
 CSTRL_API void cstrl_da_float_remove(da_float *da, int index);
@@ -91,6 +106,8 @@ CSTRL_API void cstrl_da_float_remove(da_float *da, int index);
 CSTRL_API void cstrl_string_remove(string *str, int index);
 
 CSTRL_API void cstrl_da_string_remove(da_string *da, int index);
+
+CSTRL_API void cstrl_da_void_remove(da_void *da, int index);
 
 CSTRL_API int cstrl_da_int_find_first(da_int *da, int value);
 
@@ -102,11 +119,15 @@ CSTRL_API char cstrl_string_pop_back(string *str);
 
 CSTRL_API string cstrl_da_string_pop_back(da_string *da);
 
+CSTRL_API void *cstrl_da_void_pop_back(da_void *da);
+
 CSTRL_API int cstrl_da_int_pop_front(da_int *da);
 
 CSTRL_API float cstrl_da_float_pop_front(da_float *da);
 
 CSTRL_API string cstrl_da_string_pop_front(da_string *da);
+
+CSTRL_API void *cstrl_da_void_pop_front(da_void *da);
 
 CSTRL_API void cstrl_da_int_clear(da_int *da);
 
@@ -116,6 +137,8 @@ CSTRL_API void cstrl_string_clear(string *str);
 
 CSTRL_API void cstrl_da_string_clear(da_string *da);
 
+CSTRL_API void cstrl_da_void_clear(da_void *da);
+
 CSTRL_API void cstrl_da_int_free(da_int *da);
 
 CSTRL_API void cstrl_da_float_free(da_float *da);
@@ -123,6 +146,8 @@ CSTRL_API void cstrl_da_float_free(da_float *da);
 CSTRL_API void cstrl_string_free(string *str);
 
 CSTRL_API void cstrl_da_string_free(da_string *da);
+
+CSTRL_API void cstrl_da_void_free(da_void *da);
 
 CSTRL_API char *cstrl_string_to_c_str(string *str);
 
@@ -208,5 +233,33 @@ CSTRL_API uint32_t cstrl_rand_uint32_range(cstrl_mt_rand_state_t *state, uint32_
 CSTRL_API float cstrl_rand_float(cstrl_mt_rand_state_t *state);
 
 CSTRL_API float cstrl_rand_float_range(cstrl_mt_rand_state_t *state, float min, float max);
+
+/*
+ *
+ *  Priority Queue (Min Heap)
+ *
+ */
+
+typedef struct cstrl_priority_queue_item
+{
+    void *data;
+    int priority;
+} cstrl_pq_item;
+
+typedef struct cstrl_priority_queue
+{
+    da_void data;
+    da_int priority;
+} cstrl_pq;
+
+CSTRL_API void cstrl_pq_init(cstrl_pq *pq, size_t initial_capacity);
+
+CSTRL_API void cstrl_pq_insert(cstrl_pq *pq, void *element, int priority);
+
+CSTRL_API cstrl_pq_item cstrl_pq_pop(cstrl_pq *pq);
+
+CSTRL_API cstrl_pq_item cstrl_pq_get_min(cstrl_pq *pq);
+
+CSTRL_API void cstrl_pq_free(cstrl_pq *pq);
 
 #endif // CSTRL_UTIL_H
