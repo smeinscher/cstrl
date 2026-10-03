@@ -50,6 +50,8 @@ CSTRL_API void cstrl_platform_get_screen_resolution(int *width, int *height);
 
 CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_state, bool fullscreen);
 
+CSTRL_API bool cstrl_platform_is_minimized(cstrl_platform_state *platform_state);
+
 /*
  *
  *  Thread

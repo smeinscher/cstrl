@@ -588,6 +588,12 @@ CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_stat
                                                    state->state_common.viewport_height);
 }
 
+CSTRL_API bool cstrl_platform_is_minimized(cstrl_platform_state *platform_state)
+{
+    internal_state *state = platform_state->internal_state;
+    return IsIconic(state->hwnd);
+}
+
 CSTRL_API void cstrl_platform_set_thread_attributes(cstrl_thread_t *thread)
 {
 }
