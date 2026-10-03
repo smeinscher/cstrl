@@ -431,4 +431,29 @@ CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_stat
     }
 }
 
+CSTRL_API bool cstrl_platform_is_minimized(cstrl_platform_state *platform_state)
+{
+    internal_state *state = platform_state->internal_state;
+    Atom wm_state = XInternAtom(state->display, "WM_STATE", False);
+    Atom actual_type;
+    int actual_format;
+    unsigned long nitems, bytes_after;
+    unsigned char *data = NULL;
+
+    int status = XGetWindowProperty(state->display, state->main_window, wm_state, 0, 2, False, wm_state, &actual_type,
+                                    &actual_format, &nitems, &bytes_after, &data);
+
+    if (status != Success || !data || nitems < 1)
+    {
+        if (data)
+            XFree(data);
+        return false;
+    }
+
+    long window_state = ((long *)data)[0];
+    XFree(data);
+
+    return window_state == IconicState;
+}
+
 #endif
