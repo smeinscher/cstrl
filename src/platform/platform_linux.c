@@ -8,6 +8,8 @@
 
 #include "cstrl/cstrl_types.h"
 #include "log.c/log.h"
+#define HAVE_X11
+#include "sofd/libsofd.h"
 
 #include <X11/X.h>
 #include <X11/XKBlib.h>
@@ -454,6 +456,53 @@ CSTRL_API bool cstrl_platform_is_minimized(cstrl_platform_state *platform_state)
     XFree(data);
 
     return window_state == IconicState;
+}
+
+static int fib_filter_filename(const char *name)
+{
+    return 0;
+}
+
+CSTRL_API bool cstrl_platform_file_dialog_get_filename(cstrl_platform_state *platform_state, char *buffer,
+                                                       size_t buffer_size)
+{
+    Display *dpy = XOpenDisplay(NULL);
+    if (!dpy)
+    {
+        return false;
+    }
+    internal_state *state = platform_state->internal_state;
+    x_fib_cfg_filter_callback(fib_filter_filename);
+    char cwd_buffer[1024];
+    x_fib_configure(0, getcwd(cwd_buffer, 1024));
+    x_fib_configure(1, "Open File");
+    x_fib_show(dpy, state->main_window, 0, 0);
+    while (true)
+    {
+        XEvent event;
+        while (XPending(dpy) > 0)
+        {
+            XNextEvent(dpy, &event);
+            if (x_fib_handle_events(dpy, &event))
+            {
+                if (x_fib_status() > 0)
+                {
+                    char *fn = x_fib_filename();
+                    snprintf(buffer, buffer_size, "%s", fn);
+                    printf("OPEN '%s'\n", fn);
+                    free(fn);
+                }
+            }
+        }
+        if (x_fib_status())
+        {
+            break;
+        }
+        usleep(80000);
+    }
+    x_fib_close(dpy);
+    XCloseDisplay(dpy);
+    return strlen(buffer) > 1;
 }
 
 #endif

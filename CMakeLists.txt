@@ -53,6 +53,12 @@ else()
     set(GLAD_H extern/glad/glad.h)
 endif()
 
+if(UNIX)
+    add_library(sofd STATIC
+        extern/sofd/libsofd.c
+        extern/sofd/libsofd.h)
+endif()
+
 add_library(cstrl SHARED
         ${GLAD_C}
         ${GLAD_H}
@@ -168,7 +174,7 @@ if(X11_FOUND)
     target_link_libraries(cstrl PRIVATE Xfixes)
 endif()
 if(UNIX)
-    target_link_libraries(cstrl PRIVATE m)
+    target_link_libraries(cstrl PRIVATE m sofd)
     target_link_libraries(cstrl_test PRIVATE m)
 endif()
 if(ANDROID)
