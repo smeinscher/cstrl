@@ -52,6 +52,9 @@ CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_stat
 
 CSTRL_API bool cstrl_platform_is_minimized(cstrl_platform_state *platform_state);
 
+CSTRL_API bool cstrl_platform_file_dialog_get_filename(cstrl_platform_state *platform_state, char *buffer,
+                                                       size_t buffer_size);
+
 /*
  *
  *  Thread

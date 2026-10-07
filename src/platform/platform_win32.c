@@ -12,14 +12,17 @@
 #include "log.c/log.h"
 #include "platform_internal.h"
 
+#define COBJMACROS
 #include <windows.h>
 #include <windowsx.h>
 #include <winuser.h>
 
+#include <shobjidl.h>
+
 #include <processthreadsapi.h>
 
 #define WINDOW_STYLE_WINDOWED WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME
-#define WINDOW_STYLE_FULLSCREEN WS_OVERLAPPED | WS_POPUP | WS_MAXIMIZE
+#define WINDOW_STYLE_FULLSCREEN /*WS_OVERLAPPED | WS_POPUP | */ WS_MAXIMIZE
 
 static double g_clock_frequency;
 static LARGE_INTEGER g_start_time;
@@ -482,6 +485,10 @@ CSTRL_API bool cstrl_platform_init(cstrl_platform_state *platform_state, const c
     state->state_common.initial_viewport_width = width;
     state->state_common.initial_viewport_height = height;
 
+    if (fullscreen)
+    {
+        SetWindowLongPtr(state->hwnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN);
+    }
     ShowWindow(state->hwnd, SW_SHOW);
 
     return true;
@@ -549,11 +556,11 @@ CSTRL_API void cstrl_platform_set_fullscreen(cstrl_platform_state *platform_stat
     internal_state *state = platform_state->internal_state;
     if (fullscreen)
     {
-        SetWindowLongPtr(state->hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW | WS_EX_TOPMOST);
+        SetWindowLongPtr(state->hwnd, GWL_EXSTYLE, WS_EX_APPWINDOW /* | WS_EX_TOPMOST*/);
         int width, height;
         cstrl_platform_get_screen_resolution(&width, &height);
         SetWindowLongPtr(state->hwnd, GWL_STYLE, WINDOW_STYLE_FULLSCREEN);
-        SetWindowPos(state->hwnd, HWND_TOP, 0, 0, width, height, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        SetWindowPos(state->hwnd, HWND_NOTOPMOST, 0, 0, width, height, SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
         state->state_common.window_width = width;
         state->state_common.window_height = height;
         state->state_common.window_x = 0;
@@ -592,6 +599,64 @@ CSTRL_API bool cstrl_platform_is_minimized(cstrl_platform_state *platform_state)
 {
     internal_state *state = platform_state->internal_state;
     return IsIconic(state->hwnd);
+}
+
+CSTRL_API bool cstrl_platform_file_dialog_get_filename(cstrl_platform_state *platform_state, char *buffer,
+                                                       size_t buffer_size)
+{
+    HRESULT hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (FAILED(hr))
+    {
+        return false;
+    }
+    WCHAR cwd[1024];
+    DWORD len = GetCurrentDirectoryW((DWORD)(sizeof(cwd) / sizeof(cwd[0])), cwd);
+    if (len == 0 || len >= sizeof(cwd) / sizeof(cwd[0]))
+    {
+        CoUninitialize();
+        return false;
+    }
+    internal_state *state = platform_state->internal_state;
+    PWSTR path = NULL;
+    IFileOpenDialog *pfd = NULL;
+    hr = CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, &IID_IFileOpenDialog, (void **)&pfd);
+    if (SUCCEEDED(hr))
+    {
+        IShellItem *folder = NULL;
+        hr = SHCreateItemFromParsingName(cwd, NULL, &IID_IShellItem, (void **)&folder);
+
+        if (SUCCEEDED(hr))
+        {
+            hr = IFileOpenDialog_SetFolder(pfd, folder);
+            IShellItem_Release(folder);
+        }
+        if (SUCCEEDED(hr))
+        {
+            hr = IFileOpenDialog_Show(pfd, NULL);
+        }
+        if (SUCCEEDED(hr))
+        {
+            IShellItem *item = NULL;
+            hr = IFileOpenDialog_GetResult(pfd, &item);
+            if (SUCCEEDED(hr))
+            {
+                hr = IShellItem_GetDisplayName(item, SIGDN_FILESYSPATH, &path);
+                if (SUCCEEDED(hr))
+                {
+                    size_t size;
+                    wcstombs_s(&size, buffer, buffer_size, path, buffer_size - 1);
+                    CoTaskMemFree(path);
+                }
+
+                IShellItem_Release(item);
+            }
+        }
+    }
+
+    IFileOpenDialog_Release(pfd);
+    CoUninitialize();
+
+    return strlen(buffer) > 1;
 }
 
 CSTRL_API void cstrl_platform_set_thread_attributes(cstrl_thread_t *thread)
