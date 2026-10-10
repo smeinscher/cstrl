@@ -20,6 +20,7 @@ typedef enum font_buffer_type
 
 typedef struct internal_data
 {
+    float text_block_size[MAX_TEXT_COUNT / TEXT_BLOCK_SIZE * 2];
     float *font_buffers[FONT_MAX_BUFFER_TYPE];
     cstrl_shader shader;
     cstrl_texture texture;
@@ -135,14 +136,18 @@ CSTRL_API void cstrl_font_renderer_get_text_size(const char *text, cstrl_font_da
 CSTRL_API void cstrl_font_renderer_set_position(cstrl_font_data *font_data, int text_block, float x, float y)
 {
     internal_data *internal_data = font_data->internal_data;
+    float new_x = x - internal_data->text_block_size[text_block * 2] * 0.5f;
+    float new_y = y - internal_data->text_block_size[text_block * 2 + 1] * 0.5f;
     float original_x = internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][text_block * TEXT_BLOCK_SIZE * 12];
     float original_y = internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][text_block * TEXT_BLOCK_SIZE * 12 + 3];
-    for (int i = text_block * TEXT_BLOCK_SIZE * 6; i < (text_block + 1) * TEXT_BLOCK_SIZE * 6; i++)
+    for (int i = 0; i < TEXT_BLOCK_SIZE * 6; i++)
     {
-        internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][i * 2] -= original_x;
-        internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][i * 2] += x;
-        internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][i * 2 + 1] -= original_y;
-        internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][i * 2 + 1] += y;
+        internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][text_block * TEXT_BLOCK_SIZE * 12 + i * 2] -=
+            original_x;
+        internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][text_block * TEXT_BLOCK_SIZE * 12 + i * 2] += new_x;
+        internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][text_block * TEXT_BLOCK_SIZE * 12 + i * 2 + 1] -=
+            original_y;
+        internal_data->font_buffers[FONT_BUFFER_TYPE_POSITIONS][text_block * TEXT_BLOCK_SIZE * 12 + i * 2 + 1] += new_y;
     }
 }
 
@@ -230,6 +235,10 @@ CSTRL_API void cstrl_font_renderer_set_text(cstrl_font_data *font_data, int text
             internal_data->font_buffers[FONT_BUFFER_TYPE_COLORS][index * 24 + j * 4 + 3] = a;
         }
     }
+    float width, height;
+    cstrl_font_renderer_get_text_size(text, font_data, &width, &height);
+    internal_data->text_block_size[text_block * 2] = width;
+    internal_data->text_block_size[text_block * 2 + 1] = height;
 }
 
 CSTRL_API void cstrl_font_renderer_draw(cstrl_font_data *font_data, int block_count, mat4 view, mat4 projection)
