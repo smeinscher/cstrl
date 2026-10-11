@@ -460,7 +460,7 @@ CSTRL_API bool cstrl_platform_is_minimized(cstrl_platform_state *platform_state)
 
 static int fib_filter_filename(const char *name)
 {
-    return 0;
+    return 1;
 }
 
 CSTRL_API bool cstrl_platform_file_dialog_get_filename(cstrl_platform_state *platform_state, char *buffer,
